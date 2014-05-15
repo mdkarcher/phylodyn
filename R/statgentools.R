@@ -23,40 +23,40 @@ traj_beta = function(t, traj, beta)
   return(traj(t)^beta)
 }
 
-unif_traj = function(t)
+unif_traj = function(t, level=100)
 {
   n = length(t)
-  return(rep(100,n))
+  return(rep(level,n))
 }
 
-unif_traj_inv = function(t)
+unif_traj_inv = function(t, level=100)
 {
   n = length(t)
-  return(rep(0.01,n))
+  return(rep(1/level,n))
 }
 
-exp_traj = function(t)
+exp_traj = function(t, scale=1000)
 {
-  return(1000 * exp(-t))
+  return(scale * exp(-t))
 }
 
-exp_traj_inv = function(t)
+exp_traj_inv = function(t, scale=1000)
 {
-  return(1/(1000 * exp(-t)))
+  return(1/(scale * exp(-t)))
 }
 
-boombust_traj = function(t)
+boombust_traj = function(t, bust=1, scale=1000)
 {
-  bust = 1
+  #bust = 1
   result = rep(0, length(t))
-  result[t <= bust] = 1000*exp(t[t <= bust]-bust)
-  result[t >  bust] = 1000*exp(bust-t[t >  bust])
+  result[t <= bust] = scale*exp(t[t <= bust]-bust)
+  result[t >  bust] = scale*exp(bust-t[t >  bust])
   return(result)
 }
 
-boombust_traj_inv = function(t)
+boombust_traj_inv = function(t, bust=1, scale=1000)
 {
-  return(1/boombust_traj(t))
+  return(1/boombust_traj(t, bust, scale))
 }
 
 cyclic_traj = function(t)
