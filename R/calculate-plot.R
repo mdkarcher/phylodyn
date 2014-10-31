@@ -61,7 +61,7 @@ gen_summary = function(coal_times, s_times, n_sampled)
   return(data.frame(cbind(lineages=args$indicator, start_time=args$s[1:(n-1)], stop_time=args$s[2:n], end_event=args$event[2:n], change=diff(c(args$indicator,1)))))
 }
 
-calculate.moller.hetero <- function(coal.factor,s,event,lengthout,alpha,beta,...)
+calculate.moller.hetero <- function(coal.factor,s,event,lengthout,alpha,beta,E.log.zero=-100)
 {
   grid <- seq(0,max(s),length.out=lengthout+1)
   u <- diff(grid)
@@ -138,12 +138,17 @@ calculate.moller.hetero <- function(coal.factor,s,event,lengthout,alpha,beta,...
     }
   }
   
-  #   E.factor2[1:34] <- rep(1,34)
-  data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=log(E.factor2[-1]))
-  formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(alpha, beta))),constr=FALSE,si=FALSE)
-  mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE),...)
+  #E.factor2[E.factor2 == 0] = exp(-1e6)
+  E.factor2.log = log(E.factor2)
+  E.factor2.log[E.factor2 == 0] = E.log.zero
+  #print(E.factor2.log)
   
-  return(list(result=mod4,grid=grid))
+  #   E.factor2[1:34] <- rep(1,34)
+  data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=E.factor2.log[-1])
+  formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(alpha, beta))),constr=FALSE)
+  mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE))
+  
+  return(list(result=mod4,grid=grid,data=data,E=E.factor2.log))
 }
 
 plot_INLA = function(INLA_out, traj=NULL, xlim=NULL, ...)
@@ -244,7 +249,7 @@ calculate.pref = function(coal.factor,s,event,lengthout,alpha,beta,...)
   
   #   E.factor2[1:34] <- rep(1,34)
   #data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=log(E.factor2[-1]))
-  #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(alpha, beta))),constr=FALSE,si=FALSE)
+  #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(alpha, beta))),constr=FALSE)
   #mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE),...)
   
   n1 <- length(event_new2[-1])
@@ -268,7 +273,7 @@ calculate.pref = function(coal.factor,s,event,lengthout,alpha,beta,...)
   newcount[(sum(grid<max(samps))+1):lengthout] <- NA
   
   data.sampling2<-data.frame(y=newcount,time=field,E=log(diff(grid)))
-  formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(alpha, beta))),constr=FALSE,si=FALSE)
+  formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(alpha, beta))),constr=FALSE)
   
   # MK: Added during functionizing
   E = diff(s) * coal.factor
@@ -298,7 +303,7 @@ plot_INLA_inv = function(INLA_out, traj=NULL, xlim=NULL, ...)
     lines(grid, traj(grid))
 }
 
-calculate.moller.hetero.pref <- function(coal.factor,s,event,lengthout,alpha,beta,...)
+calculate.moller.hetero.pref <- function(coal.factor,s,event,lengthout,alpha,beta,E.log.zero=-100)
 {
   grid <- seq(0,max(s),length.out=lengthout+1)
   u <- diff(grid)
@@ -377,7 +382,7 @@ calculate.moller.hetero.pref <- function(coal.factor,s,event,lengthout,alpha,bet
   
   #   E.factor2[1:34] <- rep(1,34)
   #data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=log(E.factor2[-1]))
-  #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(alpha, beta))),constr=FALSE,si=FALSE)
+  #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(alpha, beta))),constr=FALSE)
   #mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE),...)
   
   n1 <- length(event_new2[-1])
@@ -401,47 +406,53 @@ calculate.moller.hetero.pref <- function(coal.factor,s,event,lengthout,alpha,bet
   newcount[(sum(grid<max(samps))+1):lengthout] <- NA
   
   #data.sampling2<-data.frame(y=newcount,time=field,E=log(diff(grid)))
-  #formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(alpha, beta))),constr=FALSE,si=FALSE)
+  #formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(alpha, beta))),constr=FALSE)
   
   # MK: Added during functionizing
   E = diff(s) * coal.factor
   E[1]=1
   
-  print("Got here 1")
+  #print("Got here 1")
   
   alpha<-c(rep(0,n1),rep(1,n2))
   newE<-rep(NA,n1+n2)
-  newE[1:n1]<-log(E.factor2[-1])
+  
+  #MK: added to resolve INLA failure
+  E.factor2.log = log(E.factor2)
+  E.factor2.log[E.factor2 == 0] = E.log.zero
+  newE[1:n1]<-E.factor2.log[-1]
+  #newE[1:n1]<-log(E.factor2[-1])
+  
   newE[(n1+1):(n1+n2)]<-log(diff(grid))
   megafield<-c(time2[-1],field)
   
-  print("Got here 2")
+  #print("Got here 2")
   
   Y[1:n1,1]<-event_new2[-1]
-  print("Got here 3")
+  #print("Got here 3")
   Y[(n1+1):(n2+n1),2]<-newcount
-  print("Got here 4")
+  #print("Got here 4")
   r<-c(rep(1,n1),rep(2,n2))
   w<-c(rep(1,n1),rep(-1,n2))
   # data.pref<-data.frame(Y=Y,alpha=alpha,r=r,megafield=megafield,E=newE,w=w)
-  # formula.pref.rep<-Y~-1+alpha+f(megafield,w,model="rw1",replicate=r,hyper=list(prec = list(param = c(.001, .001))),constr=FALSE,si=FALSE)
+  # formula.pref.rep<-Y~-1+alpha+f(megafield,w,model="rw1",replicate=r,hyper=list(prec = list(param = c(.001, .001))),constr=FALSE)
   ii<-c(time2[-1],rep(NA,n2))
   jj<-c(rep(NA,n1),field)
   
-  print("Got here 5")
+  #print("Got here 5")
   
-  formula.pref<-Y~-1+alpha+f(ii,model="rw1",hyper=list(prec = list(param = c(.001, .001))),constr=FALSE,si=FALSE)+
+  formula.pref<-Y~-1+alpha+f(ii,model="rw1",hyper=list(prec = list(param = c(.001, .001))),constr=FALSE)+
     f(jj,w,copy="ii",fixed=FALSE,param=c(0,0.1))
-  print("Got here 6")
+  #print("Got here 6")
   
   # MK: Changed data.frame to list
   data.pref<-list(Y=Y,alpha=alpha,ii=ii,jj=jj,E=newE,w=w)
   
-  print("Got here 7")
+  #print("Got here 7")
   #print(data.pref)
   mod.pref<-inla(formula.pref,family=c("poisson","poisson"),offset=E,data=data.pref,control.predictor=list(compute=TRUE))
   
-  print("Got here 8")
+  #print("Got here 8")
   
   return(list(result=mod.pref,grid=grid))
 }
