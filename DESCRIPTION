@@ -4,7 +4,9 @@ Title: Statistical tools for phylodynamics
 Version: 1.0
 Depends: R (>= 2.13.0), ape, INLA, spam
 Date: 2013-12-12
-Author: Michael Karcher
+Author: Michael Karcher, Julia Palacios, Shiwei Lan, Vladimir Minin
 Maintainer: Michael Karcher <mkarcher@uw.edu>
 Description: Statistical tools for reconstructing population size from genetic sequence data.
 License: GPL-3
+Suggests: knitr
+VignetteBuilder: knitr
