@@ -1,4 +1,4 @@
-gen_INLA_args = function(coal_times, s_times, n_sampled)
+gen_BNPR_args = function(coal_times, s_times, n_sampled)
 {
   n         = length(coal_times) + 1
   data      = matrix(0, nrow=n-1, ncol=2)
@@ -54,6 +54,12 @@ gen_INLA_args = function(coal_times, s_times, n_sampled)
   return(list(coal_factor=coal_factor, s=s, event=event, indicator=indicator))
 }
 
+gen_INLA_args = function(...)
+{
+  result = gen_BNPR_args(...)
+  return(result)
+}
+
 gen_summary = function(coal_times, s_times, n_sampled)
 {
   args = gen_INLA_args(coal_times, s_times, n_sampled)
@@ -61,7 +67,7 @@ gen_summary = function(coal_times, s_times, n_sampled)
   return(data.frame(cbind(lineages=args$indicator, start_time=args$s[1:(n-1)], stop_time=args$s[2:n], end_event=args$event[2:n], change=diff(c(args$indicator,1)))))
 }
 
-calculate.moller.hetero <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,E.log.zero=-100,alpha=NULL,beta=NULL)
+BNPR <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,E.log.zero=-100,alpha=NULL,beta=NULL)
 {
   if (prec_alpha == 0.01 & prec_beta==0.01 & !is.null(alpha) & !is.null(beta))
   {
@@ -156,9 +162,14 @@ calculate.moller.hetero <- function(coal.factor,s,event,lengthout,prec_alpha=0.0
   return(list(result=mod4,grid=grid,data=data,E=E.factor2.log))
 }
 
-plot_INLA = function(INLA_out, traj=NULL, xlim=NULL, ...)
+calculate.moller.hetero = function(...)
 {
-  mod = INLA_out$result$summary.random$time
+  return(BNPR(...))
+}
+
+plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ...)
+{
+  mod = BNPR_out$result$summary.random$time
   
   grid = mod$"ID"
   if (is.null(xlim))
@@ -173,6 +184,11 @@ plot_INLA = function(INLA_out, traj=NULL, xlim=NULL, ...)
   lines(grid,exp(-mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
   if (!is.null(traj))
     lines(grid, traj(grid))
+}
+
+plot_INLA = function(INLA_out, traj=NULL, xlim=NULL, ...)
+{
+  plot_BNPR(BNPR_out=INLA_out, traj, xlim, ...)
 }
 
 calculate.pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
@@ -289,9 +305,9 @@ calculate.pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_bet
   return(list(result=mod.sampling2,grid=grid))
 }
 
-plot_INLA_inv = function(INLA_out, traj=NULL, xlim=NULL, ...)
+plot_INLA_inv = function(BNPR_out, traj=NULL, xlim=NULL, ...)
 {
-  mod = INLA_out$result$summary.random$time
+  mod = BNPR_out$result$summary.random$time
   
   grid = mod$"ID"
   if (is.null(xlim))
@@ -308,7 +324,7 @@ plot_INLA_inv = function(INLA_out, traj=NULL, xlim=NULL, ...)
     lines(grid, traj(grid))
 }
 
-calculate.moller.hetero.pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,E.log.zero=-100,alpha=NULL,beta=NULL)
+BNPR_PS <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,E.log.zero=-100,alpha=NULL,beta=NULL)
 {
   if (prec_alpha == 0.01 & prec_beta==0.01 & !is.null(alpha) & !is.null(beta))
   {
@@ -468,9 +484,14 @@ calculate.moller.hetero.pref <- function(coal.factor,s,event,lengthout,prec_alph
   return(list(result=mod.pref,grid=grid))
 }
 
-plot_INLA_ii = function(INLA_out, traj=NULL, xlim=NULL, ...)
+calculate.moller.hetero.pref = function(...)
 {
-  mod = INLA_out$result$summary.random$ii
+  return(BNPR_PS(...))
+}
+
+plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)
+{
+  mod = BNPR_out$result$summary.random$ii
   
   grid = mod$"ID"
   if (is.null(xlim))
