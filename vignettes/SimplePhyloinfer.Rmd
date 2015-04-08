@@ -33,120 +33,48 @@ sample = cbind(n_sampled, samp_times)
 
 We simulate a genealogy based on our sample using the coalescent.
 
-```{r cache=TRUE}
+```{r}
 gene = coalgen_thinning_hetero(sample=sample, trajectory=traj_inv)
 coal_times = cumsum(gene$intercoal_times)
 ```
 
 We first use BNPR to calculate approximate marginals. We use a helper function to generate the arguments for the BNPR function.
 
-```{r cache=TRUE}
+```{r}
 args = gen_BNPR_args(coal_times=coal_times, s_times=samp_times, n_sampled=n_sampled)
 res_BNPR = BNPR(args$coal_factor, args$s, args$event, 100, 0.01, 0.01)
 ```
 
-Next we set up splitHMC to take an MCMC approach to analysing the data.
-
-```{r cache=TRUE}
-TrjL = 3
-Nleap=16
-stepsz = TrjL/Nleap
-szkappa = 1.2
-NSAMP = 15000
-NBURNIN = 5000
-
-grid_bds = range(c(coal_times,samp_times))
-Ngrid = 100
-
-grid = seq(grid_bds[1],grid_bds[2],length.out=Ngrid)
-intl = grid[2]-grid[1]
-midpts = grid[-1]-intl/2
-
-# initialize likelihood calculation
-lik_init = coal_lik_init(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)
-
-# hyper-parameter in the priors
-alpha = 1e-1
-beta = 1e-1
-
-# Intrinsic precision matrix
-Q.matrix <- function(input,s.noise,signal)
-{
-  n2<-nrow(input)
-  diff1<-diff(input)
-  diff1[diff1==0]<-s.noise #correction for dividing over 0
-  diff<-(1/(signal*diff1))
-  Q<-spam(0,n2,n2)  
-  if (n2>2)
-  {
-    Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)
-  }
-  else
-  {
-    Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)
-  }
-  Q[cbind(seq(1,n2-1),seq(2,n2))] <- -diff[1:(n2-1)]
-  Q[cbind(seq(2,n2),seq(1,n2-1))] <- -diff[1:(n2-1)]
-  return(Q)
-}
-invC <- Q.matrix(as.matrix(midpts),0,1)
-
-#fudge to be able to compute the cholC
-invC[1,1] <- invC[1,1]+.0001 ## nugget at (1,1)
-
-eig  = eigen(invC,T)
-rtEV = sqrt(eig$values)
-EVC  = eig$vectors
-
-C = matrix(midpts,Ngrid-1,Ngrid-1)
-C = matrix(pmin(C[col(C)],C[row(C)]),Ngrid-1,Ngrid-1)
-cholC = chol(C)
-
-# initializations
-theta = rep(1,Ngrid);
-u  = U_split(theta,lik_init,invC,alpha,beta)
-du = U_split(theta,lik_init,invC,alpha,beta,TRUE)
-
-# MCMC sampling preparation
-data = list(lik_init=lik_init)
-para = list(alpha=alpha,beta=beta,invC=invC,rtEV=rtEV,EVC=EVC,cholC=cholC)
-setting = data.frame(stepsz=stepsz,Nleap=Nleap,NSAMP=NSAMP,NBURNIN=NBURNIN)
-init = list(theta=theta,u=u,du=du)
-```
-
-We invoke the `sampling` function with `splitHMC` to run MCMC on the data.
-
-```{r results='hide', cache=TRUE}
-res_MCMC = sampling(data,para,'splitHMC',setting,init)
-```
-
-We parse out the medians and 95% credible intervals for our posterior pointwise estimates.
+We set the number of samples and burn-in parameters. For expediency in this vignette we set them to be small. To produce more meaningful results, increase both parameters.
 
 ```{r}
-# genealogy
-gen = list(sample=sample,coal_times=coal_times,traj=traj)
+nsamp = 200
+nburnin = 100
+```
 
-# estimates given by MCMC samples
-med = apply(exp(res_MCMC$SAMP[,-Ngrid]),2,median);
-low = apply(exp(res_MCMC$SAMP[,-Ngrid]),2,function(x)quantile(x,.025))
-up = apply(exp(res_MCMC$SAMP[,-Ngrid]),2,function(x)quantile(x,.975))
-Ne = stepfun(grid,c(0,med,0))
-l95 = stepfun(grid,c(0,low,0))
-u95 = stepfun(grid,c(0,up,0))
-Est = list(Ne=Ne,l95=l95,u95=u95)
+We package the data in a form we can pass to `mcmc_sampling`. In future, we will add the ability to pass a genealogy/phylogeny object directly.
+
+```{r}
+data = list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times)
+```
+
+We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
+
+```{r results='hide'}
+res_MCMC = mcmc_sampling(data, 'splitHMC', nsamp, nburnin)
 ```
 
 We plot and compare the results from BNPR and splitHMC.
 
 ```{r fig.width=5, fig.height=5}
 # Plot the results of BNPR
-plot_BNPR(res_BNPR,traj)
+plot_BNPR(res_BNPR, traj)
 title("Exponential growth")
   
 # plot the results of splitHMC
-lines(Ne,pch='',col='red',lwd=2.5)
-lines(l95,pch='',col='red',lwd=2,lty=3)
-lines(u95,pch='',col='red',lwd=2,lty=3)
+lines(res_MCMC$med_fun, pch="", col='red', lwd=2.5)
+lines(res_MCMC$low_fun, pch="", col='red', lwd=2, lty=3)
+lines(res_MCMC$up_fun,  pch="", col='red', lwd=2, lty=3)
 legend('bottomright',c('Truth','BNPR',"splitHMC"),col=c('black','blue','red'),lwd=c(1,2.5,2.5),bty='n')
 ```
   

@@ -300,10 +300,38 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5)
     return (list(q = q_cur, u = u_cur, du = du_cur, Ind = 0))
 }
 
+#### Helper functions
+
+# Intrinsic precision matrix
+Q_matrix <- function(input,s.noise,signal)
+{
+  n2<-nrow(input)
+  diff1<-diff(input)
+  diff1[diff1==0]<-s.noise #correction for dividing over 0
+  diff<-(1/(signal*diff1))
+  Q<-spam(0,n2,n2)  
+  if (n2>2)
+  {
+    Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)
+  }
+  else
+  {
+    Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)
+  }
+  Q[cbind(seq(1,n2-1),seq(2,n2))] <- -diff[1:(n2-1)]
+  Q[cbind(seq(2,n2),seq(1,n2-1))] <- -diff[1:(n2-1)]
+  return(Q)
+}
+
+# backwards compatibility (deprecate soon)
+Q.matrix = function(...)
+{
+  return(Q_matrix(...))
+}
+
 #### Sampling wrappers ####
 
 # This serves as a black box to sample distributions using HMC algorithms provided data and basic settings. #
-
 sampling = function(data, para, alg, setting, init, print=TRUE)
 {
   # pass the data and parameters
@@ -325,7 +353,7 @@ sampling = function(data, para, alg, setting, init, print=TRUE)
   # storage of posterior samples
   NSAMP = setting$NSAMP
   NBURNIN = setting$NBURNIN
-  SAMP = matrix(NA,NSAMP-NBURNIN,Ngrid) # all parameters together
+  samp = matrix(NA,NSAMP-NBURNIN,Ngrid) # all parameters together
   acpi = 0
   acpt = 0
   
@@ -363,7 +391,7 @@ sampling = function(data, para, alg, setting, init, print=TRUE)
     # save posterior samples after burnin
     if(Iter>NBURNIN)
     {
-      SAMP[Iter-NBURNIN,]<-theta
+      samp[Iter-NBURNIN,]<-theta
       acpt<-acpt+res$Ind
     }
     
@@ -374,11 +402,10 @@ sampling = function(data, para, alg, setting, init, print=TRUE)
   acpt = acpt/(NSAMP-NBURNIN)
   cat('\nFinal Acceptance Rate: ',acpt,'\n')
   
-  return(list(SAMP=SAMP,time=time,acpt=acpt))
+  return(list(samp=samp,time=time,acpt=acpt))
 }
 
 # Same as 'sampling' above but specially designed for comparing mixing rate of MCMC algorithms #
-
 sampling_mixrate = function(data, para, alg, setting, init, print=TRUE)
 {
   # pass the data and parameters
@@ -462,4 +489,80 @@ sampling_mixrate = function(data, para, alg, setting, init, print=TRUE)
   cat('\nFinal Acceptance Rate: ',acpt,'\n')
   
   return(list(time=time,acpt=acpt,WallTime=WallTime,Intvl=Intvl,logLiks=logLiks,times=times))
+}
+
+# wrapper that encapsulates sampler above with good defaults
+mcmc_sampling = function(data, alg, nsamp, nburnin, nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2, Ngrid=100)
+{
+  # add ability to parse genealogy objects as well as lists
+  samp_times = data$samp_times
+  n_sampled  = data$n_sampled
+  coal_times = data$coal_times
+  
+  # Jump tuning parameters--should probably have an option to change in the arguments
+  TrjL = 3
+  Nleap=16
+  stepsz = TrjL/Nleap
+  szkappa = 1.2
+  
+  grid_bds = range(c(coal_times,samp_times))
+  #Ngrid = 100
+  
+  grid = seq(grid_bds[1],grid_bds[2],length.out=Ngrid)
+  intl = grid[2]-grid[1]
+  midpts = grid[-1]-intl/2
+  
+  # initialize likelihood calculation
+  lik_init = coal_lik_init(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)
+  
+  # calculate intrinsic precision matrix
+  invC <- Q.matrix(as.matrix(midpts),0,1)
+  
+  # fudge to be able to compute the cholC
+  if (nugget == "1,1")
+    invC[1,1] <- invC[1,1]+.0001 # nugget at (1,1)
+  else if (nugget == "diag")
+    diag(invC)<-diag(invC)+.0001 # nugget for the whole diagonal
+  else if (nugget == "none")
+    warning("No nugget may result in a non-full-rank matrix.")
+  else
+    stop(paste("Unrecognized argument nugget = '", nugget, "', please use '1,1', 'diag', or 'none'.", sep = ""))
+  
+  eig  = eigen(invC,T)
+  rtEV = sqrt(eig$values)
+  EVC  = eig$vectors
+  
+  C = matrix(midpts,Ngrid-1,Ngrid-1)
+  C = matrix(pmin(C[col(C)],C[row(C)]),Ngrid-1,Ngrid-1)
+  cholC = chol(C)
+  
+  # initializations
+  theta = rep(1,Ngrid)
+  u  = U_split(theta,lik_init,invC,prec_alpha,prec_beta)
+  du = U_split(theta,lik_init,invC,prec_alpha,prec_beta,TRUE)
+  
+  # MCMC sampling preparation
+  data = list(lik_init=lik_init)
+  para = list(alpha=prec_alpha,beta=prec_beta,invC=invC,rtEV=rtEV,EVC=EVC,cholC=cholC)
+  setting = data.frame(stepsz=stepsz,Nleap=Nleap,NSAMP=nsamp,NBURNIN=nburnin)
+  init = list(theta=theta,u=u,du=du)
+  
+  # Run MCMC sampler
+  res_MCMC = sampling(data,para,alg,setting,init)
+  
+  # estimates given by MCMC samples
+  med = apply(exp(res_MCMC$samp[,-Ngrid]),2,median);
+  low = apply(exp(res_MCMC$samp[,-Ngrid]),2,function(x)quantile(x,.025))
+  up  = apply(exp(res_MCMC$samp[,-Ngrid]),2,function(x)quantile(x,.975))
+  
+  # Incorporate estimates into the output from sampling
+  res_MCMC$grid = grid
+  res_MCMC$med = med
+  res_MCMC$low = low
+  res_MCMC$up  = up
+  res_MCMC$med_fun = stepfun(grid,c(0,med,0))
+  res_MCMC$low_fun = stepfun(grid,c(0,low,0))
+  res_MCMC$up_fun  = stepfun(grid,c(0,up,0))
+  
+  return(res_MCMC)
 }
