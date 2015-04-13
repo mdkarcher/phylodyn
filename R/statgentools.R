@@ -126,30 +126,16 @@ logistic_traj_inv = function(t, offset=0, a=2)
   return(1/logistic_traj(t, offset, a))
 }
 
-# sre = function(hat_f, true_f, s)
-# {
-#   return(sum( abs(hat_f(s)-true_f(s)) / true_f(s) ))
-# }
-# 
-# mre = function(hat_f, true_f, s)
-# {
-#   return(sum( (hat_f(s)-true_f(s)) / true_f(s) ))
-# }
-# 
-# mrw = function(hat, hat975, hat025, s)
-# {
-#   K = length(s)
-#   return(sum( abs(hat975(s) - hat025(s)) / (K * hat(s)) ))
-# }
-# 
-# envelope = function(true_f, hat975, hat025, s)
-# {
-#   K = length(s)
-#   return(sum(true_f(s) < hat975(s) & true_f(s) > hat025(s)) / K)
-# }
-# 
-# variation = function(hat_f, s)
-# {
-#   y = hat_f(s)
-#   return(sum(abs(diff(y))))
-# }
+bottleneck_traj <- function(t)
+{
+  result = rep(0,length(t))
+  result[t<=0.5]<-1
+  result[t>0.5 & t<1]<-.1
+  result[t>=1]<-1
+  return(result)
+}
+
+bottleneck_traj_inv <- function(t)
+{
+  return(1/bottleneck_traj(t))
+}
