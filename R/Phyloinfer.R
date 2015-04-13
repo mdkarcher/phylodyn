@@ -175,7 +175,7 @@ aMALA = function (q_cur, u_cur, U, Met, c, eps=1)
 #   u, du: new potential energy and its gradient
 #   Ind: proposal acceptance indicator
 
-HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5)
+HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5, rand_leap=TRUE)
 {  
   # initialization
   q = q_cur
@@ -192,7 +192,11 @@ HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5)
   # Make a half step for momentum at the beginning
   p = p - eps/2 * du
   
-  randL = ceiling(runif(1)*L)
+  if (rand_leap)
+    randL = ceiling(runif(1)*L)
+  else
+    randL = ceiling(L)
+  
   # Alternate full steps for position and momentum
   for (l in 1:randL)
   {
@@ -238,7 +242,7 @@ HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5)
 #   u, du: new potential energy and its gradient
 #   Ind: proposal acceptance indicator
 
-splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5)
+splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=TRUE)
 {
   # initialization
   q = q_cur
@@ -253,7 +257,11 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5)
   E_cur = u + sum(p^2)/2
   
   
-  randL = ceiling(runif(1)*L)
+  if (rand_leap)
+    randL = ceiling(runif(1)*L)
+  else
+    randL = ceiling(L)
+  
   p = p - eps/2*du
   qT = rtEV*(t(EVC)%*%q[-D])
   pT = t(EVC)%*%p[-D]
@@ -347,8 +355,10 @@ sampling = function(data, para, alg, setting, init, print=TRUE)
   # MCMC sampling setting
   stepsz = setting$stepsz
   Nleap  = setting$Nleap
-  if(alg=='aMALA')
+  if (alg=='aMALA')
     szkappa=setting$szkappa
+  if (alg=="HMC" | alg == "splitHMC")
+    rand_leap = settings$rand_leap
   
   # storage of posterior samples
   NSAMP = setting$NSAMP
@@ -376,10 +386,10 @@ sampling = function(data, para, alg, setting, init, print=TRUE)
     
     # sample the whole parameter
     tryCatch({res=switch(alg,
-                         HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=F)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap),
-                         splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=F)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap),
-                         MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=F)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
-                         aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=F)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
+                         HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap,rand_leap),
+                         splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=FALSE)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap,rand_leap),
+                         MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
+                         aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=FALSE)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
                          ESS=eval(parse(text='ESS'))(theta[-Ngrid],u,function(f)coal_loglik(lik_init,f),cholC/sqrt(theta[Ngrid])),
                          stop('The algorithm is not in the list!'));
               theta[1:(Ngrid-(alg=='ESS'))]=res$q;u=res[[2]];if(any(grepl(alg,c('HMC','splitHMC','MALA'))))du=res$du;
@@ -421,8 +431,10 @@ sampling_mixrate = function(data, para, alg, setting, init, print=TRUE)
   # MCMC sampling setting
   stepsz = setting$stepsz
   Nleap  = setting$Nleap
-  if(alg=='aMALA')
-    szkappa=setting$szkappa
+  if (alg=='aMALA')
+    szkappa = setting$szkappa
+  if (alg=="HMC" | alg=="splitHMC")
+    rand_leap = setting$rand_leap
   
   # storage of posterior samples
   WallTime = setting$WallTime
@@ -458,10 +470,10 @@ sampling_mixrate = function(data, para, alg, setting, init, print=TRUE)
     
     # sample the whole parameter
     tryCatch({res=switch(alg,
-                         HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=F)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap),
-                         splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=F)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap),
-                         MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=F)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
-                         aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=F)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
+                         HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap,rand_leap),
+                         splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=FALSE)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap,rand_leap),
+                         MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
+                         aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=FALSE)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
                          ESS=eval(parse(text='ESS'))(theta[-Ngrid],u,function(f)coal_loglik(lik_init,f),cholC/sqrt(theta[Ngrid])),
                          stop('The algorithm is not in the list!'));
               theta[1:(Ngrid-(alg=='ESS'))]=res$q;u=res[[2]];if(any(grepl(alg,c('HMC','splitHMC','MALA'))))du=res$du;
@@ -492,7 +504,8 @@ sampling_mixrate = function(data, para, alg, setting, init, print=TRUE)
 }
 
 # wrapper that encapsulates sampler above with good defaults
-mcmc_sampling = function(data, alg, nsamp, nburnin, nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2, Ngrid=100)
+mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,
+                         TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL)
 {
   # add ability to parse genealogy objects as well as lists
   samp_times = data$samp_times
@@ -500,10 +513,14 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, nugget="1,1", prec_alpha = 1
   coal_times = data$coal_times
   
   # Jump tuning parameters--should probably have an option to change in the arguments
-  TrjL = 3
-  Nleap=16
+  if (is.null(TrjL))
+    TrjL = switch(alg, HMC=3, splitHMC=3, MALA=0.1, aMALA=0.1)
+  if (is.null(Nleap))
+    Nleap = switch(alg, HMC=30, splitHMC=15, MALA=1, aMALA=1)
+  if (is.null(szkappa) & alg=="aMALA")
+    szkappa = 1.2
+  
   stepsz = TrjL/Nleap
-  szkappa = 1.2
   
   grid_bds = range(c(coal_times,samp_times))
   #Ngrid = 100
@@ -544,7 +561,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, nugget="1,1", prec_alpha = 1
   # MCMC sampling preparation
   data = list(lik_init=lik_init)
   para = list(alpha=prec_alpha,beta=prec_beta,invC=invC,rtEV=rtEV,EVC=EVC,cholC=cholC)
-  setting = data.frame(stepsz=stepsz,Nleap=Nleap,NSAMP=nsamp,NBURNIN=nburnin)
+  setting = data.frame(stepsz=stepsz,Nleap=Nleap,NSAMP=nsamp,NBURNIN=nburnin,rand_leap=rand_leap)
   init = list(theta=theta,u=u,du=du)
   
   # Run MCMC sampler
