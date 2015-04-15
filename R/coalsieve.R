@@ -15,7 +15,7 @@ coalgen_thinning_iso <- function(sample,trajectory,upper=25,...)
       j <- j-1
     }
   }
-  return(list(intercoal_times=c(out[1],diff(out)),lineages=seq(n,2,-1)))
+  return(list(intercoal_times=c(out[1],diff(out)),lineages=seq(n,2,-1), coal_times=out))
 }
 
 coalgen_thinning_hetero <- function(sample,trajectory,upper=25,...)
@@ -86,5 +86,5 @@ coalgen_thinning_hetero <- function(sample,trajectory,upper=25,...)
     }
   }
   
-  return(list(intercoal_times=c(out[1],diff(out)),lineages=branches))   
+  return(list(intercoal_times=c(out[1],diff(out)),lineages=branches,coal_times=out))   
 }
