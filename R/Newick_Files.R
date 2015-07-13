@@ -50,7 +50,7 @@ generate_newick<-function(args,sample)
       ##TODO: When adding more samples.
     }  
   }
-  out.tree<-read.tree(text=paste(temp_labels,";",sep=""))
+  out.tree<-ape::read.tree(text=paste(temp_labels,";",sep=""))
   
   return(list(newick=out.tree,labels=labels))
 }

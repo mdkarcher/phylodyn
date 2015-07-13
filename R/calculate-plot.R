@@ -157,7 +157,7 @@ BNPR <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,E.
   #   E.factor2[1:34] <- rep(1,34)
   data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=E.factor2.log[-1])
   formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
-  mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE))
+  mod4 <- INLA::inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE))
   
   return(list(result=mod4,grid=grid,data=data,E=E.factor2.log))
 }
@@ -191,138 +191,138 @@ plot_INLA = function(INLA_out, traj=NULL, xlim=NULL, ...)
   plot_BNPR(BNPR_out=INLA_out, traj, xlim, ...)
 }
 
-calculate.pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
-{
-  grid <- seq(0,max(s),length.out=lengthout+1)
-  u <- diff(grid)
-  field <- grid[-1]-u/2
-  sgrid <- grid
-  event_new <- 0
-  time <- 0
-  where <- 1
-  E.factor <- 0
-  for (j in 1:lengthout)
-  {
-    count <- sum(s>sgrid[j] & s<=sgrid[j+1]) 
-    if (count>1)
-    {
-      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
-      u <- diff(c(sgrid[j],points))
-      event_new <- c(event_new,event[(where):(where+count-1)])
-      time <- c(time,rep(field[j],count))
-      E.factor <- c(E.factor,coal.factor[where:(where+count-1)]*u)
-      where <- where+count
-      if (max(points)<sgrid[j+1])
-      {
-        event_new <- c(event_new,0)
-        time <- c(time,field[j])
-        E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-max(points)))
-      }
-    }
-    if (count==1)
-    {
-      event_new <- c(event_new,event[where])
-      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
-      if (points==sgrid[j+1])
-      {
-        E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
-        time <- c(time,field[j])
-        where <- where+1
-      }
-      else
-      {
-        event_new <- c(event_new,0)
-        E.factor <- c(E.factor,coal.factor[where]*(points-sgrid[j]))
-        E.factor <- c(E.factor,coal.factor[where+1]*(sgrid[j+1]-points))
-        time <- c(time,rep(field[j],2))
-        where <- where+1
-      }
-    }
-    if (count==0)
-    {
-      event_new <- c(event_new,0)
-      E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
-      time <- c(time,field[j])
-    }
-    
-  }
-  time2 <- time
-  event_new2 <- event_new
-  E.factor2 <- E.factor
-  
-  for (j in 1:lengthout)
-  {
-    count <- sum(time2==field[j])
-    if (count>1)
-    {
-      indic <- seq(1:length(event_new2))[time2==field[j]]
-      if (sum(event_new2[indic])==0)
-      {
-        event_new2 <- event_new2[-indic[-1]]
-        time2 <- time2[-indic[-1]]
-        temp <- sum(E.factor2[indic])
-        E.factor2[indic[1]] <- temp
-        E.factor2 <- E.factor2[-indic[-1]]
-      }
-      #else {}
-    }
-  }
-  
-  #   E.factor2[1:34] <- rep(1,34)
-  #data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=log(E.factor2[-1]))
-  #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
-  #mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE),...)
-  
-  n1 <- length(event_new2[-1])
-  n2 <- length(field)
-  Y  <- matrix(NA,n1+n2,2)
-  
-  #dd <- heterochronous.gp.stat(influenza.tree)
-  #s.time <- dd$sample.times
-  #n.sample <- dd$sampled.lineages
-  newcount <- rep(0,length(grid)-1)
-  
-  # MK: added to replace reading from influenza.tree above
-  samps = s[-1][event==0]
-  
-  for (j in 1:length(newcount))
-  {
-    # MK: altered to samps version
-    newcount[j] <- sum(samps > grid[j] & samps <= grid[j+1])
-  }
-  newcount[1] <- newcount[1]+1
-  newcount[(sum(grid<max(samps))+1):lengthout] <- NA
-  
-  data.sampling2<-data.frame(y=newcount,time=field,E=log(diff(grid)))
-  formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
-  
-  # MK: Added during functionizing
-  E = diff(s) * coal.factor
-  E[1]=1
-  
-  mod.sampling2<-inla(formula.sampling2,family="poisson",data=data.sampling2,offset=E,control.predictor=list(compute=TRUE))
-  
-  return(list(result=mod.sampling2,grid=grid))
-}
+# calculate.pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
+# {
+#   grid <- seq(0,max(s),length.out=lengthout+1)
+#   u <- diff(grid)
+#   field <- grid[-1]-u/2
+#   sgrid <- grid
+#   event_new <- 0
+#   time <- 0
+#   where <- 1
+#   E.factor <- 0
+#   for (j in 1:lengthout)
+#   {
+#     count <- sum(s>sgrid[j] & s<=sgrid[j+1]) 
+#     if (count>1)
+#     {
+#       points <- s[s>sgrid[j] & s<=sgrid[j+1]]
+#       u <- diff(c(sgrid[j],points))
+#       event_new <- c(event_new,event[(where):(where+count-1)])
+#       time <- c(time,rep(field[j],count))
+#       E.factor <- c(E.factor,coal.factor[where:(where+count-1)]*u)
+#       where <- where+count
+#       if (max(points)<sgrid[j+1])
+#       {
+#         event_new <- c(event_new,0)
+#         time <- c(time,field[j])
+#         E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-max(points)))
+#       }
+#     }
+#     if (count==1)
+#     {
+#       event_new <- c(event_new,event[where])
+#       points <- s[s>sgrid[j] & s<=sgrid[j+1]]
+#       if (points==sgrid[j+1])
+#       {
+#         E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
+#         time <- c(time,field[j])
+#         where <- where+1
+#       }
+#       else
+#       {
+#         event_new <- c(event_new,0)
+#         E.factor <- c(E.factor,coal.factor[where]*(points-sgrid[j]))
+#         E.factor <- c(E.factor,coal.factor[where+1]*(sgrid[j+1]-points))
+#         time <- c(time,rep(field[j],2))
+#         where <- where+1
+#       }
+#     }
+#     if (count==0)
+#     {
+#       event_new <- c(event_new,0)
+#       E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
+#       time <- c(time,field[j])
+#     }
+#     
+#   }
+#   time2 <- time
+#   event_new2 <- event_new
+#   E.factor2 <- E.factor
+#   
+#   for (j in 1:lengthout)
+#   {
+#     count <- sum(time2==field[j])
+#     if (count>1)
+#     {
+#       indic <- seq(1:length(event_new2))[time2==field[j]]
+#       if (sum(event_new2[indic])==0)
+#       {
+#         event_new2 <- event_new2[-indic[-1]]
+#         time2 <- time2[-indic[-1]]
+#         temp <- sum(E.factor2[indic])
+#         E.factor2[indic[1]] <- temp
+#         E.factor2 <- E.factor2[-indic[-1]]
+#       }
+#       #else {}
+#     }
+#   }
+#   
+#   #   E.factor2[1:34] <- rep(1,34)
+#   #data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=log(E.factor2[-1]))
+#   #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
+#   #mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE),...)
+#   
+#   n1 <- length(event_new2[-1])
+#   n2 <- length(field)
+#   Y  <- matrix(NA,n1+n2,2)
+#   
+#   #dd <- heterochronous.gp.stat(influenza.tree)
+#   #s.time <- dd$sample.times
+#   #n.sample <- dd$sampled.lineages
+#   newcount <- rep(0,length(grid)-1)
+#   
+#   # MK: added to replace reading from influenza.tree above
+#   samps = s[-1][event==0]
+#   
+#   for (j in 1:length(newcount))
+#   {
+#     # MK: altered to samps version
+#     newcount[j] <- sum(samps > grid[j] & samps <= grid[j+1])
+#   }
+#   newcount[1] <- newcount[1]+1
+#   newcount[(sum(grid<max(samps))+1):lengthout] <- NA
+#   
+#   data.sampling2<-data.frame(y=newcount,time=field,E=log(diff(grid)))
+#   formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
+#   
+#   # MK: Added during functionizing
+#   E = diff(s) * coal.factor
+#   E[1]=1
+#   
+#   mod.sampling2<-inla(formula.sampling2,family="poisson",data=data.sampling2,offset=E,control.predictor=list(compute=TRUE))
+#   
+#   return(list(result=mod.sampling2,grid=grid))
+# }
 
-plot_INLA_inv = function(BNPR_out, traj=NULL, xlim=NULL, ...)
-{
-  mod = BNPR_out$result$summary.random$time
-  
-  grid = mod$"ID"
-  if (is.null(xlim))
-  {
-    xlim=c(max(grid),0)
-  }
-  plot(grid,exp(mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
-       xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
-       xlim=xlim,ylim=c(min(exp(mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)])),
-                        max(exp(mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
-  lines(grid,exp(mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
-  lines(grid,exp(mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
-  if (!is.null(traj))
-    lines(grid, traj(grid))
-}
+# plot_INLA_inv = function(BNPR_out, traj=NULL, xlim=NULL, ...)
+# {
+#   mod = BNPR_out$result$summary.random$time
+#   
+#   grid = mod$"ID"
+#   if (is.null(xlim))
+#   {
+#     xlim=c(max(grid),0)
+#   }
+#   plot(grid,exp(mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
+#        xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
+#        xlim=xlim,ylim=c(min(exp(mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)])),
+#                         max(exp(mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
+#   lines(grid,exp(mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
+#   lines(grid,exp(mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
+#   if (!is.null(traj))
+#     lines(grid, traj(grid))
+# }
 
 BNPR_PS <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,E.log.zero=-100,alpha=NULL,beta=NULL)
 {
@@ -477,7 +477,7 @@ BNPR_PS <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01
   
   #print("Got here 7")
   #print(data.pref)
-  mod.pref<-inla(formula.pref,family=c("poisson","poisson"),offset=E,data=data.pref,control.predictor=list(compute=TRUE))
+  mod.pref<-INLA::inla(formula.pref,family=c("poisson","poisson"),offset=E,data=data.pref,control.predictor=list(compute=TRUE))
   
   #print("Got here 8")
   

@@ -1,0 +1,97 @@
+---
+title: "Producing results and figures using BNPR/MCMC"
+author: "Michael Karcher"
+date: "April 12, 2015"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Producing results and figures using BNPR/MCMC}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This vignette shows a more complex and complete use of `phylodyn` and its MCMC tools. We start by loading the `phylodyn` package.
+
+```{r message=FALSE, echo=-1}
+set.seed(8675309)
+library(phylodyn)
+```
+
+We need to set the true effective population size trajectory functions, as well as their reciprocals.
+
+```{r}
+traj = list(logistic_traj,exp_traj,boombust_traj,bottleneck_traj)
+traj_inv = list(logistic_traj_inv,exp_traj_inv,boombust_traj_inv,bottleneck_traj_inv)
+```
+
+We simulate heterochronous sampling. We sample 10 individuals at t=0, and 40 more distributed uniformly between t=0 and t=8.
+
+```{r}
+samp_times = c(0, sort(runif(40, 0, 8)))
+n_sampled = c(10, rep(1, 40))
+sample = cbind(n_sampled, samp_times)
+```
+
+We simulate genealogies based on our sample using the coalescent and the four trajectories.
+
+```{r}
+gene = list()
+for (i in 1:4)
+{
+  gene[[i]] = coalgen_thinning_hetero(sample=sample, trajectory=traj_inv[[i]])
+}
+```
+
+We first use BNPR to calculate approximate marginals. We use a helper function to generate the arguments for the BNPR function.
+
+```{r}
+res_BNPR = list()
+for (i in 1:4)
+{
+  args = gen_BNPR_args(coal_times=gene[[i]]$coal_times, s_times=samp_times, n_sampled=n_sampled)
+  res_BNPR[[i]] = BNPR(args$coal_factor, args$s, args$event, 100, 0.01, 0.01)
+}
+```
+
+We set the number of samples and burn-in parameters. For expediency in this vignette we set them to be small. To produce more meaningful results, increase both parameters. We also use all five implemented samplers.
+
+```{r}
+nsamp = 200
+nburnin = 100
+alg = c("HMC", "splitHMC", "MALA", "aMALA", "ESS")
+```
+
+We package the data in a form we can pass to `mcmc_sampling`. In future, we will add the ability to pass a genealogy/phylogeny object directly. We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
+
+```{r results='hide'}
+res_MCMC = list()
+for (i in 1:4)
+{
+  res_MCMC[[i]] = list()
+  data = list(samp_times=samp_times, n_sampled=n_sampled, coal_times=gene[[i]]$coal_times)
+  for (j in 1:5)
+  {
+    res_MCMC[[i]][[j]] = mcmc_sampling(data, alg[j], nsamp, nburnin)
+  }
+}
+```
+
+We plot and compare the results from BNPR versus the MCMC samplers.
+
+```{r fig.width=12, fig.height=10}
+par(mfrow=c(4,5))
+traj_title = c("Logistic", "Exponential", "Boombust", "Bottleneck")
+color = c("green", "red", "pink", "purple", "cyan")
+for (i in 1:4)
+{
+  for (j in 1:5)
+  {
+    plot_BNPR(res_BNPR[[i]], traj[[i]])
+    title(traj_title[i])
+    
+    lines(res_MCMC[[i]][[j]]$med_fun, pch="", col=color[j], lwd=2.5)
+    lines(res_MCMC[[i]][[j]]$low_fun, pch="", col=color[j], lwd=2, lty=3)
+    lines(res_MCMC[[i]][[j]]$up_fun,  pch="", col=color[j], lwd=2, lty=3)
+    legend('bottomright',c('Truth','BNPR',alg[j]),col=c('black','blue',color[j]),lwd=c(1,2.5,2.5),bty='n')
+  }
+}
+```
