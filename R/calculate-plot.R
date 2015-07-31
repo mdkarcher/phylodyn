@@ -121,10 +121,12 @@ BNPR <- function(data, lengthout=300, pref=FALSE, prec_alpha=0.01,
   if (!pref)
   {
     result = calculate_moller_hetero(args$coal_factor, args$s, args$event, lengthout, prec_alpha, prec_beta, log_zero)
+    result$effpop = exp(-result$result$summary.random$time$`0.5quant`)
   }
   else
   {
     result = calculate_moller_hetero_pref(args$coal_factor, args$s, args$event, lengthout, prec_alpha, prec_beta, beta1_prec, log_zero)
+    result$effpop = exp(-result$result$summary.random$ii$`0.5quant`)
   }
   
   return(result)
