@@ -231,7 +231,7 @@ calculate_moller_hetero <- function(coal.factor,s,event,lengthout,prec_alpha=0.0
   formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
   mod4 <- INLA::inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE))
   
-  return(list(result=mod4,grid=grid,data=data,E=E.factor2.log))
+  return(list(result=mod4,grid=grid,data=data,E=E.factor2.log, x = field))
 }
 
 plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ...)
@@ -548,7 +548,7 @@ calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alph
   
   #print("Got here 8")
   
-  return(list(result=mod.pref,grid=grid))
+  return(list(result=mod.pref,grid=grid, x = field))
 }
 
 calculate.moller.hetero.pref = function(...)
