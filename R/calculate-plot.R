@@ -1,4 +1,25 @@
-gen_BNPR_args = function(coal_times, s_times, n_sampled)
+gen_INLA_args_exper <- function(s_times, n_sampled, coal_times)
+{
+  if (sum(n_sampled) != length(coal_times) + 1)
+    stop("Number sampled not equal to number of coalescent events + 1.")
+  
+  if (length(intersect(coal_times, s_times)) > 0)
+    warning("Coincident sampling event and coalescent event: results may be unpredictable.")
+  
+  l <- length(s_times)
+  m <- length(coal_times)
+  sorting <- sort(c(s_times, coal_times), index.return=TRUE)
+  
+  lineage_change <- c(n_sampled, rep(-1, m))[sorting$ix]
+  lineages <- head(cumsum(lineage_change), -1) # remove entry for the post-final-coalescent-event open interval
+  coal_factor <- lineages*(lineages-1)/2
+  
+  event <- c(rep(0, l), rep(1, m))[sorting$ix]
+  
+  return(list(coal_factor=coal_factor, s=sorting$x, event=event, lineages=lineages))
+}
+
+gen_INLA_args = function(coal_times, s_times, n_sampled)
 {
   n         = length(coal_times) + 1
   data      = matrix(0, nrow=n-1, ncol=2)
@@ -51,23 +72,72 @@ gen_BNPR_args = function(coal_times, s_times, n_sampled)
   coal_factor = indicator*(indicator-1)/2
   
   
-  return(list(coal_factor=coal_factor, s=s, event=event, indicator=indicator))
-}
-
-gen_INLA_args = function(...)
-{
-  result = gen_BNPR_args(...)
-  return(result)
+  return(list(coal_factor=coal_factor, s=s, event=event, lineages=indicator))
 }
 
 gen_summary = function(coal_times, s_times, n_sampled)
 {
   args = gen_INLA_args(coal_times, s_times, n_sampled)
   n = length(args$s)
-  return(data.frame(cbind(lineages=args$indicator, start_time=args$s[1:(n-1)], stop_time=args$s[2:n], end_event=args$event[2:n], change=diff(c(args$indicator,1)))))
+  return(data.frame(cbind(lineages=args$lineages, start_time=args$s[1:(n-1)], stop_time=args$s[2:n], end_event=args$event[2:n], change=diff(c(args$indicator,1)))))
 }
 
-BNPR <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,E.log.zero=-100,alpha=NULL,beta=NULL)
+#' Bayesian nonparametric phylodynamic reconstruction.
+#' 
+#' @param data \code{phylo} object or list containing vectors of coalescent
+#'   times \code{coal_times}, sampling times \code{s_times}, and number sampled
+#'   per sampling time \code{n_sampled}.
+#' @param lengthout numeric specifying number of grid points - 1.
+#' @param pref logical. Should the preferential sampling model be used?
+#' @param prec_alpha,prec_beta numerics specifying gamma prior for precision 
+#'   \eqn{\tau}.
+#' @param beta1_prec numeric specifying precision for normal prior on 
+#'   \eqn{\beta_1}.
+#' @param log_zero numeric specifying approximate log of zero.
+#'   
+#' @return Phylodynamic reconstruction of (log) effective population size at the
+#'   grid points.
+#' @export
+#'   
+#' @examples
+#' data("NY_flu")
+#' res = BNPR(NY_flu)
+#' plot_BNPR(res)
+BNPR <- function(data, lengthout=300, pref=FALSE, prec_alpha=0.01,
+                 prec_beta=0.01, beta1_prec = 0.001, log_zero=-100)
+{
+  if (class(data) == "phylo")
+  {
+    hgs = heterochronous_gp_stat(data)
+    args = gen_INLA_args(coal_times = hgs$coal.times, 
+                         s_times    = hgs$sample.times,
+                         n_sampled  = hgs$sampled.lineages)
+  }
+  else if (all(c("coal_times", "s_times", "n_sampled") %in% names(data)))
+  {
+    args = gen_INLA_args(data$coal_times, data$s_times, data$n_sampled)
+  }
+  
+  if (!pref)
+  {
+    result = calculate_moller_hetero(args$coal_factor, args$s, args$event, lengthout, prec_alpha, prec_beta, log_zero)
+  }
+  else
+  {
+    result = calculate_moller_hetero_pref(args$coal_factor, args$s, args$event, lengthout, prec_alpha, prec_beta, beta1_prec, log_zero)
+  }
+  
+  return(result)
+}
+
+#' @describeIn BNPR Uses preferential sampling model.
+BNPR_PS <- function(data, lengthout=300, prec_alpha=0.01, prec_beta=0.01,
+                    beta1_prec = 0.001, log_zero=-100)
+{
+  return(BNPR(data, lengthout, pref=TRUE, prec_alpha, prec_beta, beta1_prec, log_zero))
+}
+
+calculate_moller_hetero <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,log_zero=-100,alpha=NULL,beta=NULL)
 {
   if (prec_alpha == 0.01 & prec_beta==0.01 & !is.null(alpha) & !is.null(beta))
   {
@@ -151,7 +221,7 @@ BNPR <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,E.
   
   #E.factor2[E.factor2 == 0] = exp(-1e6)
   E.factor2.log = log(E.factor2)
-  E.factor2.log[E.factor2 == 0] = E.log.zero
+  E.factor2.log[E.factor2 == 0] = log_zero
   #print(E.factor2.log)
   
   #   E.factor2[1:34] <- rep(1,34)
@@ -160,11 +230,6 @@ BNPR <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,E.
   mod4 <- INLA::inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE))
   
   return(list(result=mod4,grid=grid,data=data,E=E.factor2.log))
-}
-
-calculate.moller.hetero = function(...)
-{
-  return(BNPR(...))
 }
 
 plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ...)
@@ -324,7 +389,7 @@ plot_INLA = function(INLA_out, traj=NULL, xlim=NULL, ...)
 #     lines(grid, traj(grid))
 # }
 
-BNPR_PS <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,E.log.zero=-100,alpha=NULL,beta=NULL)
+calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,log_zero=-100,alpha=NULL,beta=NULL)
 {
   if (prec_alpha == 0.01 & prec_beta==0.01 & !is.null(alpha) & !is.null(beta))
   {
@@ -446,7 +511,7 @@ BNPR_PS <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01
   
   #MK: added to resolve INLA failure
   E.factor2.log = log(E.factor2)
-  E.factor2.log[E.factor2 == 0] = E.log.zero
+  E.factor2.log[E.factor2 == 0] = log_zero
   newE[1:n1]<-E.factor2.log[-1]
   #newE[1:n1]<-log(E.factor2[-1])
   
@@ -486,7 +551,7 @@ BNPR_PS <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01
 
 calculate.moller.hetero.pref = function(...)
 {
-  return(BNPR_PS(...))
+  return(calculate_moller_hetero_pref(...))
 }
 
 plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)

@@ -1,6 +1,22 @@
-#################
-####### Vladimir s code with a small change for doubles
-#################
+#' Summarize a phylogeny.
+#' 
+#' @param phy a \code{phylo} object containing a phylogeny.
+#'   
+#' @return A list containing vectors of sampling times \code{s_times}, number 
+#'   sampled per sampling time \code{n_sampled}, and coalescent times
+#'   \code{coal_times}.
+#' @export
+#' 
+#' @examples
+#' data("NY_flu")
+#' summarize_phylo(NY_flu)
+summarize_phylo <- function(phy)
+{
+  hgpstat <- heterochronous_gp_stat(phy)
+  return(list(s_times    = hgpstat$sample.times,
+              n_sampled  = hgpstat$sampled.lineages,
+              coal_times = hgpstat$coal.times))
+}
 
 branching_sampling_times <- function(phy)
 {

@@ -1,3 +1,25 @@
+#' Simulate from inhomogeneous, heterochronous coalescent.
+#' 
+#' @param s_times numeric vector of sampling times.
+#' @param n_sampled numeric vector of samples taken per sampling time.
+#' @param traj function that returns effective population size at time t.
+#' @param upper numeric upper limit on \code{traj} function on its support.
+#' @param ... additional arguments to be passed to \code{traj} function.
+#'   
+#' @return A list containing vectors of coalescent times \code{coal_times}, 
+#'   intercoalescent times \code{intercoal_times}, and number of active lineages
+#'   \code{lineages}.
+#' @export
+#' 
+#' @examples
+#' coalsim(0:2, 3:1, unif_traj, upper=10, level=10)
+coalsim <- function(s_times, n_sampled, traj, upper=25, ...)
+{
+  sample <- cbind(n_sampled, s_times, deparse.level = 0)
+  result <- coalgen_thinning_hetero(sample = sample, trajectory = traj, upper = upper, ... = ...)
+  return(result)
+}
+
 coalgen_thinning_iso <- function(sample,trajectory,upper=25,...)
 {
   ###Need to add correction to "systematic" definition of upper bound
@@ -9,7 +31,7 @@ coalgen_thinning_iso <- function(sample,trajectory,upper=25,...)
   while (j>1)
   {
     time <- time+rexp(1,upper*j*(j-1)*.5)
-    if (runif(1)<=trajectory(time,...)/upper)
+    if (runif(1)<=1/(trajectory(time,...)*upper))
     {
       out[n-j+1] <- time
       j <- j-1
@@ -21,7 +43,7 @@ coalgen_thinning_iso <- function(sample,trajectory,upper=25,...)
 coalgen_thinning_hetero <- function(sample,trajectory,upper=25,...)
 {
   #'sample = is a matrix with 2 columns. The first column contains the number of samples collected at the time defined in the second column
-  #'trajectory = one over the effective population size function
+  #'trajectory = the effective population size function
   # this works for heterochronous sampling
   # assumes sample[1,1]>1
   s=sample[1,2]
@@ -46,7 +68,7 @@ coalgen_thinning_hetero <- function(sample,trajectory,upper=25,...)
       i <- i+1
     }
     E <- rexp(1,upper*b*(b-1)*.5)
-    if (runif(1) <= trajectory(E+s,...)/upper)
+    if (runif(1) <= 1/(trajectory(E+s,...)*upper))
     {
       if ( (s+E)>sample[i+1,2])
       {

@@ -9,5 +9,6 @@ Author: Michael Karcher, Julia Palacios, Shiwei Lan, Vladimir Minin
 Maintainer: Michael Karcher <mkarcher@uw.edu>
 Description: Statistical tools for reconstructing population size from genetic sequence data.
 License: GPL-3
-Suggests: knitr
+Suggests: knitr,
+    testthat
 VignetteBuilder: knitr
