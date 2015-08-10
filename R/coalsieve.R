@@ -8,7 +8,8 @@
 #'   
 #' @return A list containing vectors of coalescent times \code{coal_times}, 
 #'   intercoalescent times \code{intercoal_times}, and number of active lineages
-#'   \code{lineages}.
+#'   \code{lineages}, as well as passing along \code{s_times} and
+#'   \code{n_sampled}.
 #' @export
 #' 
 #' @examples
@@ -17,6 +18,8 @@ coalsim <- function(s_times, n_sampled, traj, upper=25, ...)
 {
   sample <- cbind(n_sampled, s_times, deparse.level = 0)
   result <- coalgen_thinning_hetero(sample = sample, trajectory = traj, upper = upper, ... = ...)
+  result$s_times <- s_times
+  result$n_sampled <- n_sampled
   return(result)
 }
 

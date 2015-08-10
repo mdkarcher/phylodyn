@@ -13,9 +13,9 @@
 summarize_phylo <- function(phy)
 {
   hgpstat <- heterochronous_gp_stat(phy)
-  return(list(s_times    = hgpstat$sample.times,
-              n_sampled  = hgpstat$sampled.lineages,
-              coal_times = hgpstat$coal.times))
+  return(list(s_times    = hgpstat$s_times,
+              n_sampled  = hgpstat$n_sampled,
+              coal_times = hgpstat$coal_times))
 }
 
 branching_sampling_times <- function(phy)
@@ -75,5 +75,5 @@ heterochronous_gp_stat <- function(phy)
     sampled.lineages = c(sampled.lineages, sum(sampling.times == sample.time))  
   }
   
-  return(list(coal.times=sorted.coal.times, sample.times = unique.sampling.times, sampled.lineages=sampled.lineages))
+  return(list(coal_times=sorted.coal.times, s_times = unique.sampling.times, n_sampled=sampled.lineages))
 }
