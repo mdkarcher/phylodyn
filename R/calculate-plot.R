@@ -100,28 +100,6 @@ BNPR_PS <- function(data, lengthout=300, prec_alpha=0.01, prec_beta=0.01,
   return(BNPR(data, lengthout, pref=TRUE, prec_alpha, prec_beta, beta1_prec, log_zero))
 }
 
-firstloop_exper <- function(coal_factor, s, event, lengthout)
-{
-  grid <- seq(min(s),max(s),length.out=lengthout+1)
-  grid_trimmed <- setdiff(x = grid, y = s)
-  field <- grid[-1] - diff(grid)/2
-  Cfun <- stepfun(x = s, y = c(0, coal_factor, 0), right = TRUE)
-  
-  sorting <- sort(c(grid_trimmed, s), index.return=TRUE)
-  sgrid <- sorting$x
-  ordering <- sorting$ix
-  
-  time_index <- cut(x = sgrid[-1], breaks = grid, labels = FALSE)
-  time <- field[time_index]
-  
-  event_out <- c(rep(0, length(grid_trimmed)), event)[ordering]
-  
-  Cvec <- Cfun(sgrid[-1])
-  E <- diff(sgrid)*Cvec
-  
-  return(list(time=time, event=event_out[-1], E=E))
-}
-
 firstloop <- function(coal_factor, s, event, lengthout)
 {
   grid <- seq(min(s),max(s),length.out=lengthout+1)
@@ -179,15 +157,6 @@ firstloop <- function(coal_factor, s, event, lengthout)
   return(list(time=time, event_new=event_new, E_factor=E.factor, grid=grid, field=field))
 }
 
-secondloop_strong_exper <- function(time, event, E)
-{
-  time_agg <- aggregate(event ~ time, FUN = sum)$time
-  event_agg <- aggregate(event ~ time, FUN = sum)$event
-  E_agg <- aggregate(E ~ time, FUN = sum)$E
-  
-  return(list(time = time_agg, event = event_agg, E = E_agg))
-}
-
 secondloop <- function(time2, event_new2, E_factor2, lengthout, field)
 {
   for (j in 1:lengthout)
@@ -238,126 +207,219 @@ calculate_moller_hetero <- function(coal.factor, s, event, lengthout,
   return(list(result=mod4,grid=fl$grid,data=data,E=E_log, x = fl$field))
 }
 
-calculate_moller_hetero_exper <- function(coal.factor, s, event, lengthout,
-                                          prec_alpha = 0.01, prec_beta = 0.01,
-                                          log_zero = -100, simplify = FALSE)
+firstloop_exper <- function(grid, s_times, coal_times, n_sampled = NULL,
+                            log_zero = -100)
 {
-  pois_data <- firstloop_exper(coal_factor = coal.factor, s = s, event = event,
-                               lengthout = lengthout)
+  lengthout <- length(grid) - 1
+  field <- grid[-1] - diff(grid)/2
+  
+  if (is.null(n_sampled))
+    n_sampled <- rep(1, length(s_times))
+  args <- gen_INLA_args(s_times = s_times, n_sampled = n_sampled,
+                        coal_times = coal_times)
+  
+  coal_factor <- args$coal_factor
+  s <- args$s
+  event <- args$event
+  
+  grid_trimmed <- setdiff(x = grid, y = s)
+  sorting <- sort(c(grid_trimmed, s), index.return=TRUE)
+  sgrid <- sorting$x
+  ordering <- sorting$ix
+  
+  time_index <- cut(x = sgrid[-1], breaks = grid, labels = FALSE)
+  time <- field[time_index]
+  
+  event_out <- c(rep(0, length(grid_trimmed)), event)[ordering]
+  
+  Cfun <- stepfun(x = s, y = c(0, coal_factor, 0), right = TRUE)
+  Cvec <- Cfun(sgrid[-1])
+  E <- diff(sgrid)*Cvec
+  
+  E_log = log(E)
+  E_log[E == 0] = log_zero
+  
+  return(data.frame(time = time, event = event_out[-1], E = E, E_log = E_log))
+}
+
+secondloop_strong_exper <- function(time, event, E, log_zero = -100)
+{
+  result <- aggregate(event ~ time, FUN = sum)
+  result$E <- aggregate(E ~ time, FUN = sum)$E
+  
+  E_log = log(result$E)
+  E_log[result$E == 0] = log_zero
+  result$E_log <- E_log
+  
+  return(result)
+}
+
+calculate_moller_hetero_exper <- function(s_times, coal_times, n_sampled = NULL,
+                                          lengthout = 300,
+                                          prec_alpha = 0.01, prec_beta = 0.01,
+                                          simplify = FALSE)
+{
+  grid <- seq(min(s),max(s),length.out=lengthout+1)
+  
+  if (is.null(n_sampled))
+    n_sampled <- rep(1, length(s_times))
+  
+  coal_data <- firstloop_exper(grid = grid, s_times = s_times,
+                               n_sampled = n_sampled, coal_times = coal_times)
   
   if (simplify)
-  {
-    pois_data <- secondloop_strong_exper(time = pois_data$time,
-                                         event = pois_data$event,
-                                         E = pois_data$E)
-  }
+    coal_data <- with(coal_data,
+                      secondloop_strong_exper(time = time, event = event, E=E))
   
-  E_log = log(pois_data$E)
-  E_log[pois_data$E == 0] = log_zero
-  
-  data <- list(y = pois_data$event, time = pois_data$time, E = E_log)
+  data <- with(coal_data, data.frame(y = event, time = time, E_log = E_log))
   hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
   formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE)
-  mod <- INLA::inla(formula, family = "poisson", data = data, offset = E,
+  
+  mod <- INLA::inla(formula, family = "poisson", data = data, offset = E_log,
                     control.predictor = list(compute=TRUE))
   
   return(list(result = mod, data = data, E = E_log,
-              grid = pois_data$grid, x = pois_data$field))
+              grid = coal_data$grid, x = coal_data$field))
 }
 
-calculate_pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
+sampleloop <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
+{
+  lengthout <- length(grid) - 1
+  field <- grid[-1] - diff(grid)/2
+  E=diff(grid)
+  
+  buckets <- cut(x = s_times, breaks = grid,
+                 include.lowest = TRUE)
+  
+  if (is.null(n_sampled))
+    count <- as.vector(table(buckets))
+  else
+  {
+    tab <- aggregate(n_sampled ~ buckets, FUN = sum, labels = FALSE)
+    count <- rep(0, lengthout)
+    count[as.numeric(tab$buckets)] <- tab$n_sampled
+  }
+  
+  count[head(grid, -1) >= max(s_times)] <- NA
+  result <- data.frame(time = field, count = count, E = E, E_log = log(E))
+  
+  if (trim_end)
+    result <- result[complete.cases(result),]
+  
+  return(result)
+}
+
+calculate_pref_exper <- function(s_times, n_sampled = NULL, lengthout = 300,
+                                 prec_alpha = 0.01, prec_beta = 0.01)
+{
+  grid <- seq(min(s_times),max(s_times),length.out=lengthout+1)
+  
+  samp_data <- sampleloop(grid = grid, s_times = s_times,
+                          n_sampled = n_sampled)
+  
+  data <- with(samp_data, data.frame(y = count, time = time, E_log = E_log))
+  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  formula_sampling <- y ~ 1 + f(time, model="rw1", hyper = hyper, constr=FALSE)
+  
+  mod <- INLA::inla(formula_sampling, family="poisson", data=data,
+                             offset=E_log, control.predictor=list(compute=TRUE))
+  
+  return(list(result = mod, data = data, grid = grid, x = field))
+}
+
+calculate_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
 {
   grid <- seq(0,max(s),length.out=lengthout+1)
   u <- diff(grid)
   field <- grid[-1]-u/2
-  sgrid <- grid
-  event_new <- 0
-  time <- 0
-  where <- 1
-  E.factor <- 0
-  for (j in 1:lengthout)
-  {
-    count <- sum(s>sgrid[j] & s<=sgrid[j+1]) 
-    if (count>1)
-    {
-      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
-      u <- diff(c(sgrid[j],points))
-      event_new <- c(event_new,event[(where):(where+count-1)])
-      time <- c(time,rep(field[j],count))
-      E.factor <- c(E.factor,coal.factor[where:(where+count-1)]*u)
-      where <- where+count
-      if (max(points)<sgrid[j+1])
-      {
-        event_new <- c(event_new,0)
-        time <- c(time,field[j])
-        E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-max(points)))
-      }
-    }
-    if (count==1)
-    {
-      event_new <- c(event_new,event[where])
-      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
-      if (points==sgrid[j+1])
-      {
-        E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
-        time <- c(time,field[j])
-        where <- where+1
-      }
-      else
-      {
-        event_new <- c(event_new,0)
-        E.factor <- c(E.factor,coal.factor[where]*(points-sgrid[j]))
-        E.factor <- c(E.factor,coal.factor[where+1]*(sgrid[j+1]-points))
-        time <- c(time,rep(field[j],2))
-        where <- where+1
-      }
-    }
-    if (count==0)
-    {
-      event_new <- c(event_new,0)
-      E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
-      time <- c(time,field[j])
-    }
-    
-  }
-  time2 <- time
-  event_new2 <- event_new
-  E.factor2 <- E.factor
-  
-  for (j in 1:lengthout)
-  {
-    count <- sum(time2==field[j])
-    if (count>1)
-    {
-      indic <- seq(1:length(event_new2))[time2==field[j]]
-      if (sum(event_new2[indic])==0)
-      {
-        event_new2 <- event_new2[-indic[-1]]
-        time2 <- time2[-indic[-1]]
-        temp <- sum(E.factor2[indic])
-        E.factor2[indic[1]] <- temp
-        E.factor2 <- E.factor2[-indic[-1]]
-      }
-      #else {}
-    }
-  }
+#   sgrid <- grid
+#   event_new <- 0
+#   time <- 0
+#   where <- 1
+#   E.factor <- 0
+#   for (j in 1:lengthout)
+#   {
+#     count <- sum(s>sgrid[j] & s<=sgrid[j+1]) 
+#     if (count>1)
+#     {
+#       points <- s[s>sgrid[j] & s<=sgrid[j+1]]
+#       u <- diff(c(sgrid[j],points))
+#       event_new <- c(event_new,event[(where):(where+count-1)])
+#       time <- c(time,rep(field[j],count))
+#       E.factor <- c(E.factor,coal.factor[where:(where+count-1)]*u)
+#       where <- where+count
+#       if (max(points)<sgrid[j+1])
+#       {
+#         event_new <- c(event_new,0)
+#         time <- c(time,field[j])
+#         E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-max(points)))
+#       }
+#     }
+#     if (count==1)
+#     {
+#       event_new <- c(event_new,event[where])
+#       points <- s[s>sgrid[j] & s<=sgrid[j+1]]
+#       if (points==sgrid[j+1])
+#       {
+#         E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
+#         time <- c(time,field[j])
+#         where <- where+1
+#       }
+#       else
+#       {
+#         event_new <- c(event_new,0)
+#         E.factor <- c(E.factor,coal.factor[where]*(points-sgrid[j]))
+#         E.factor <- c(E.factor,coal.factor[where+1]*(sgrid[j+1]-points))
+#         time <- c(time,rep(field[j],2))
+#         where <- where+1
+#       }
+#     }
+#     if (count==0)
+#     {
+#       event_new <- c(event_new,0)
+#       E.factor <- c(E.factor,coal.factor[where]*(sgrid[j+1]-sgrid[j]))
+#       time <- c(time,field[j])
+#     }
+#     
+#   }
+#   time2 <- time
+#   event_new2 <- event_new
+#   E.factor2 <- E.factor
+#   
+#   for (j in 1:lengthout)
+#   {
+#     count <- sum(time2==field[j])
+#     if (count>1)
+#     {
+#       indic <- seq(1:length(event_new2))[time2==field[j]]
+#       if (sum(event_new2[indic])==0)
+#       {
+#         event_new2 <- event_new2[-indic[-1]]
+#         time2 <- time2[-indic[-1]]
+#         temp <- sum(E.factor2[indic])
+#         E.factor2[indic[1]] <- temp
+#         E.factor2 <- E.factor2[-indic[-1]]
+#       }
+#       #else {}
+#     }
+#   }
   
   #   E.factor2[1:34] <- rep(1,34)
   #data <- list(y=event_new2[-1],event=event_new2[-1],time=time2[-1],E=log(E.factor2[-1]))
   #formula <- y~-1+f(time,model="rw1",hyper=list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
   #mod4 <- inla(formula,family="poisson",data=data,offset=E,control.predictor=list(compute=TRUE),...)
   
-  n1 <- length(event_new2[-1])
-  n2 <- length(field)
-  Y  <- matrix(NA,n1+n2,2)
-  
+#   n1 <- length(event_new2[-1])
+#   n2 <- length(field)
+#   Y  <- matrix(NA,n1+n2,2)
+#   
   #dd <- heterochronous.gp.stat(influenza.tree)
   #s.time <- dd$sample.times
   #n.sample <- dd$sampled.lineages
   newcount <- rep(0,length(grid)-1)
   
   # MK: added to replace reading from influenza.tree above
-  samps = s[-1][event==0]
+  samps = s[event==0]
   
   for (j in 1:length(newcount))
   {
@@ -365,7 +427,8 @@ calculate_pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_bet
     newcount[j] <- sum(samps > grid[j] & samps <= grid[j+1])
   }
   newcount[1] <- newcount[1]+1
-  newcount[(sum(grid<max(samps))+1):lengthout] <- NA
+  #newcount[(sum(grid<max(samps))+1):lengthout] <- NA
+  newcount[head(grid, -1) >= max(samps)] <- NA
   
   data.sampling2<-data.frame(y=newcount,time=field,E=log(diff(grid)))
   formula.sampling2=y~1+f(time,model="rw1",hyper = list(prec = list(param = c(prec_alpha, prec_beta))),constr=FALSE)
@@ -374,9 +437,60 @@ calculate_pref = function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_bet
   E = diff(s) * coal.factor
   E[1]=1
   
-  mod.sampling2<-inla(formula.sampling2,family="poisson",data=data.sampling2,offset=E,control.predictor=list(compute=TRUE))
+  mod.sampling2 <- INLA::inla(formula.sampling2,family="poisson",data=data.sampling2,offset=E,control.predictor=list(compute=TRUE))
   
-  return(list(result=mod.sampling2,grid=grid))
+  return(list(result=mod.sampling2,grid=grid, data = data.sampling2))
+}
+
+joint_stats <- function(coal_data, samp_data)
+{
+  n1 <- length(coal_data$time)
+  n2 <- length(samp_data$time)
+  beta0 <- c(rep(0, n1), rep(1, n2))
+  E_log <- c(coal_data$E_log, samp_data$E_log)
+  Y <- matrix(c(coal_data$event, rep(NA, n2), rep(NA, n1), samp_data$count),
+              nrow = n1 + n2, byrow = FALSE)
+  w <- c(rep(1, n1), rep(-1, n2))
+  ii <- c(coal_data$time, rep(NA, n2))
+  jj <- c(rep(NA, n1), samp_data$time)
+  
+  return(list(Y = Y, beta0 = beta0, ii = ii, jj = jj, w = w, E_log = E_log))
+}
+
+calculate_moller_hetero_pref_exper <- function(s_times, coal_times, n_sampled = NULL,
+                                               lengthout = 300,
+                                               prec_alpha = 0.01, prec_beta = 0.01,
+                                               simplify = FALSE,
+                                               events_only = FALSE)
+{
+  grid <- seq(min(s),max(s),length.out=lengthout+1)
+  
+  if (is.null(n_sampled))
+    n_sampled <- rep(1, length(s_times))
+  
+  coal_data <- firstloop_exper(grid = grid, s_times = s_times,
+                               n_sampled = n_sampled, coal_times = coal_times)
+  
+  if (simplify)
+    coal_data <- with(coal_data,
+                      secondloop_strong_exper(time = time, event = event, E=E))
+  
+  if (events_only)
+    samp_data <- sampleloop(grid = grid, s_times = s_times)
+  else
+    samp_data <- sampleloop(grid = grid, s_times = s_times,
+                            n_sampled = n_sampled)
+  
+  joint_data <- joint_stats(coal_data = coal_data, samp_data = samp_data)
+  
+  data <- list(y = coal_data$event, time = coal_data$time, E = E_log)
+  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE)
+  mod <- INLA::inla(formula, family = "poisson", data = data, offset = E,
+                    control.predictor = list(compute=TRUE))
+  
+  return(list(result = mod, data = data, E = E_log,
+              grid = coal_data$grid, x = coal_data$field))
 }
 
 calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,log_zero=-100,alpha=NULL,beta=NULL)
