@@ -207,7 +207,7 @@ calculate_moller_hetero <- function(coal.factor, s, event, lengthout,
   return(list(result=mod4,grid=fl$grid,data=data,E=E_log, x = fl$field))
 }
 
-firstloop_exper <- function(grid, s_times, coal_times, n_sampled = NULL,
+coal_stats <- function(grid, s_times, coal_times, n_sampled = NULL,
                             log_zero = -100)
 {
   lengthout <- length(grid) - 1
@@ -242,7 +242,7 @@ firstloop_exper <- function(grid, s_times, coal_times, n_sampled = NULL,
   return(data.frame(time = time, event = event_out[-1], E = E, E_log = E_log))
 }
 
-secondloop_strong_exper <- function(time, event, E, log_zero = -100)
+condense_stats <- function(time, event, E, log_zero = -100)
 {
   result <- aggregate(event ~ time, FUN = sum)
   result$E <- aggregate(E ~ time, FUN = sum)$E
@@ -254,35 +254,38 @@ secondloop_strong_exper <- function(time, event, E, log_zero = -100)
   return(result)
 }
 
-calculate_moller_hetero_exper <- function(s_times, coal_times, n_sampled = NULL,
-                                          lengthout = 300,
-                                          prec_alpha = 0.01, prec_beta = 0.01,
-                                          simplify = FALSE)
+infer_coal <- function(s_times, coal_times, n_sampled = NULL, lengthout = 300,
+                       prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE)
 {
-  grid <- seq(min(s),max(s),length.out=lengthout+1)
+  if (min(coal_times) < min(s_times))
+    stop("First coalescent time occurs before first sampling time")
+  
+  if (max(s_times) > max(coal_times))
+    stop("Last sampling time occurs after last coalescent time")
+  
+  grid <- seq(min(s_times), max(coal_times), length.out = lengthout+1)
   
   if (is.null(n_sampled))
     n_sampled <- rep(1, length(s_times))
   
-  coal_data <- firstloop_exper(grid = grid, s_times = s_times,
-                               n_sampled = n_sampled, coal_times = coal_times)
+  coal_data <- coal_stats(grid = grid, s_times = s_times, n_sampled = n_sampled,
+                          coal_times = coal_times)
   
   if (simplify)
     coal_data <- with(coal_data,
-                      secondloop_strong_exper(time = time, event = event, E=E))
+                      condense_stats(time = time, event = event, E=E))
   
   data <- with(coal_data, data.frame(y = event, time = time, E_log = E_log))
   hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
   formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE)
   
-  mod <- INLA::inla(formula, family = "poisson", data = data, offset = E_log,
+  mod <- INLA::inla(formula, family = "poisson", data = data, offset = data$E_log,
                     control.predictor = list(compute=TRUE))
   
-  return(list(result = mod, data = data, E = E_log,
-              grid = coal_data$grid, x = coal_data$field))
+  return(list(result = mod, data = data, grid = grid, x = coal_data$field))
 }
 
-sampleloop <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
+samp_stats <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
 {
   lengthout <- length(grid) - 1
   field <- grid[-1] - diff(grid)/2
@@ -309,12 +312,12 @@ sampleloop <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
   return(result)
 }
 
-calculate_pref_exper <- function(s_times, n_sampled = NULL, lengthout = 300,
-                                 prec_alpha = 0.01, prec_beta = 0.01)
+infer_samp <- function(s_times, n_sampled = NULL, lengthout = 300,
+                       prec_alpha = 0.01, prec_beta = 0.01)
 {
   grid <- seq(min(s_times),max(s_times),length.out=lengthout+1)
   
-  samp_data <- sampleloop(grid = grid, s_times = s_times,
+  samp_data <- samp_stats(grid = grid, s_times = s_times,
                           n_sampled = n_sampled)
   
   data <- with(samp_data, data.frame(y = count, time = time, E_log = E_log))
@@ -322,9 +325,9 @@ calculate_pref_exper <- function(s_times, n_sampled = NULL, lengthout = 300,
   formula_sampling <- y ~ 1 + f(time, model="rw1", hyper = hyper, constr=FALSE)
   
   mod <- INLA::inla(formula_sampling, family="poisson", data=data,
-                             offset=E_log, control.predictor=list(compute=TRUE))
+                             offset=data$E_log, control.predictor=list(compute=TRUE))
   
-  return(list(result = mod, data = data, grid = grid, x = field))
+  return(list(result = mod, data = data, grid = grid, x = samp_data$field))
 }
 
 calculate_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
@@ -457,40 +460,43 @@ joint_stats <- function(coal_data, samp_data)
   return(list(Y = Y, beta0 = beta0, ii = ii, jj = jj, w = w, E_log = E_log))
 }
 
-calculate_moller_hetero_pref_exper <- function(s_times, coal_times, n_sampled = NULL,
-                                               lengthout = 300,
-                                               prec_alpha = 0.01, prec_beta = 0.01,
-                                               simplify = FALSE,
-                                               events_only = FALSE)
+infer_coal_samp <- function(s_times, coal_times, n_sampled=NULL, lengthout=300,
+                            prec_alpha=0.01, prec_beta=0.01, beta1_prec=0.001,
+                            simplify = FALSE, events_only = FALSE)
 {
-  grid <- seq(min(s),max(s),length.out=lengthout+1)
+  if (min(coal_times) < min(s_times))
+    stop("First coalescent time occurs before first sampling time")
+  
+  if (max(s_times) > max(coal_times))
+    stop("Last sampling time occurs after last coalescent time")
+  
+  grid <- seq(min(s_times), max(coal_times), length.out = lengthout+1)
   
   if (is.null(n_sampled))
     n_sampled <- rep(1, length(s_times))
   
-  coal_data <- firstloop_exper(grid = grid, s_times = s_times,
-                               n_sampled = n_sampled, coal_times = coal_times)
+  coal_data <- coal_stats(grid = grid, s_times = s_times, n_sampled = n_sampled,
+                          coal_times = coal_times)
   
   if (simplify)
-    coal_data <- with(coal_data,
-                      secondloop_strong_exper(time = time, event = event, E=E))
+    coal_data <- with(coal_data, condense_stats(time=time, event=event, E=E))
   
   if (events_only)
-    samp_data <- sampleloop(grid = grid, s_times = s_times)
+    samp_data <- samp_stats(grid = grid, s_times = s_times)
   else
-    samp_data <- sampleloop(grid = grid, s_times = s_times,
-                            n_sampled = n_sampled)
+    samp_data <- samp_stats(grid=grid, s_times=s_times, n_sampled=n_sampled)
   
   joint_data <- joint_stats(coal_data = coal_data, samp_data = samp_data)
   
-  data <- list(y = coal_data$event, time = coal_data$time, E = E_log)
   hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
-  formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE)
-  mod <- INLA::inla(formula, family = "poisson", data = data, offset = E,
+  formula <- Y ~ -1 + beta0 +
+                 f(ii, model="rw1", hyper = hyper, constr = FALSE) +
+                 f(jj, w, copy="ii", fixed=FALSE, param=c(0, beta1_prec))
+  mod <- INLA::inla(formula, family = c("poisson", "poisson"),
+                    data = joint_data, offset = joint_data$E_log,
                     control.predictor = list(compute=TRUE))
   
-  return(list(result = mod, data = data, E = E_log,
-              grid = coal_data$grid, x = coal_data$field))
+  return(list(result = mod, data = joint_data, grid = grid, x = coal_data$field))
 }
 
 calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,log_zero=-100,alpha=NULL,beta=NULL)
@@ -650,7 +656,7 @@ calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alph
   
   #print("Got here 8")
   
-  return(list(result=mod.pref,grid=grid, x = field))
+  return(list(result=mod.pref,data = data.pref, grid=grid, x = field))
 }
 
 calculate.moller.hetero.pref = function(...)
