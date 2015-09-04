@@ -10,7 +10,7 @@ summarize_phylo(phy)
 \item{phy}{a \code{phylo} object containing a phylogeny.}
 }
 \value{
-A list containing vectors of sampling times \code{s_times}, number
+A list containing vectors of sampling times \code{samp_times}, number
   sampled per sampling time \code{n_sampled}, and coalescent times
   \code{coal_times}.
 }

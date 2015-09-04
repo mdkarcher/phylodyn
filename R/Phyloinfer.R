@@ -431,6 +431,7 @@ sampling = function(data, para, alg, setting, init, print=TRUE)
 }
 
 # wrapper that encapsulates sampler above with good defaults
+#' @export
 mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,
                          TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL)
 {

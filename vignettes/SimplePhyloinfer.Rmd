@@ -19,7 +19,6 @@ library(phylodyn)
 We need to set the true effective population size trajectory function, and also its reciprocal. For this example, we choose exponential growth (already implemented in `phylodyn`).
 
 ```{r}
-traj = exp_traj
 traj_inv = exp_traj_inv
 ```
 
@@ -28,21 +27,19 @@ For simplicity's sake, we will use isochronous sampling (taking all samples simu
 ```{r}
 samp_times = 0
 n_sampled  = 100
-sample = cbind(n_sampled, samp_times)
 ```
 
 We simulate a genealogy based on our sample using the coalescent.
 
 ```{r}
-gene = coalgen_thinning_hetero(sample=sample, trajectory=traj_inv)
-coal_times = cumsum(gene$intercoal_times)
+sample = cbind(n_sampled, samp_times)
+gene = coalgen_thinning_hetero(sample = sample, traj_inv = traj_inv, 5)
 ```
 
 We first use BNPR to calculate approximate marginals. We use a helper function to generate the arguments for the BNPR function.
 
 ```{r}
-args = gen_BNPR_args(coal_times=coal_times, s_times=samp_times, n_sampled=n_sampled)
-res_BNPR = BNPR(args$coal_factor, args$s, args$event, 100, 0.01, 0.01)
+res_BNPR = BNPR(data = gene, lengthout = 100)
 ```
 
 We set the number of samples and burn-in parameters. For expediency in this vignette we set them to be small. To produce more meaningful results, increase both parameters.
@@ -52,29 +49,24 @@ nsamp = 500
 nburnin = 100
 ```
 
-We package the data in a form we can pass to `mcmc_sampling`. In future, we will add the ability to pass a genealogy/phylogeny object directly.
-
-```{r}
-data = list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times)
-```
-
 We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
 
 ```{r results='hide'}
-res_MCMC = mcmc_sampling(data, 'splitHMC', nsamp, nburnin)
+res_MCMC = mcmc_sampling(data = gene, alg = 'splitHMC', nsamp = nsamp,
+                         nburnin = nburnin)
 ```
 
 We plot and compare the results from BNPR and splitHMC.
 
 ```{r fig.width=5, fig.height=5}
 # Plot the results of BNPR
-plot_BNPR(res_BNPR, traj)
+plot_BNPR(BNPR_out = res_BNPR,traj = traj)
 title("Exponential growth")
   
 # plot the results of splitHMC
 lines(res_MCMC$med_fun, pch="", col='red', lwd=2.5)
 lines(res_MCMC$low_fun, pch="", col='red', lwd=2, lty=3)
 lines(res_MCMC$up_fun,  pch="", col='red', lwd=2, lty=3)
-legend('bottomright',c('Truth','BNPR',"splitHMC"),
+legend('topright',c('Truth','BNPR',"splitHMC"),
        col=c('black','blue','red'),lwd=c(1,2.5,2.5),bty='n')
 ```

@@ -1,14 +1,14 @@
-gen_INLA_args <- function(s_times, n_sampled, coal_times)
+gen_INLA_args <- function(samp_times, n_sampled, coal_times)
 {
   if (sum(n_sampled) != length(coal_times) + 1)
     stop("Number sampled not equal to number of coalescent events + 1.")
   
-  if (length(intersect(coal_times, s_times)) > 0)
+  if (length(intersect(coal_times, samp_times)) > 0)
     warning("Coincident sampling event and coalescent event: results may be unpredictable.")
   
-  l <- length(s_times)
+  l <- length(samp_times)
   m <- length(coal_times)
-  sorting <- sort(c(s_times, coal_times), index.return=TRUE)
+  sorting <- sort(c(samp_times, coal_times), index.return=TRUE)
   
   lineage_change <- c(n_sampled, rep(-1, m))[sorting$ix]
   lineages <- head(cumsum(lineage_change), -1) # remove entry for the post-final-coalescent-event open interval
@@ -19,9 +19,9 @@ gen_INLA_args <- function(s_times, n_sampled, coal_times)
   return(list(coal_factor=coal_factor, s=sorting$x, event=event, lineages=lineages))
 }
 
-gen_summary = function(coal_times, s_times, n_sampled)
+gen_summary = function(coal_times, samp_times, n_sampled)
 {
-  args = gen_INLA_args(coal_times, s_times, n_sampled)
+  args = gen_INLA_args(coal_times, samp_times, n_sampled)
   n = length(args$s)
   return(data.frame(cbind(lineages=args$lineages, start_time=args$s[1:(n-1)], stop_time=args$s[2:n], end_event=args$event[2:n], change=diff(c(args$indicator,1)))))
 }
@@ -29,7 +29,7 @@ gen_summary = function(coal_times, s_times, n_sampled)
 #' Bayesian nonparametric phylodynamic reconstruction.
 #' 
 #' @param data \code{phylo} object or list containing vectors of coalescent
-#'   times \code{coal_times}, sampling times \code{s_times}, and number sampled
+#'   times \code{coal_times}, sampling times \code{samp_times}, and number sampled
 #'   per sampling time \code{n_sampled}.
 #' @param lengthout numeric specifying number of grid points - 1.
 #' @param pref logical. Should the preferential sampling model be used?
@@ -47,46 +47,45 @@ gen_summary = function(coal_times, s_times, n_sampled)
 #' data("NY_flu")
 #' res = BNPR(NY_flu)
 #' plot_BNPR(res)
-BNPR <- function(data, lengthout=300, pref=FALSE, prec_alpha=0.01,
-                 prec_beta=0.01, beta1_prec = 0.001, log_zero=-100)
+BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
+                 prec_beta=0.01, beta1_prec = 0.001, simplify = TRUE)
 {
   if (class(data) == "phylo")
   {
     phy <- summarize_phylo(data)
-    s_times    <- phy$s_times
+    samp_times <- phy$samp_times
     n_sampled  <- phy$n_sampled
     coal_times <- phy$coal_times
-    args <- gen_INLA_args(coal_times = coal_times, 
-                          s_times    = s_times,
-                          n_sampled  = n_sampled)
   }
-  else if (all(c("coal_times", "s_times", "n_sampled") %in% names(data)))
+  else if (all(c("coal_times", "samp_times", "n_sampled") %in% names(data)))
   {
-    s_times    <- data$s_times
+    samp_times <- data$samp_times
     n_sampled  <- data$n_sampled
     coal_times <- data$coal_times
-    
-    args <- gen_INLA_args(coal_times = coal_times,
-                          s_times    = s_times,
-                          n_sampled  = n_sampled)
   }
   
   if (!pref)
   {
-    result <- calculate_moller_hetero(args$coal_factor, args$s, args$event, lengthout, prec_alpha, prec_beta, log_zero)
-    result$effpop <- exp(-result$result$summary.random$time$`0.5quant`)
+    result <- infer_coal(samp_times = samp_times, coal_times = coal_times,
+                         n_sampled = n_sampled, lengthout = lengthout,
+                         prec_alpha = prec_alpha, prec_beta = prec_beta,
+                         simplify = simplify)
+    result$effpop    <- exp(-result$result$summary.random$time$`0.5quant`)
     result$effpop975 <- exp(-result$result$summary.random$time$`0.025quant`)
     result$effpop025 <- exp(-result$result$summary.random$time$`0.975quant`)
   }
   else
   {
-    result = calculate_moller_hetero_pref(args$coal_factor, args$s, args$event, lengthout, prec_alpha, prec_beta, beta1_prec, log_zero)
-    result$effpop = exp(-result$result$summary.random$ii$`0.5quant`)
+    result = infer_coal_samp(samp_times = samp_times, coal_times = coal_times,
+                             n_sampled = n_sampled, lengthout = lengthout,
+                             prec_alpha = prec_alpha, prec_beta = prec_beta,
+                             beta1_prec = beta1_prec, simplify = simplify)
+    result$effpop    <- exp(-result$result$summary.random$ii$`0.5quant`)
     result$effpop975 <- exp(-result$result$summary.random$ii$`0.025quant`)
     result$effpop025 <- exp(-result$result$summary.random$ii$`0.975quant`)
   }
   
-  result$s_times    <- s_times
+  result$samp_times <- samp_times
   result$n_sampled  <- n_sampled
   result$coal_times <- coal_times
   
@@ -94,10 +93,13 @@ BNPR <- function(data, lengthout=300, pref=FALSE, prec_alpha=0.01,
 }
 
 #' @describeIn BNPR Uses preferential sampling model.
-BNPR_PS <- function(data, lengthout=300, prec_alpha=0.01, prec_beta=0.01,
-                    beta1_prec = 0.001, log_zero=-100)
+#' @export
+BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
+                    beta1_prec = 0.001, simplify = TRUE)
 {
-  return(BNPR(data, lengthout, pref=TRUE, prec_alpha, prec_beta, beta1_prec, log_zero))
+  return(BNPR(data = data, lengthout = lengthout, pref = TRUE,
+              prec_alpha = prec_alpha, prec_beta = prec_beta,
+              beta1_prec = beta1_prec, simplify = simplify))
 }
 
 firstloop <- function(coal_factor, s, event, lengthout)
@@ -207,15 +209,15 @@ calculate_moller_hetero <- function(coal.factor, s, event, lengthout,
   return(list(result=mod4,grid=fl$grid,data=data,E=E_log, x = fl$field))
 }
 
-coal_stats <- function(grid, s_times, coal_times, n_sampled = NULL,
-                            log_zero = -100)
+coal_stats <- function(grid, samp_times, coal_times, n_sampled = NULL,
+                       log_zero = -100)
 {
   lengthout <- length(grid) - 1
   field <- grid[-1] - diff(grid)/2
   
   if (is.null(n_sampled))
-    n_sampled <- rep(1, length(s_times))
-  args <- gen_INLA_args(s_times = s_times, n_sampled = n_sampled,
+    n_sampled <- rep(1, length(samp_times))
+  args <- gen_INLA_args(samp_times = samp_times, n_sampled = n_sampled,
                         coal_times = coal_times)
   
   coal_factor <- args$coal_factor
@@ -254,21 +256,22 @@ condense_stats <- function(time, event, E, log_zero = -100)
   return(result)
 }
 
-infer_coal <- function(s_times, coal_times, n_sampled = NULL, lengthout = 300,
+#' @export
+infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100,
                        prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE)
 {
-  if (min(coal_times) < min(s_times))
+  if (min(coal_times) < min(samp_times))
     stop("First coalescent time occurs before first sampling time")
   
-  if (max(s_times) > max(coal_times))
+  if (max(samp_times) > max(coal_times))
     stop("Last sampling time occurs after last coalescent time")
   
-  grid <- seq(min(s_times), max(coal_times), length.out = lengthout+1)
+  grid <- seq(min(samp_times), max(coal_times), length.out = lengthout+1)
   
   if (is.null(n_sampled))
-    n_sampled <- rep(1, length(s_times))
+    n_sampled <- rep(1, length(samp_times))
   
-  coal_data <- coal_stats(grid = grid, s_times = s_times, n_sampled = n_sampled,
+  coal_data <- coal_stats(grid = grid, samp_times = samp_times, n_sampled = n_sampled,
                           coal_times = coal_times)
   
   if (simplify)
@@ -282,16 +285,16 @@ infer_coal <- function(s_times, coal_times, n_sampled = NULL, lengthout = 300,
   mod <- INLA::inla(formula, family = "poisson", data = data, offset = data$E_log,
                     control.predictor = list(compute=TRUE))
   
-  return(list(result = mod, data = data, grid = grid, x = coal_data$field))
+  return(list(result = mod, data = data, grid = grid, x = coal_data$time))
 }
 
-samp_stats <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
+samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
 {
   lengthout <- length(grid) - 1
   field <- grid[-1] - diff(grid)/2
   E=diff(grid)
   
-  buckets <- cut(x = s_times, breaks = grid,
+  buckets <- cut(x = samp_times, breaks = grid,
                  include.lowest = TRUE)
   
   if (is.null(n_sampled))
@@ -303,7 +306,7 @@ samp_stats <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
     count[as.numeric(tab$buckets)] <- tab$n_sampled
   }
   
-  count[head(grid, -1) >= max(s_times)] <- NA
+  count[head(grid, -1) >= max(samp_times)] <- NA
   result <- data.frame(time = field, count = count, E = E, E_log = log(E))
   
   if (trim_end)
@@ -312,12 +315,13 @@ samp_stats <- function(grid, s_times, n_sampled = NULL, trim_end = FALSE)
   return(result)
 }
 
-infer_samp <- function(s_times, n_sampled = NULL, lengthout = 300,
+#' @export
+infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100,
                        prec_alpha = 0.01, prec_beta = 0.01)
 {
-  grid <- seq(min(s_times),max(s_times),length.out=lengthout+1)
+  grid <- seq(min(samp_times),max(samp_times),length.out=lengthout+1)
   
-  samp_data <- samp_stats(grid = grid, s_times = s_times,
+  samp_data <- samp_stats(grid = grid, samp_times = samp_times,
                           n_sampled = n_sampled)
   
   data <- with(samp_data, data.frame(y = count, time = time, E_log = E_log))
@@ -327,7 +331,7 @@ infer_samp <- function(s_times, n_sampled = NULL, lengthout = 300,
   mod <- INLA::inla(formula_sampling, family="poisson", data=data,
                              offset=data$E_log, control.predictor=list(compute=TRUE))
   
-  return(list(result = mod, data = data, grid = grid, x = samp_data$field))
+  return(list(result = mod, data = data, grid = grid, x = samp_data$time))
 }
 
 calculate_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01)
@@ -460,31 +464,32 @@ joint_stats <- function(coal_data, samp_data)
   return(list(Y = Y, beta0 = beta0, ii = ii, jj = jj, w = w, E_log = E_log))
 }
 
-infer_coal_samp <- function(s_times, coal_times, n_sampled=NULL, lengthout=300,
+#' @export
+infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=100,
                             prec_alpha=0.01, prec_beta=0.01, beta1_prec=0.001,
                             simplify = FALSE, events_only = FALSE)
 {
-  if (min(coal_times) < min(s_times))
+  if (min(coal_times) < min(samp_times))
     stop("First coalescent time occurs before first sampling time")
   
-  if (max(s_times) > max(coal_times))
+  if (max(samp_times) > max(coal_times))
     stop("Last sampling time occurs after last coalescent time")
   
-  grid <- seq(min(s_times), max(coal_times), length.out = lengthout+1)
+  grid <- seq(min(samp_times), max(coal_times), length.out = lengthout+1)
   
   if (is.null(n_sampled))
-    n_sampled <- rep(1, length(s_times))
+    n_sampled <- rep(1, length(samp_times))
   
-  coal_data <- coal_stats(grid = grid, s_times = s_times, n_sampled = n_sampled,
+  coal_data <- coal_stats(grid = grid, samp_times = samp_times, n_sampled = n_sampled,
                           coal_times = coal_times)
   
   if (simplify)
     coal_data <- with(coal_data, condense_stats(time=time, event=event, E=E))
   
   if (events_only)
-    samp_data <- samp_stats(grid = grid, s_times = s_times)
+    samp_data <- samp_stats(grid = grid, samp_times = samp_times)
   else
-    samp_data <- samp_stats(grid=grid, s_times=s_times, n_sampled=n_sampled)
+    samp_data <- samp_stats(grid=grid, samp_times=samp_times, n_sampled=n_sampled)
   
   joint_data <- joint_stats(coal_data = coal_data, samp_data = samp_data)
   
@@ -496,7 +501,7 @@ infer_coal_samp <- function(s_times, coal_times, n_sampled=NULL, lengthout=300,
                     data = joint_data, offset = joint_data$E_log,
                     control.predictor = list(compute=TRUE))
   
-  return(list(result = mod, data = joint_data, grid = grid, x = coal_data$field))
+  return(list(result = mod, data = joint_data, grid = grid, x = coal_data$time))
 }
 
 calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,log_zero=-100,alpha=NULL,beta=NULL)

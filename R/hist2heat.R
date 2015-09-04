@@ -3,6 +3,7 @@ float2gray = function(f)
   return(sprintf("#%02x%02x%02x", floor((1-f) * 255), floor((1-f) * 255), floor((1-f) * 255)))
 }
 
+#' @export
 hist2heat = function(hist, y, wd)
 {
   breaks = hist$breaks

@@ -5,15 +5,15 @@
 \alias{BNPR_PS}
 \title{Bayesian nonparametric phylodynamic reconstruction.}
 \usage{
-BNPR(data, lengthout = 300, pref = FALSE, prec_alpha = 0.01,
-  prec_beta = 0.01, beta1_prec = 0.001, log_zero = -100)
+BNPR(data, lengthout = 100, pref = FALSE, prec_alpha = 0.01,
+  prec_beta = 0.01, beta1_prec = 0.001, simplify = TRUE)
 
-BNPR_PS(data, lengthout = 300, prec_alpha = 0.01, prec_beta = 0.01,
-  beta1_prec = 0.001, log_zero = -100)
+BNPR_PS(data, lengthout = 100, prec_alpha = 0.01, prec_beta = 0.01,
+  beta1_prec = 0.001, simplify = TRUE)
 }
 \arguments{
 \item{data}{\code{phylo} object or list containing vectors of coalescent
-times \code{coal_times}, sampling times \code{s_times}, and number sampled
+times \code{coal_times}, sampling times \code{samp_times}, and number sampled
 per sampling time \code{n_sampled}.}
 
 \item{lengthout}{numeric specifying number of grid points - 1.}

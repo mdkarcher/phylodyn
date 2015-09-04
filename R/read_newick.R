@@ -2,7 +2,7 @@
 #' 
 #' @param phy a \code{phylo} object containing a phylogeny.
 #'   
-#' @return A list containing vectors of sampling times \code{s_times}, number 
+#' @return A list containing vectors of sampling times \code{samp_times}, number 
 #'   sampled per sampling time \code{n_sampled}, and coalescent times
 #'   \code{coal_times}.
 #' @export
@@ -13,14 +13,14 @@
 summarize_phylo <- function(phy)
 {
   hgpstat <- heterochronous_gp_stat(phy)
-  return(list(s_times    = hgpstat$s_times,
+  return(list(samp_times = hgpstat$samp_times,
               n_sampled  = hgpstat$n_sampled,
               coal_times = hgpstat$coal_times))
 }
 
 branching_sampling_times <- function(phy)
 {
-  phy = new2old.phylo(phy)
+  phy = ape::new2old.phylo(phy)
 
   if (class(phy) != "phylo")
     stop("object \"phy\" is not of class \"phylo\"")
@@ -75,5 +75,5 @@ heterochronous_gp_stat <- function(phy)
     sampled.lineages = c(sampled.lineages, sum(sampling.times == sample.time))  
   }
   
-  return(list(coal_times=sorted.coal.times, s_times = unique.sampling.times, n_sampled=sampled.lineages))
+  return(list(coal_times=sorted.coal.times, samp_times = unique.sampling.times, n_sampled=sampled.lineages))
 }
