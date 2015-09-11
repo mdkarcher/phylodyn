@@ -77,7 +77,8 @@ heterochronous_gp_stat <- function(phy, tol=.1)
     sampled.lineages = c(sampled.lineages, sum(sampling.times == sample.time))
   }
   
-  return(list(coal_times = sorted.coal.times, s_times = unique.sampling.times,
+  return(list(coal_times = sorted.coal.times,
+              samp_times = unique.sampling.times,
               n_sampled = sampled.lineages))
 }
 

@@ -292,7 +292,7 @@ samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
 {
   lengthout <- length(grid) - 1
   field <- grid[-1] - diff(grid)/2
-  E=diff(grid)
+  E <- diff(grid)
   
   buckets <- cut(x = samp_times, breaks = grid,
                  include.lowest = TRUE)

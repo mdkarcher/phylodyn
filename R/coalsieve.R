@@ -13,41 +13,45 @@
 #' @export
 #' 
 #' @examples
-#' coalsim(0:2, 3:1, unif_traj, upper=10, level=10)
-coalsim <- function(samp_times, n_sampled, traj, upper, ...)
+#' coalsim(0:2, 3:1, unif_traj, lower_bound=10, level=10)
+coalsim <- function(samp_times, n_sampled, traj, lower_bound, ...)
 {
-  warning("Work in progress")
-  sample <- cbind(n_sampled, samp_times, deparse.level = 0)
-  result <- coalgen_thinning_hetero(sample = sample, traj = traj, upper = upper, ... = ...)
-  result$samp_times <- samp_times
-  result$n_sampled <- n_sampled
-  return(result)
-}
-
-coalgen_thinning_iso <- function(sample,traj_inv,upper=25,...)
-{
-  ###Need to add correction to "systematic" definition of upper bound
-  s=sample[2]
-  n <- sample[1]
-  out <- rep(0,n-1)
-  time <- 0
-  j <- n
-  while (j>1)
+  coal_times = NULL
+  lineages = NULL
+  
+  curr = 1
+  active_lineages = n_sampled[curr]
+  time = samp_times[curr]
+  
+  while (time <= max(samp_times) || active_lineages > 1)
   {
-    time <- time+rexp(1,upper*j*(j-1)*.5)
-    if (runif(1)<=1/(traj_inv(time,...)*upper))
+    if (active_lineages == 1)
     {
-      out[n-j+1] <- time
-      j <- j-1
+      curr = curr + 1
+      active_lineages = active_lineages + n_sampled[curr]
+      time = samp_times[curr]
+    }
+    
+    time = time + rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
+    
+    if (curr < length(samp_times) && time >= samp_times[curr + 1])
+    {
+      curr = curr + 1
+      active_lineages = active_lineages + n_sampled[curr]
+      time = samp_times[curr]
+    }
+    else if (runif(1) <= lower_bound/traj(time))
+    {
+      coal_times = c(coal_times, time)
+      lineages = c(lineages, active_lineages)
+      active_lineages = active_lineages - 1
     }
   }
-  return(list(intercoal_times=c(out[1],diff(out)),lineages=seq(n,2,-1), coal_times=out))
+  
+  return(list(coal_times = coal_times, lineages = lineages,
+         intercoal_times = c(coal_times[1], diff(coal_times)),
+         samp_times = samp_times, n_sampled = n_sampled))
 }
-
-# coalgen_thinning_hetero_exper <- function(samp_times, n_sampled, trajectory, upper, ...)
-# {
-#   
-# }
 
 #' Generate inhomogeneous coalescent with heterochronous samples.
 #' 
@@ -139,4 +143,24 @@ coalgen_thinning_hetero <- function(sample,traj_inv,upper,...)
   
   return(list(intercoal_times=c(out[1],diff(out)), lineages=branches, 
               coal_times=out, samp_times = samp_times, n_sampled = n_sampled))   
+}
+
+coalgen_thinning_iso <- function(sample,traj_inv,upper=25,...)
+{
+  ###Need to add correction to "systematic" definition of upper bound
+  s=sample[2]
+  n <- sample[1]
+  out <- rep(0,n-1)
+  time <- 0
+  j <- n
+  while (j>1)
+  {
+    time <- time+rexp(1,upper*j*(j-1)*.5)
+    if (runif(1)<=1/(traj_inv(time,...)*upper))
+    {
+      out[n-j+1] <- time
+      j <- j-1
+    }
+  }
+  return(list(intercoal_times=c(out[1],diff(out)),lineages=seq(n,2,-1), coal_times=out))
 }
