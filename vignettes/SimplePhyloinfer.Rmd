@@ -9,7 +9,9 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-This vignette shows a simple and typical use of `phylodyn` and its MCMC tools. We start by loading the `phylodyn` package.
+This vignette shows a simple and typical use of `phylodyn` and its MCMC tools. If we increase the number of MCMC samples, we reproduce part of the split HMC results from Lan, et al. 2014.
+
+We start by loading the `phylodyn` package.
 
 ```{r message=FALSE, echo=-1}
 set.seed(8675309)
@@ -19,7 +21,7 @@ library(phylodyn)
 We need to set the true effective population size trajectory function, and also its reciprocal. For this example, we choose exponential growth (already implemented in `phylodyn`).
 
 ```{r}
-traj_inv = exp_traj_inv
+traj = exp_traj
 ```
 
 For simplicity's sake, we will use isochronous sampling (taking all samples simultaneously at t=0). We sample 100 individuals at the present time.
@@ -32,11 +34,10 @@ n_sampled  = 100
 We simulate a genealogy based on our sample using the coalescent.
 
 ```{r}
-sample = cbind(n_sampled, samp_times)
-gene = coalgen_thinning_hetero(sample = sample, traj_inv = traj_inv, 5)
+gene = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj, lower_bound = 1/20)
 ```
 
-We first use BNPR to calculate approximate marginals. We use a helper function to generate the arguments for the BNPR function.
+We first use BNPR to calculate approximate marginals.
 
 ```{r}
 res_BNPR = BNPR(data = gene, lengthout = 100)
@@ -60,13 +61,23 @@ We plot and compare the results from BNPR and splitHMC.
 
 ```{r fig.width=5, fig.height=5}
 # Plot the results of BNPR
-plot_BNPR(BNPR_out = res_BNPR,traj = traj)
+plot_BNPR(BNPR_out = res_BNPR, traj = exp_traj, col = "blue", traj_col = "black")
 title("Exponential growth")
   
 # plot the results of splitHMC
-lines(res_MCMC$med_fun, pch="", col='red', lwd=2.5)
-lines(res_MCMC$low_fun, pch="", col='red', lwd=2, lty=3)
-lines(res_MCMC$up_fun,  pch="", col='red', lwd=2, lty=3)
-legend('topright',c('Truth','BNPR',"splitHMC"),
-       col=c('black','blue','red'),lwd=c(1,2.5,2.5),bty='n')
+lines(res_MCMC$med_fun, pch="", col='red', lwd=1)
+lines(res_MCMC$low_fun, pch="", col='red', lwd=1, lty=1)
+lines(res_MCMC$up_fun,  pch="", col='red', lwd=1, lty=1)
+legend('topleft',c('Truth','BNPR',"splitHMC"),
+       col=c('black','blue','red'),lwd=c(1,2.5,2.5),bty='n', lty=c(2,1,1))
 ```
+
+## References
+
+1. J. A. Palacios and V. N. Minin.
+Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
+In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
+
+2. Lan, S., Palacios, J. A., Karcher, M., Minin, V. N., & Shahbaba, B. (2014).
+An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
+*arXiv preprint arXiv*:1412.0158.
