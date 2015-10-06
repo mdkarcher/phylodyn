@@ -18,8 +18,8 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
                      traj_lty=2, traj_lwd=2, traj_col=col,
                      newplot=TRUE, credible_region=TRUE,
                      heatmaps=TRUE, heatmap_labels=TRUE,
-                     heatmap_labels_side="right",
-                     heatmap_width=10,...)
+                     heatmap_labels_side="right", heatmap_width=10,
+                     yscale = 1, ...)
 {
   grid = BNPR_out$grid
   if (is.null(xlim))
@@ -31,9 +31,9 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
   
   t = BNPR_out$x[mask]
   
-  y = BNPR_out$effpop[mask]
-  yhi = BNPR_out$effpop975[mask]
-  ylo = BNPR_out$effpop025[mask]
+  y = BNPR_out$effpop[mask] * yscale
+  yhi = BNPR_out$effpop975[mask] * yscale
+  ylo = BNPR_out$effpop025[mask] * yscale
   
   if (newplot)
   {
@@ -52,7 +52,7 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
     {
       yspan=ymax/ymin
       yextra=yspan^(1/10)
-      ylim=c(ymin/(yextra^1.25), ymax)
+      ylim=c(ymin/(yextra^1.35), ymax)
     }
     else
     {
