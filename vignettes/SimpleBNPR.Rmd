@@ -13,7 +13,7 @@ This vignette shows a simple and typical use of `phylodyn` and its main function
 
 We start by loading the `phylodyn` package.
 
-```{r message=FALSE, echo=-1}
+```{r message=FALSE}
 set.seed(8675309)
 library(phylodyn)
 ```
@@ -56,8 +56,8 @@ We plot the results.
 
 ```{r, fig.width=8.5, fig.height=5}
 par(mfrow=c(1,2))
-plot_BNPR(res_BNPR, traj = traj, main="BNPR")
-plot_BNPR(res_BNPR_PS, traj = traj, main="BNPR-PS")
+plot_BNPR(res_BNPR, traj = traj, main="BNPR", ylim = c(1, 700))
+plot_BNPR(res_BNPR_PS, traj = traj, main="BNPR-PS", ylim = c(1, 700))
 ```
 
 ## References
