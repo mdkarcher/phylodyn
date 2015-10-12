@@ -102,113 +102,6 @@ BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
               beta1_prec = beta1_prec, simplify = simplify))
 }
 
-firstloop <- function(coal_factor, s, event, lengthout)
-{
-  grid <- seq(min(s),max(s),length.out=lengthout+1)
-  u <- diff(grid)
-  field <- grid[-1]-u/2
-  sgrid <- grid
-  event_new <- 0
-  time <- 0
-  where <- 1
-  E.factor <- 0
-  for (j in 1:lengthout)
-  {
-    count <- sum(s>sgrid[j] & s<=sgrid[j+1]) 
-    if (count>1)
-    {
-      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
-      u <- diff(c(sgrid[j],points))
-      event_new <- c(event_new,event[(where):(where+count-1)])
-      time <- c(time,rep(field[j],count))
-      E.factor <- c(E.factor,coal_factor[where:(where+count-1)]*u)
-      where <- where+count
-      if (max(points)<sgrid[j+1])
-      {
-        event_new <- c(event_new,0)
-        time <- c(time,field[j])
-        E.factor <- c(E.factor,coal_factor[where]*(sgrid[j+1]-max(points)))
-      }
-    }
-    if (count==1)
-    {
-      event_new <- c(event_new,event[where])
-      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
-      if (points==sgrid[j+1])
-      {
-        E.factor <- c(E.factor,coal_factor[where]*(sgrid[j+1]-sgrid[j]))
-        time <- c(time,field[j])
-        where <- where+1
-      }
-      else
-      {
-        event_new <- c(event_new,0)
-        E.factor <- c(E.factor,coal_factor[where]*(points-sgrid[j]))
-        E.factor <- c(E.factor,coal_factor[where+1]*(sgrid[j+1]-points))
-        time <- c(time,rep(field[j],2))
-        where <- where+1
-      }
-    }
-    if (count==0)
-    {
-      event_new <- c(event_new,0)
-      E.factor <- c(E.factor,coal_factor[where]*(sgrid[j+1]-sgrid[j]))
-      time <- c(time,field[j])
-    }
-  }
-  return(list(time=time, event_new=event_new, E_factor=E.factor, grid=grid, field=field))
-}
-
-secondloop <- function(time2, event_new2, E_factor2, lengthout, field)
-{
-  for (j in 1:lengthout)
-  {
-    count <- sum(time2==field[j])
-    if (count>1)
-    {
-      indic <- seq(1:length(event_new2))[time2==field[j]]
-      if (sum(event_new2[indic])==0)
-      {
-        event_new2 <- event_new2[-indic[-1]]
-        time2 <- time2[-indic[-1]]
-        temp <- sum(E_factor2[indic])
-        E_factor2[indic[1]] <- temp
-        E_factor2 <- E_factor2[-indic[-1]]
-      }
-      #else {}
-    }
-  }
-  
-  return(list(time2=time2, event_new2=event_new2, E_factor2=E_factor2))
-}
-
-calculate_moller_hetero <- function(coal.factor, s, event, lengthout,
-                                    prec_alpha = 0.01, prec_beta = 0.01,
-                                    log_zero = -100, alpha = NULL, beta = NULL)
-{
-  if (prec_alpha == 0.01 & prec_beta==0.01 & !is.null(alpha) & !is.null(beta))
-  {
-    prec_alpha <- alpha
-    prec_beta  <- beta
-  }
-  
-  fl <- firstloop(coal_factor = coal.factor, s = s, event = event,
-                  lengthout = lengthout)
-  
-  sl <- secondloop(time2 = fl$time, event_new2 = fl$event_new,
-                   E_factor2 = fl$E_factor, lengthout = lengthout,
-                   field = fl$field)
-  
-  E_log = log(sl$E_factor2)
-  E_log[sl$E_factor2 == 0] = log_zero
-  
-  data <- list(y = sl$event_new2[-1], time = sl$time2[-1], E = E_log[-1])
-  formula <- y ~ -1 + f(time, model="rw1", hyper = list(prec = list(param = c(prec_alpha, prec_beta))), constr = FALSE)
-  mod4 <- INLA::inla(formula, family = "poisson", data = data, offset = E, control.predictor = list(compute=TRUE))
-  
-  return(list(result=mod4,grid=fl$grid,data=data,E=E_log, x = fl$field))
-}
-
 coal_stats <- function(grid, samp_times, coal_times, n_sampled = NULL,
                        log_zero = -100)
 {
@@ -287,6 +180,48 @@ infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100
   
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
 }
+
+#' @export
+infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100,
+                             prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE)
+{
+  if (min(coal_times) < min(samp_times))
+    stop("First coalescent time occurs before first sampling time")
+  
+  if (max(samp_times) > max(coal_times))
+    stop("Last sampling time occurs after last coalescent time")
+  
+  grid <- seq(min(samp_times), max(coal_times), length.out = lengthout+1)
+  
+  if (is.null(n_sampled))
+    n_sampled <- rep(1, length(samp_times))
+  
+  coal_data <- coal_stats(grid = grid, samp_times = samp_times, n_sampled = n_sampled,
+                          coal_times = coal_times)
+  
+  if (simplify)
+    coal_data <- with(coal_data,
+                      condense_stats(time = time, event = event, E=E))
+  
+  data <- with(coal_data, data.frame(y = event, time = time, E_log = E_log))
+  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE) + offset(data$E_log)
+  
+  Imat <- diag(lengthout)
+  A <- head(Imat, -1) - tail(Imat, -1)
+  A[A == 0] <- NA
+  
+  #lcmat <- rbind(c(1, -1, rep(NA, lengthout - 2)), c(NA, 1, -1, rep(NA, lengthout - 3)))
+  lc_many <- INLA::inla.make.lincombs(time = A)
+  #names(lc1) = "lc1"
+  
+  mod <- INLA::inla(formula, family = "poisson", data = data, lincomb = lc_many,
+                    control.predictor = list(compute=TRUE),
+                    control.inla = list(lincomb.derived.only=FALSE))
+  
+  return(list(result = mod, data = data, grid = grid, x = coal_data$time))
+}
+
 
 samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
 {
@@ -502,6 +437,113 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=10
                     control.predictor = list(compute=TRUE))
   
   return(list(result = mod, data = joint_data, grid = grid, x = coal_data$time))
+}
+
+firstloop <- function(coal_factor, s, event, lengthout)
+{
+  grid <- seq(min(s),max(s),length.out=lengthout+1)
+  u <- diff(grid)
+  field <- grid[-1]-u/2
+  sgrid <- grid
+  event_new <- 0
+  time <- 0
+  where <- 1
+  E.factor <- 0
+  for (j in 1:lengthout)
+  {
+    count <- sum(s>sgrid[j] & s<=sgrid[j+1]) 
+    if (count>1)
+    {
+      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
+      u <- diff(c(sgrid[j],points))
+      event_new <- c(event_new,event[(where):(where+count-1)])
+      time <- c(time,rep(field[j],count))
+      E.factor <- c(E.factor,coal_factor[where:(where+count-1)]*u)
+      where <- where+count
+      if (max(points)<sgrid[j+1])
+      {
+        event_new <- c(event_new,0)
+        time <- c(time,field[j])
+        E.factor <- c(E.factor,coal_factor[where]*(sgrid[j+1]-max(points)))
+      }
+    }
+    if (count==1)
+    {
+      event_new <- c(event_new,event[where])
+      points <- s[s>sgrid[j] & s<=sgrid[j+1]]
+      if (points==sgrid[j+1])
+      {
+        E.factor <- c(E.factor,coal_factor[where]*(sgrid[j+1]-sgrid[j]))
+        time <- c(time,field[j])
+        where <- where+1
+      }
+      else
+      {
+        event_new <- c(event_new,0)
+        E.factor <- c(E.factor,coal_factor[where]*(points-sgrid[j]))
+        E.factor <- c(E.factor,coal_factor[where+1]*(sgrid[j+1]-points))
+        time <- c(time,rep(field[j],2))
+        where <- where+1
+      }
+    }
+    if (count==0)
+    {
+      event_new <- c(event_new,0)
+      E.factor <- c(E.factor,coal_factor[where]*(sgrid[j+1]-sgrid[j]))
+      time <- c(time,field[j])
+    }
+  }
+  return(list(time=time, event_new=event_new, E_factor=E.factor, grid=grid, field=field))
+}
+
+secondloop <- function(time2, event_new2, E_factor2, lengthout, field)
+{
+  for (j in 1:lengthout)
+  {
+    count <- sum(time2==field[j])
+    if (count>1)
+    {
+      indic <- seq(1:length(event_new2))[time2==field[j]]
+      if (sum(event_new2[indic])==0)
+      {
+        event_new2 <- event_new2[-indic[-1]]
+        time2 <- time2[-indic[-1]]
+        temp <- sum(E_factor2[indic])
+        E_factor2[indic[1]] <- temp
+        E_factor2 <- E_factor2[-indic[-1]]
+      }
+      #else {}
+    }
+  }
+  
+  return(list(time2=time2, event_new2=event_new2, E_factor2=E_factor2))
+}
+
+calculate_moller_hetero <- function(coal.factor, s, event, lengthout,
+                                    prec_alpha = 0.01, prec_beta = 0.01,
+                                    log_zero = -100, alpha = NULL, beta = NULL)
+{
+  if (prec_alpha == 0.01 & prec_beta==0.01 & !is.null(alpha) & !is.null(beta))
+  {
+    prec_alpha <- alpha
+    prec_beta  <- beta
+  }
+  
+  fl <- firstloop(coal_factor = coal.factor, s = s, event = event,
+                  lengthout = lengthout)
+  
+  sl <- secondloop(time2 = fl$time, event_new2 = fl$event_new,
+                   E_factor2 = fl$E_factor, lengthout = lengthout,
+                   field = fl$field)
+  
+  E_log = log(sl$E_factor2)
+  E_log[sl$E_factor2 == 0] = log_zero
+  
+  data <- list(y = sl$event_new2[-1], time = sl$time2[-1], E = E_log[-1])
+  formula <- y ~ -1 + f(time, model="rw1", hyper = list(prec = list(param = c(prec_alpha, prec_beta))), constr = FALSE)
+  mod4 <- INLA::inla(formula, family = "poisson", data = data, offset = E, control.predictor = list(compute=TRUE))
+  
+  return(list(result=mod4,grid=fl$grid,data=data,E=E_log, x = fl$field))
 }
 
 calculate_moller_hetero_pref <- function(coal.factor,s,event,lengthout,prec_alpha=0.01,prec_beta=0.01,beta1_prec = 0.001,log_zero=-100,alpha=NULL,beta=NULL)

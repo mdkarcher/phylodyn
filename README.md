@@ -19,9 +19,15 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
 1. **SimpleBNPR**: A short example showing how to use BNPR and BNPR-PS on simulated data.
 
-2. **SimplePhyloinfer**: A short example comparing BNPR with a split HMC MCMC sampler approach.
+2. **NewYorkInfluenza**: A case study analyzing influenza data from New York.
 
-3. **LongPhyloinfer**: A longer example comparing BNPR with multiple MCMC samplers, including split HMC as in SimplePhyloinfer.
+3. **RegionalInfluenza**: A case study analyzing influenza data from nine geographic regions.
+
+4. **RegionalSeasonality**: A case study analyzing influenza seasonality from nine geographic regions.
+
+5. **SimplePhyloinfer**: A short example comparing BNPR with a split HMC MCMC sampler approach.
+
+6. **LongPhyloinfer**: A longer example comparing BNPR with multiple MCMC samplers, including split HMC as in SimplePhyloinfer.
 
 ## References
 
@@ -33,6 +39,14 @@ In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in 
 Improving Bayesian population dynamics inference: a coalescent-based model for multiple loci.
 *Molecular biology and evolution*, 30(3):713–724, 2013.
 
-3. Lan, S., Palacios, J. A., Karcher, M., Minin, V. N., & Shahbaba, B. (2014).
+3. A. Rambaut, O. G. Pybus, M. I. Nelson, C. Viboud, J. K. Taubenberger, and E. C. Holmes.
+The genomic and epidemiological dynamics of human influenza A virus.
+*Nature*, 453 (7195):615–619, 2008.
+
+4. M. D. Karcher, J. A. Palacios, T. Bedford, M. A. Suchard, and V. N. Minin.
+Quantifying and mitigating the effect of preferential sampling on phylodynamic inference.
+*arXiv preprint arXiv*:1510.00775, 2015.
+
+5. S. Lan, J. A. Palacios, M. Karcher, V. N. Minin, and B. Shahbaba
 An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
-*arXiv preprint arXiv*:1412.0158.
+*arXiv preprint arXiv*:1412.0158, 2014.
