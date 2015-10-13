@@ -13,7 +13,7 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
     a. `install_github("mdkarcher/phylodyn/")`, or
 
-    b. `install_github("mdkarcher/phylodyn/", build_vignettes = TRUE)` if you want some illustrative vignettes
+    b. `install_github("mdkarcher/phylodyn/", build_vignettes = TRUE)` if you want some illustrative vignettes (note: using `build_vignettes = TRUE` will make the install take longer).
 
 ## Vignettes
 
