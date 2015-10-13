@@ -11,9 +11,9 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
 3. Install `phylodyn` using
 
-    a. `install_github("phylodyn", username="mdkarcher")`, or
+    a. `install_github("mdkarcher/phylodyn/")`, or
 
-    b. `install_github("phylodyn", username="mdkarcher", build_vignettes = TRUE)` if you want some illustrative vignettes (note: using `build_vignettes = TRUE` will make the install take longer).
+    b. `install_github("mdkarcher/phylodyn/", build_vignettes = TRUE)` if you want some illustrative vignettes (note: using `build_vignettes = TRUE` will make the install take longer).
 
 ## Vignettes
 
