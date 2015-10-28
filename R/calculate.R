@@ -72,11 +72,11 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
                            n_sampled = n_sampled))
   }
   
-  result = infer_coal_samp(samp_times = phy$samp_times, coal_times = phy$coal_times,
-                           n_sampled = phy$n_sampled, lengthout = lengthout,
-                           prec_alpha = prec_alpha, prec_beta = prec_beta,
-                           beta1_prec = beta1_prec, use_samp = pref,
-                           simplify = simplify, derivative = derivative)
+  result <- infer_coal_samp(samp_times = phy$samp_times, coal_times = phy$coal_times,
+                            n_sampled = phy$n_sampled, lengthout = lengthout,
+                            prec_alpha = prec_alpha, prec_beta = prec_beta,
+                            beta1_prec = beta1_prec, use_samp = pref,
+                            simplify = simplify, derivative = derivative)
   
   result$samp_times <- phy$samp_times
   result$n_sampled  <- phy$n_sampled
@@ -200,6 +200,8 @@ infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100
   {
     Imat <- diag(lengthout)
     A <- head(Imat, -1) - tail(Imat, -1)
+    field <- grid[-1] - diff(grid)/2
+    A <- diag(1/diff(field)) %*% A
     A[A == 0] <- NA
     
     lc_many <- INLA::inla.make.lincombs(time = A)
@@ -330,6 +332,8 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=10
   {
     Imat <- diag(lengthout)
     A <- head(Imat, -1) - tail(Imat, -1)
+    field <- grid[-1] - diff(grid)/2
+    A <- diag(1/diff(field)) %*% A
     A[A == 0] <- NA
     
     lc_many <- INLA::inla.make.lincombs(time = A)
