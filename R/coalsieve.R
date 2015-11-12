@@ -40,7 +40,7 @@ coalsim <- function(samp_times, n_sampled, traj, lower_bound, ...)
       active_lineages = active_lineages + n_sampled[curr]
       time = samp_times[curr]
     }
-    else if (runif(1) <= lower_bound/traj(time))
+    else if (runif(1) <= lower_bound/traj(time, ...))
     {
       coal_times = c(coal_times, time)
       lineages = c(lineages, active_lineages)
