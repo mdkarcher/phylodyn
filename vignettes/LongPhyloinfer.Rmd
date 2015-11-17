@@ -13,7 +13,7 @@ This vignette shows a simple and typical use of `phylodyn` and its MCMC tools. I
 
 We start by loading the `phylodyn` package.
 
-```{r message=FALSE, echo=-1}
+```{r message=FALSE}
 set.seed(8675309)
 library(phylodyn)
 ```
