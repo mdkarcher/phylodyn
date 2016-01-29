@@ -1,7 +1,7 @@
 #### Coalescent likelihood functions ####
 # Compute log likelihood of coalescent model, energy function in HMC algorithms, and metric tensor needed in aMALA.
 
-coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
+coal_lik_init_old = function(samp_times, n_sampled, coal_times, grid)
 {
   ns = length(samp_times)
   nc = length(coal_times)
@@ -76,7 +76,7 @@ coal_loglik = function(init, f, grad=FALSE)
   }
 }
 
-coal_samp_lik_init = function(samp_times, n_sampled, coal_times, grid)
+coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
 {
   ns = length(samp_times)
   nc = length(coal_times)
@@ -166,13 +166,13 @@ U = function(theta, init, invC, alpha, beta, grad=FALSE)
   {
     loglik = coal_loglik(init, f)
     logpri = ((D-1)/2+alpha)*tau - (t(f)%*%invCf/2+beta)*exp(tau)
-    return(-(loglik+logpri))
+    return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
   }
   else
   {
     dloglik = c(coal_loglik(init, f, grad),0)
     dlogpri = c(-invCf*exp(tau),((D-1)/2+alpha)-(t(f)%*%invCf/2+beta)*exp(tau))
-    return(-(dloglik+dlogpri))
+    return(list(dloglik = -dloglik, dlogpri = -dlogpri, dlogpos = -(dloglik+dlogpri)))
   }
 }
 
@@ -186,13 +186,13 @@ U_kappa = function(theta, init, invC, alpha, beta, grad=FALSE)
   {
     loglik = coal_loglik(init, f)
     logpri = ((D-1)/2+alpha-1)*log(kappa) - (t(f)%*%invCf/2+beta)*kappa
-    return(-(loglik+logpri))
+    return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
   }
   else
   {
     dloglik = c(coal_loglik(init, f, grad),0)
     dlogpri = c(-invCf*kappa,((D-1)/2+alpha-1)/kappa-(t(f)%*%invCf/2+beta))
-    return(-(dloglik+dlogpri))
+    return(list(dloglik = -dloglik, dlogpri = -dlogpri, dlogpos = -(dloglik+dlogpri)))
   }
 }
 
@@ -206,7 +206,7 @@ U_split = function(theta, init, invC, alpha, beta, grad=FALSE)
   {
     loglik = coal_loglik(init, f)
     logpri = ((D-1)/2+alpha)*tau - (t(f)%*%invCf/2+beta)*exp(tau)
-    return(-(loglik+logpri))
+    return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
   }
   else
   {
