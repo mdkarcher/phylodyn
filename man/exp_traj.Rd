@@ -4,13 +4,15 @@
 \alias{exp_traj}
 \title{Exponential trajectory}
 \usage{
-exp_traj(t, scale = 1000)
+exp_traj(t, scale = 1000, rate = 1)
 }
 \arguments{
 \item{t}{numeric vector of times at which to evaluate the trajectory
 function.}
 
-\item{scale}{value to return at \code{t=0}}
+\item{scale}{value to return at \code{t=0}.}
+
+\item{rate}{exponential decay rate.}
 }
 \value{
 A vector containing a value of \code{level} for every element in
