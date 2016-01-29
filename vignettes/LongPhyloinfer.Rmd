@@ -55,7 +55,7 @@ for (i in 1:4)
 We set the number of samples and burn-in parameters. For expediency in this vignette we set them to be small. To produce more meaningful results, increase both parameters. We also use all five implemented samplers.
 
 ```{r}
-nsamp = 200
+nsamp = 500
 nburnin = 100
 alg = c("HMC", "splitHMC", "MALA", "aMALA", "ESS")
 ```
