@@ -31,6 +31,7 @@ exp_coal_loglik <- function(betas, init)
   return(loglik)
 }
 
+#' @export
 ml_exp_coal <- function(samp_times, n_sampled, coal_times, betas = c(0, 0))
 {
   ini <- exp_coal_lik_init(samp_times, n_sampled, coal_times)
