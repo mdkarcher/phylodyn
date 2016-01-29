@@ -164,3 +164,113 @@ coalgen_thinning_iso <- function(sample,traj_inv,upper=25,...)
   }
   return(list(intercoal_times=c(out[1],diff(out)),lineages=seq(n,2,-1), coal_times=out))
 }
+
+#' @export
+coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10)
+{
+  traj_inv <- function(t) 1/traj(t)
+  hazard <- function(t, lins, start, target) .5*lins*(lins-1)*integrate(traj_inv, start, start+t)$value - target
+  
+  coal_times = NULL
+  lineages = NULL
+  
+  curr = 1
+  active_lineages = n_sampled[curr]
+  time = samp_times[curr]
+  
+  while (time <= max(samp_times) || active_lineages > 1)
+  {
+    if (active_lineages == 1)
+    {
+      curr <- curr + 1
+      active_lineages <- active_lineages + n_sampled[curr]
+      time <- samp_times[curr]
+    }
+    
+    #time = time + rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
+    target <- rexp(1)
+    y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
+                 lower=0, upper=val_upper, extendInt = "upX")$root
+    
+    while(curr < length(samp_times) && time + y >= samp_times[curr+1])
+    {
+      target <- -hazard(t = samp_times[curr+1] - time, lins = active_lineages,
+                        start = time, target = target)
+      curr <- curr + 1
+      active_lineages <- active_lineages + n_sampled[curr]
+      time <- samp_times[curr]
+      
+      y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
+                   lower=0, upper=val_upper, extendInt = "upX")$root
+    }
+    
+    time <- time + y
+    coal_times = c(coal_times, time)
+    lineages = c(lineages, active_lineages)
+    active_lineages = active_lineages - 1
+  }
+  
+  return(list(coal_times = coal_times, lineages = lineages,
+              intercoal_times = c(coal_times[1], diff(coal_times)),
+              samp_times = samp_times, n_sampled = n_sampled))
+}
+
+coalgen_transformation_hetero <- function(sample, trajectory,val_upper=10)
+{
+  #'sample = is a matrix with 2 columns. The first column contains the number of samples collected at the time defined in the second column
+  #'trajectory = one over the effective population size function
+  # this works for heterochronous sampling
+  # assumes sample[1,1]>1
+  s=sample[1,2]
+  b <- sample[1,1]
+  n <- sum(sample[,1])-1
+  m <- n
+  nsample <- nrow(sample)
+  sample <- rbind(sample,c(0,10))
+  out <- rep(0,n)
+  branches <- rep(0,n)
+  i <- 1
+  while (i<(nsample+1))
+  {
+    #if (b==1)
+    #{
+    #  break
+    #}
+    if (b<2)
+    {
+      b <- b+sample[i+1,1]
+      s <- sample[i+1,2]
+      i <- i+1
+    }
+    x <- rexp(1)
+    f <- function(bran,u,x,s) .5*bran*(bran-1)*integrate(trajectory, s, s+u)$value - x    
+    y <- uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
+    while ( (s+y)>sample[i+1,2])
+    {
+      #     f <- function(bran,u,x,s) .5*bran*(bran-1)*integrate(trajectory, s, s+u)$value - x    
+      #     y <- uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
+      x <- x-.5*b*(b-1)*integrate(trajectory,s,sample[i+1,2])$value  
+      b <- b+sample[i+1,1]
+      s <- sample[i+1,2]
+      i <- i+1
+      f <- function(bran,u,x,s) .5*bran*(bran-1)*integrate(trajectory, s, s+u)$value - x    
+      y <- uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
+      if (i==nsample)
+      {
+        sample[nsample+1,2] <- 10*(s+y)
+      }
+    } 
+    
+    s <- s+y
+    out[m-n+1] <- s
+    branches[m-n+1] <- b
+    n <- n-1
+    b <- b-1
+    if (i==nsample)
+    {
+      sample[nsample+1,2] <- 10*(s+y)
+    }
+  }
+  
+  return(list(branches=c(out[1],diff(out)),lineages=branches))   
+}
