@@ -82,9 +82,10 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
   result$n_sampled  <- phy$n_sampled
   result$coal_times <- phy$coal_times
   
-  result$effpop    <- exp(-result$result$summary.random$time$`0.5quant`)
-  result$effpop975 <- exp(-result$result$summary.random$time$`0.025quant`)
-  result$effpop025 <- exp(-result$result$summary.random$time$`0.975quant`)
+  result$effpop     <- exp(-result$result$summary.random$time$`0.5quant`)
+  result$effpopmean <- exp(-result$result$summary.random$time$mean)
+  result$effpop975  <- exp(-result$result$summary.random$time$`0.025quant`)
+  result$effpop025  <- exp(-result$result$summary.random$time$`0.975quant`)
   
   result$summary <- with(result$result$summary.random$time,
                          data.frame(time = ID, mean = exp(-mean),
@@ -106,7 +107,16 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
                                          quant0.5   = -`0.5quant`[ind],
                                          quant0.975 = -`0.025quant`[ind]))
   }
-    
+  
+  if (pref)
+  {
+    result$beta0     <- result$result$summary.fixed$`0.5quant`
+    result$beta0summ <- result$result$summary.fixed
+    rownames(result$beta0summ) <- "Beta0"
+    result$beta1     <- result$result$summary.hyperpar[2,]$`0.5quant`
+    result$beta1summ <- result$result$summary.hyperpar[2,]
+    rownames(result$beta1summ) <- "Beta1"
+  }
   
   return(result)
 }
