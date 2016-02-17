@@ -1,0 +1,100 @@
+---
+title: "Regional Seasonality"
+author: "Michael Karcher"
+date: "October 12, 2015"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Regional Seasonality}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This vignette shows a case study of seasonality in influenza data from nine geographic regions, using `phylodyn`.
+We start by loading the `phylodyn` package.
+
+```{r message=FALSE}
+library(phylodyn)
+```
+
+In preparation, we aligned the sequences by region using the software MUSCLE,
+and inferred a maximum clade credibility genealogy for each region using the software BEAST[^1].
+We packaged the genealogies in a list of `phylo` objects `regional_flu`, and we load it now.
+
+[^1]: We infer the genealogy branch lengths in units of years using a strict molecular clock, a constant effective population size prior, and an HKY substitution model with the first two nucleotides of a codon sharing the same estimated transition matrix, while the third nucleotide's transition matrix is estimated separately.
+
+```{r}
+data(regional_flu)
+```
+
+We supply region names, plotting parameters, and other statistics unique to each region.
+
+```{r}
+mains <- list(USACanada = "USA / Canada", Europe = "Europe", NorthChina = "NorthChina",
+              JapanKorea = "Japan / Korea", India = "India", SouthChina = "South China",
+              SouthAmerica = "South America", SoutheastAsia = "Southeast Asia", Oceania = "Oceania")
+
+axlabs <- list(x = seq(1, 0, by=-1/12),
+              labs = c("Sep", "Oct", "Nov", "Dec", "Jan", "Feb", "Mar",
+                       "Apr", "May", "Jun", "Jul", "Aug", "Sep"))
+start <- 8/12
+
+zero_dates <- list(USACanada = 2012.301, Europe = 2011.044, NorthChina = 2011.285,
+                   JapanKorea = 2012.29, India = 2010.814, SouthChina = 2011.282,
+                   SouthAmerica = 2011.518, SoutheastAsia = 2011.995, Oceania = 2010.964)
+years = list(USACanada = 12, Europe = 11, NorthChina = 10,
+             JapanKorea = 12, India = 10, SouthChina = 11,
+             SouthAmerica = 11, SoutheastAsia = 11, Oceania = 10)
+```
+
+We select a region (more than one can be chosen) and use BNPR and BNPR_PS.
+
+```{r}
+regions <- list("USACanada")
+
+results <- list()
+for (region in regions)
+{
+  results[[region]] <- list(bnpr    = BNPR(data = regional_flu[[region]], lengthout = 100),
+                            bnpr_ps = BNPR_PS(data = regional_flu[[region]], lengthout = 100))
+}
+```
+
+We plot with years overlaid to show seasonal patterns.
+
+```{r, fig.width=8.5, fig.height=4.5*length(regions)}
+par(mfrow=c(length(regions), 2), cex=1.0, cex.lab=1.4, cex.main=1.5,
+    oma=c(2,3,0,0)+0.1, mar=c(3,2,2,1), xpd=NA)
+for (region in regions)
+{
+  plot_seasonality(BNPR_out = results[[region]]$bnpr, zero_date = zero_dates[[region]],
+                   start = start, years = years[[region]], ylim = c(0.5, 15), log_y = TRUE,
+                   main=mains[[region]], axlabs = axlabs, xlab="Time", 
+                   col_years = rgb(0.943, 0.893, 0.769), col_mean = rgb(0.829, 0.680, 0.306),
+                   ylab="Effective Population Size", heatmap_labels = TRUE,
+                   heatmap_width = 7, heatmap_labels_side = "left", legend = "BNPR")
+  plot_seasonality(BNPR_out = results[[region]]$bnpr_ps, zero_date = zero_dates[[region]],
+                   start = start, years = years[[region]], ylim = c(0.5, 15), log_y = TRUE,
+                   main=mains[[region]], axlabs = axlabs, xlab="Time",
+                   col_years = rgb(0.777, 0.828, 0.943), col_mean = rgb(0.330, 0.484, 0.828),
+                   ylab="", heatmap_labels = FALSE, heatmap_width = 7,
+                   heatmap_labels_side = "left", legend = "BNPR-PS")
+}
+```
+
+## References
+
+1. R. C. Edgar.
+MUSCLE: Multiple sequence alignment with high accuracy and high through- put.
+*Nucleic Acids Research*, 32:1792–1797, 2004.
+
+2. A. J. Drummond, M. A. Suchard, D. Xie, and A. Rambaut.
+Bayesian phylogenetics with BEAUti and the BEAST 1.7.
+*Molecular Biology and Evolution*, 29:1969–1973, 2012.
+
+3. D. Zinder, T. Bedford, E. B. Baskerville, R. J. Woods, M. Roy, and M. Pascual.
+Seasonality in the migration and establishment of H3N2 influenza lineages with epidemic growth and decline.
+*BMC Evolutionary Biology*, 14(1):272, 2014.
+
+4. M. D. Karcher, J. A. Palacios, T. Bedford, M. A. Suchard, and V. N. Minin.
+Quantifying and mitigating the effect of preferential sampling on phylodynamic inference.
+*arXiv preprint arXiv*:1510.00775, 2015.

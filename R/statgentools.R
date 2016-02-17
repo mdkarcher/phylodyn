@@ -1,3 +1,4 @@
+#' @export
 pref_sample = function(f, c=1, lim=c(0,1), grid.len = 1000, beta=1)
 {
   grid = seq(lim[1], lim[2], length.out=grid.len)

@@ -9,18 +9,20 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-This vignette shows a more complex and complete use of `phylodyn` and its MCMC tools. We start by loading the `phylodyn` package.
+This vignette shows a simple and typical use of `phylodyn` and its MCMC tools. If we increase the number of MCMC samples, we reproduce many of the results from Lan, et al. 2014.
 
-```{r message=FALSE, echo=-1}
+We start by loading the `phylodyn` package.
+
+```{r message=FALSE}
 set.seed(8675309)
 library(phylodyn)
 ```
 
-We need to set the true effective population size trajectory functions, as well as their reciprocals.
+We need to set the true effective population size trajectory functions, as well as the lower bounds of the trajectories on the intervals we expect to use.
 
 ```{r}
 traj = list(logistic_traj,exp_traj,boombust_traj,bottleneck_traj)
-traj_inv = list(logistic_traj_inv,exp_traj_inv,boombust_traj_inv,bottleneck_traj_inv)
+lower_bounds = c(10, 0.01, 0.1, 0.1)
 ```
 
 We simulate heterochronous sampling. We sample 10 individuals at t=0, and 40 more distributed uniformly between t=0 and t=8.
@@ -28,7 +30,6 @@ We simulate heterochronous sampling. We sample 10 individuals at t=0, and 40 mor
 ```{r}
 samp_times = c(0, sort(runif(40, 0, 8)))
 n_sampled = c(10, rep(1, 40))
-sample = cbind(n_sampled, samp_times)
 ```
 
 We simulate genealogies based on our sample using the coalescent and the four trajectories.
@@ -37,7 +38,7 @@ We simulate genealogies based on our sample using the coalescent and the four tr
 gene = list()
 for (i in 1:4)
 {
-  gene[[i]] = coalgen_thinning_hetero(sample=sample, trajectory=traj_inv[[i]])
+  gene[[i]] = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj[[i]], lower_bound = lower_bounds[i])
 }
 ```
 
@@ -47,8 +48,7 @@ We first use BNPR to calculate approximate marginals. We use a helper function t
 res_BNPR = list()
 for (i in 1:4)
 {
-  args = gen_BNPR_args(coal_times=gene[[i]]$coal_times, s_times=samp_times, n_sampled=n_sampled)
-  res_BNPR[[i]] = BNPR(args$coal_factor, args$s, args$event, 100, 0.01, 0.01)
+  res_BNPR[[i]] = BNPR(data = gene[[i]], lengthout = 100, prec_alpha = 0.01, prec_beta = 0.01)
 }
 ```
 
@@ -60,7 +60,7 @@ nburnin = 100
 alg = c("HMC", "splitHMC", "MALA", "aMALA", "ESS")
 ```
 
-We package the data in a form we can pass to `mcmc_sampling`. In future, we will add the ability to pass a genealogy/phylogeny object directly. We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
+We package the data in a form we can pass to `mcmc_sampling`. We invoke the `mcmc_sampling` function to run MCMC on the data.
 
 ```{r results='hide'}
 res_MCMC = list()
@@ -95,3 +95,13 @@ for (i in 1:4)
   }
 }
 ```
+
+## References
+
+1. J. A. Palacios and V. N. Minin.
+Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
+In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
+
+2. Lan, S., Palacios, J. A., Karcher, M., Minin, V. N., & Shahbaba, B. (2014).
+An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
+*arXiv preprint arXiv*:1412.0158.

@@ -1,0 +1,71 @@
+---
+title: "Simple BNPR Vignette"
+author: "Michael Karcher"
+date: "September 4, 2015"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simple BNPR Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This vignette shows a simple and typical use of `phylodyn` and its main functions BNPR and BNPR_PS.
+
+We start by loading the `phylodyn` package.
+
+```{r message=FALSE}
+set.seed(8675309)
+library(phylodyn)
+```
+
+We need to set the true effective population size trajectory function. For this example, we choose a seasonal growth/collapse trajectory (already implemented in `phylodyn`).
+
+```{r}
+traj = logistic_traj
+```
+
+We set the end of the sampling interval and the number of samples we should expect.
+
+```{r}
+samp_end = 48
+nsamps   = 500
+```
+
+We calculate the proportionality constant necessary to produce the correct expected number of samples. We then produce a set of samples by drawing from an inhomogeneous Poisson process with intensity proportional to the effective population size trajectory.
+
+```{r}
+Cprop      = nsamps/integrate(traj_beta, 0, samp_end, traj=traj, beta=1)$value
+samp_times = pref_sample(traj, c=Cprop, lim=c(0,samp_end), beta=1)
+```
+
+We simulate a genealogy based on our sample using the coalescent.
+
+```{r}
+gene = coalsim(samp_times = samp_times, n_sampled = rep(1, length(samp_times)),
+               traj = traj, lower_bound = 10)
+```
+
+We use BNPR and BNPR_PS to calculate approximate marginals (without and with a sampling model).
+
+```{r}
+res_BNPR    = BNPR(data = gene, lengthout = 100)
+res_BNPR_PS = BNPR_PS(data = gene, lengthout = 100)
+```
+
+We plot the results.
+
+```{r, fig.width=8.5, fig.height=5}
+par(mfrow=c(1,2))
+plot_BNPR(res_BNPR, traj = traj, main="BNPR", ylim = c(1, 700))
+plot_BNPR(res_BNPR_PS, traj = traj, main="BNPR-PS", ylim = c(1, 700))
+```
+
+## References
+
+1. J. A. Palacios and V. N. Minin.
+Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
+In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
+
+2. M. S. Gill, P. Lemey, N. R. Faria, A. Rambaut, B. Shapiro, and M. A. Suchard.
+Improving Bayesian population dynamics inference: a coalescent-based model for multiple loci.
+*Molecular biology and evolution*, 30(3):713–724, 2013.

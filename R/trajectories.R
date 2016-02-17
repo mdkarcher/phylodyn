@@ -34,22 +34,38 @@ unif_traj = function(t, level=100)
   return(rep(level,n))
 }
 
+#' @export
 unif_traj_inv = function(t, level=100)
 {
   n = length(t)
   return(rep(1/level,n))
 }
 
-exp_traj = function(t, scale=1000)
+#' Exponential trajectory
+#'
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#' @param scale value to return at \code{t=0}.
+#' @param rate exponential decay rate.
+#'
+#' @return A vector containing a value of \code{level} for every element in
+#'   \code{t}.
+#' @export
+#'
+#' @examples
+#' unif_traj(0:10, scale = 100)
+exp_traj = function(t, scale=1000, rate=1)
 {
-  return(scale * exp(-t))
+  return(scale * exp(-t*rate))
 }
 
+#' @export
 exp_traj_inv = function(t, scale=1000)
 {
   return(1/(scale * exp(-t)))
 }
 
+#' @export
 boombust_traj = function(t, bust=1, scale=1000)
 {
   #bust = 1
@@ -59,11 +75,13 @@ boombust_traj = function(t, bust=1, scale=1000)
   return(result)
 }
 
+#' @export
 boombust_traj_inv = function(t, bust=1, scale=1000)
 {
   return(1/boombust_traj(t, bust, scale))
 }
 
+#' @export
 cyclic_traj = function(t)
 {
   result = rep(0, length(t))
@@ -72,11 +90,13 @@ cyclic_traj = function(t)
   return(result)
 }
 
+#' @export
 cyclic_traj_inv = function(t)
 {
   return(1/cyclic_traj(t))
 }
 
+#' @export
 steep_cyc_traj = function(t)
 {
   result = rep(0, length(t))
@@ -85,11 +105,13 @@ steep_cyc_traj = function(t)
   return(result)
 }
 
+#' @export
 steep_cyc_traj_inv = function(t)
 {
   return(1/steep_cyc_traj(t))
 }
 
+#' @export
 sloped_traj = function(t)
 {
   result = rep(0, length(t))
@@ -98,11 +120,13 @@ sloped_traj = function(t)
   return(result)
 }
 
+#' @export
 sloped_traj_inv = function(t)
 {
   return(1/sloped_traj(t))
 }
 
+#' @export
 mesa_traj = function(t, a=2, b=3)
 {
   result = rep(0, length(t))
@@ -112,11 +136,27 @@ mesa_traj = function(t, a=2, b=3)
   return(result)
 }
 
+#' @export
 mesa_traj_inv = function(t, a=2, b=3)
 {
   return(1/mesa_traj(t, a, b))
 }
 
+#' Seasonal logistic trajectory
+#'
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#' @param offset numeric. By default \code{t=0} is a local maximum. Offset is
+#'   added to \code{t} to allow \code{t=0} to represent a different point in the
+#'   cycle.
+#' @param a numeric slopedness parameter.
+#'
+#' @return A vector containing a value of \code{level} for every element in
+#'   \code{t}.
+#' @export
+#'
+#' @examples
+#' unif_traj(0:12)
 logistic_traj = function(t, offset=0, a=2)
 {
   t = t + offset
@@ -126,11 +166,13 @@ logistic_traj = function(t, offset=0, a=2)
   return(result)
 }
 
+#' @export
 logistic_traj_inv = function(t, offset=0, a=2)
 {
   return(1/logistic_traj(t, offset, a))
 }
 
+#' @export
 bottleneck_traj <- function(t)
 {
   result = rep(0,length(t))
@@ -140,6 +182,7 @@ bottleneck_traj <- function(t)
   return(result)
 }
 
+#' @export
 bottleneck_traj_inv <- function(t)
 {
   return(1/bottleneck_traj(t))

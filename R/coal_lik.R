@@ -47,7 +47,7 @@ coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
   rep_idx = cumsum(gridrep)
   rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
   
-  return(list(t=t, l=l, C=C, D=D, y=y, gridrep=gridrep, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
+  return(list(t=t, l=l, C=C, D=D, y=y, gridrep=gridrep, ns=sum(n_sampled), nc=nc, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
 }
 
 coal_loglik = function(init, f, grad=FALSE)
@@ -74,6 +74,86 @@ coal_loglik = function(init, f, grad=FALSE)
     
     return(dll)
   }
+}
+
+coal_samp_lik_init = function(samp_times, n_sampled, coal_times, grid)
+{
+  ns = length(samp_times)
+  nc = length(coal_times)
+  ng = length(grid)-1
+  
+  if (length(samp_times) != length(n_sampled))
+    stop("samp_times vector of differing length than n_sampled vector.")
+  
+  if (length(coal_times) != sum(n_sampled) - 1)
+    stop("Incorrect length of coal_times: should be sum(n_sampled) - 1.")
+  
+  if (max(samp_times, coal_times) > max(grid))
+    stop("Grid does not envelop all sampling and/or coalescent times.")
+  
+  t = sort(unique(c(samp_times, coal_times, grid)))
+  l = rep(0, length(t))
+  
+  for (i in 1:ns)
+    l[t >= samp_times[i]] = l[t >= samp_times[i]] + n_sampled[i]
+  
+  for (i in 1:nc)
+    l[t >= coal_times[i]] = l[t >= coal_times[i]] - 1
+  
+  #print(l)
+  
+  if (sum((l < 1) & (t >= min(samp_times))) > 0)
+    stop("Number of active lineages falls below 1 after the first sampling point.")
+  
+  mask = l > 0
+  t = t[mask]
+  l = head(l[mask], -1)
+  
+  gridrep = rep(0, ng)
+  for (i in 1:ng)
+    gridrep[i] = sum(t > grid[i] & t <= grid[i+1])
+  
+  C = 0.5 * l * (l-1)
+  D = diff(t)
+  
+  y = rep(0, length(D))
+  y[t[-1] %in% coal_times] = 1
+  
+  buckets = cut(x = samp_times, breaks = t,
+                include.lowest = TRUE)
+  tab <- aggregate(n_sampled ~ buckets, FUN = sum, labels = FALSE)
+  count <- rep(0, length(D))
+  count[as.numeric(tab$buckets)] <- tab$n_sampled
+  count[head(t, -1) >= max(samp_times)] <- NA
+  
+  rep_idx = cumsum(gridrep)
+  rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
+  
+  return(list(t=t, l=l, C=C, D=D, y=y, count=count, gridrep=gridrep, ns=sum(n_sampled), nc=nc, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
+}
+
+coal_samp_loglik = function(init, f, beta0, beta1)
+{
+  if (init$ng != length(f))
+    stop(paste("Incorrect length for f; should be", init$ng))
+  
+  f = rep(f, init$gridrep)
+  
+  llnocoal = init$D * init$C * exp(-f)
+  
+  lls = - init$y * f - llnocoal
+  #print(lls)
+  
+  #print(init$count)
+  llsampevents = beta1 * init$count * f
+  #print(llsampevents[!is.na(init$count)])
+  llsampnoevents = init$D * beta0 * exp(f)^beta1
+  #print(llsampnoevents[!is.na(init$count)])
+  llsamp = init$ns * log(beta0) + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  
+  llcoal = sum(lls[!is.nan(lls)])
+  
+  return(llcoal + llsamp)
 }
 
 U = function(theta, init, invC, alpha, beta, grad=FALSE)

@@ -4,28 +4,29 @@
 \alias{coalsim}
 \title{Simulate from inhomogeneous, heterochronous coalescent.}
 \usage{
-coalsim(s_times, n_sampled, traj, upper = 25, ...)
+coalsim(samp_times, n_sampled, traj, lower_bound, ...)
 }
 \arguments{
-\item{s_times}{numeric vector of sampling times.}
+\item{samp_times}{numeric vector of sampling times.}
 
 \item{n_sampled}{numeric vector of samples taken per sampling time.}
 
 \item{traj}{function that returns effective population size at time t.}
 
-\item{upper}{numeric upper limit on \code{traj} function on its support.}
-
 \item{...}{additional arguments to be passed to \code{traj} function.}
+
+\item{upper}{numeric upper limit on \code{traj} function on its support.}
 }
 \value{
 A list containing vectors of coalescent times \code{coal_times},
   intercoalescent times \code{intercoal_times}, and number of active lineages
-  \code{lineages}.
+  \code{lineages}, as well as passing along \code{samp_times} and
+  \code{n_sampled}.
 }
 \description{
 Simulate from inhomogeneous, heterochronous coalescent.
 }
 \examples{
-coalsim(0:2, 3:1, unif_traj, upper=10, level=10)
+coalsim(0:2, 3:1, unif_traj, lower_bound=10, level=10)
 }
 

@@ -6,21 +6,25 @@ test_that("unif_traj produces expected output", {
 })
 
 test_that("coalsim produces larger coalescent times when effective population is lower", {
-  gen1 <- coalsim(s_times = 0, n_sampled = 10, traj = unif_traj, upper = 1, level = 1);
-  gen2 <- coalsim(s_times = 0, n_sampled = 10, traj = unif_traj, upper = 100, level = 100);
+  gen1 <- coalsim(samp_times = 0, n_sampled = 10, traj = unif_traj, lower_bound = 1, level = 1);
+  gen2 <- coalsim(samp_times = 0, n_sampled = 10, traj = unif_traj, lower_bound = 100, level = 100);
   expect_true(gen1$coal_times[9] > gen2$coal_times[9])
 })
 
-test_that("gen_INLA_args functions agree on isochronous data", {
-  data <- coalsim(s_times = 0, n_sampled = 10, traj = unif_traj, upper = 1, level = 1)
-  args_old <- gen_INLA_args_old(coal_times = data$coal_times, s_times = data$s_times, n_sampled = data$n_sampled)
-  args_new <- gen_INLA_args(s_times = data$s_times, n_sampled = data$n_sampled, coal_times = data$coal_times)
-  expect_identical(args_old, args_new)
-})
-
-test_that("gen_INLA_args functions agree on serial data", {
-  data <- coalsim(s_times = 0:9, n_sampled = rep(1, 10), traj = unif_traj, upper = 1, level = 1)
-  args_old <- gen_INLA_args_old(coal_times = data$coal_times, s_times = data$s_times, n_sampled = data$n_sampled)
-  args_new <- gen_INLA_args(s_times = data$s_times, n_sampled = data$n_sampled, coal_times = data$coal_times)
-  expect_identical(args_old, args_new)
+test_that("BNPR produces correct INLA arguments", {
+  samp_times = 0
+  n_sampled  = 4
+  coal_times = c(0.25, 0.75, 1.0)
+  grid = c(0.0, 0.5, 1.0)
+  answer = data.frame(rbind(c(0.25, 1, 2.25, log(2.25)), c(0.75, 2, 1, log(1))))
+  names(answer) = c("time", "event", "E", "E_log")
+  
+  data1 = coal_stats(grid = grid, samp_times = samp_times, coal_times = coal_times, n_sampled = n_sampled)
+  data1 = with(data1, condense_stats(time = time, event = event, E = E))
+  expect_equal(data1, answer)
+  
+  data2 = BNPR(data = list(samp_times = samp_times, n_sampled = n_sampled, coal_times= coal_times), lengthout = 2)$data
+  expect_equal(data2$y, answer$event)
+  expect_equal(data2$time, answer$time)
+  expect_equal(data2$E_log, answer$E_log)
 })
