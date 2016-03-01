@@ -108,11 +108,9 @@ generate_newick_old<-function(args,sample)
         tb<-tb+1
         temp_times<-c(temp_times,s)        
       }
-      ##TODO: When adding more samples.
-    }  
+    }
   }
   out.tree<-ape::read.tree(text=paste(temp_labels,";",sep=""))
-  
   return(list(newick=out.tree,labels=labels))
 }
 
