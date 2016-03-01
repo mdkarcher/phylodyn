@@ -147,9 +147,9 @@ coal_samp_loglik = function(init, f, beta0, beta1)
   #print(init$count)
   llsampevents = beta1 * init$count * f
   #print(llsampevents[!is.na(init$count)])
-  llsampnoevents = init$D * beta0 * exp(f)^beta1
+  llsampnoevents = init$D * exp(beta0) * exp(f)^beta1
   #print(llsampnoevents[!is.na(init$count)])
-  llsamp = init$ns * log(beta0) + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
   
   llcoal = sum(lls[!is.nan(lls)])
   
