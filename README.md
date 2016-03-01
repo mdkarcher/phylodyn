@@ -32,8 +32,18 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 ## Datasets
 
 1. **New York influenza** BEAST XML for inferring genealogy using sequence data from [4].
+    * NewYork.xml
 
 2. **Regional influenza** BEAST XML for inferring genealogy using sequence data from [5].
+    * Europe.xml
+    * India.xml
+    * JapanKorea.xml
+    * NorthChina.xml
+    * Oceania.xml
+    * SouthAmerica.xml
+    * SouthChina.xml
+    * SoutheastAsia.xml
+    * USACanada.xml
 
 ## References
 
