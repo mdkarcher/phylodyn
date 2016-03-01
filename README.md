@@ -19,15 +19,21 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
 1. **SimpleBNPR**: A short example showing how to use BNPR and BNPR-PS on simulated data, illustraring methodology in [1] and [3].
 
-2. **NewYorkInfluenza**: A case study analyzing influenza data from New York, reproducing analsyis in [3].
+2. **NewYorkInfluenza**: A case study analyzing influenza data from New York, reproducing analysis in [3] on data from [4].
 
-3. **RegionalInfluenza**: A case study analyzing influenza data from nine geographic regions, reproducing analsyis in [3].
+3. **RegionalInfluenza**: A case study analyzing influenza data from nine geographic regions, reproducing analsyis in [3] on data from [5].
 
-4. **RegionalSeasonality**: A case study analyzing influenza seasonality from nine geographic regions, reproducing analsyis in [3].
+4. **RegionalSeasonality**: A case study analyzing influenza seasonality from nine geographic regions, reproducing analsyis in [3] on data from [5].
 
 5. **SimplePhyloinfer**: A short example comparing BNPR with a split HMC MCMC sampler approach, illustrating methodology in [2].
 
 6. **LongPhyloinfer**: A longer example comparing BNPR with multiple MCMC samplers, including split HMC as in SimplePhyloinfer, illustrating methodology in [2].
+
+## Datasets
+
+1. **New York influenza** BEAST XML for inferring genealogy using sequence data from [4].
+
+2. **Regional influenza** BEAST XML for inferring genealogy using sequence data from [5].
 
 ## References
 
@@ -42,3 +48,12 @@ In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in 
 3. M. D. Karcher, J. A. Palacios, T. Bedford, M. A. Suchard, and V. N. Minin.
 [Quantifying and mitigating the effect of preferential sampling on phylodynamic inference](http://arxiv.org/abs/1510.00775).
 *arXiv preprint arXiv*:1510.00775, 2015.
+
+4. A. Rambaut, O. G. Pybus, M. I. Nelson, C. Viboud, J. K. Taubenberger, E. C. Holmes
+[The genomic and epidemiological dynamics of human influenza A
+virus](http://www.nature.com/doifinder/10.1038/nature06945).
+*Nature*, 453(7195): 615–619, 2008.
+
+5. D. Zinder, T. Bedford, E. B. Baskerville, R. J. Woods, M. Roy, M. Pascual.
+[Seasonality in the migration and establishment of H3N2 Influenza lineages with epidemic growth and decline](http://bmcevolbiol.biomedcentral.com/articles/10.1186/s12862-014-0272-2).
+*BMC Evolutionary Biology*, 14(1): 272, 2014.
