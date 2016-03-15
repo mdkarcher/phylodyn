@@ -59,8 +59,8 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #' res = BNPR(NY_flu)
 #' plot_BNPR(res)
 BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
-                 prec_beta=0.01, beta1_prec = 0.001, simplify = TRUE,
-                 derivative = FALSE, forward = TRUE)
+                 prec_beta=0.01, beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
+                 simplify = TRUE, derivative = FALSE, forward = TRUE)
 {
   if (class(data) == "phylo")
   {
@@ -73,9 +73,9 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
   }
   
   result <- infer_coal_samp(samp_times = phy$samp_times, coal_times = phy$coal_times,
-                            n_sampled = phy$n_sampled, lengthout = lengthout,
+                            n_sampled = phy$n_sampled, fns = fns, lengthout = lengthout,
                             prec_alpha = prec_alpha, prec_beta = prec_beta,
-                            beta1_prec = beta1_prec, use_samp = pref,
+                            beta1_prec = beta1_prec, use_samp = pref, log_fns = log_fns,
                             simplify = simplify, derivative = derivative)
   
   result$samp_times <- phy$samp_times
@@ -110,10 +110,10 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
   
   if (pref)
   {
-    result$beta0     <- result$result$summary.fixed$`0.5quant`
-    result$beta0summ <- result$result$summary.fixed
+    result$beta0     <- result$result$summary.fixed["beta0","0.5quant"]
+    result$beta0summ <- result$result$summary.fixed["beta0",]
     rownames(result$beta0summ) <- "Beta0"
-    result$beta1     <- result$result$summary.hyperpar[2,]$`0.5quant`
+    result$beta1     <- result$result$summary.hyperpar[2,"0.5quant"]
     result$beta1summ <- result$result$summary.hyperpar[2,]
     rownames(result$beta1summ) <- "Beta1"
   }
@@ -124,13 +124,13 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
 #' @describeIn BNPR Uses preferential sampling model.
 #' @export
 BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
-                    beta1_prec = 0.001, simplify = TRUE,
-                    derivative = FALSE, forward = TRUE)
+                    beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
+                    simplify = TRUE, derivative = FALSE, forward = TRUE)
 {
   return(BNPR(data = data, lengthout = lengthout, pref = TRUE,
               prec_alpha = prec_alpha, prec_beta = prec_beta,
-              beta1_prec = beta1_prec, simplify = simplify,
-              derivative = derivative, forward = forward))
+              beta1_prec = beta1_prec, fns = fns, log_fns = log_fns,
+              simplify = simplify, derivative = derivative, forward = forward))
 }
 
 coal_stats <- function(grid, samp_times, coal_times, n_sampled = NULL,
@@ -235,16 +235,15 @@ samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
   field <- grid[-1] - diff(grid)/2
   E <- diff(grid)
   
-  buckets <- cut(x = samp_times, breaks = grid,
-                 include.lowest = TRUE)
+  bins <- cut(x = samp_times, breaks = grid, include.lowest = TRUE)
   
   if (is.null(n_sampled))
-    count <- as.vector(table(buckets))
+    count <- as.vector(table(bins))
   else
   {
-    tab <- aggregate(n_sampled ~ buckets, FUN = sum, labels = FALSE)
+    tab <- aggregate(n_sampled ~ bins, FUN = sum, labels = FALSE)
     count <- rep(0, lengthout)
-    count[as.numeric(tab$buckets)] <- tab$n_sampled
+    count[as.numeric(tab$bins)] <- tab$n_sampled
   }
   
   count[head(grid, -1) >= max(samp_times)] <- NA
@@ -270,7 +269,7 @@ infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100,
   formula_sampling <- y ~ 1 + f(time, model="rw1", hyper = hyper, constr=FALSE)
   
   mod <- INLA::inla(formula_sampling, family="poisson", data=data,
-                             offset=data$E_log, control.predictor=list(compute=TRUE))
+                    offset=data$E_log, control.predictor=list(compute=TRUE))
   
   return(list(result = mod, data = data, grid = grid, x = samp_data$time))
 }
@@ -291,9 +290,10 @@ joint_stats <- function(coal_data, samp_data)
 }
 
 #' @export
-infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=100,
-                            prec_alpha=0.01, prec_beta=0.01, beta1_prec=0.001,
-                            use_samp = FALSE, simplify = FALSE, events_only = FALSE,
+infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
+                            lengthout=100, prec_alpha=0.01, prec_beta=0.01,
+                            beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
+                            simplify = FALSE, events_only = FALSE,
                             derivative = FALSE)
 {
   if (min(coal_times) < min(samp_times))
@@ -320,6 +320,7 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=10
     data <- with(coal_data, data.frame(y = event, time = time, E_log = E_log))
     
     formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE)
+    family <- "poisson"
   }
   else if (use_samp)
   {
@@ -331,9 +332,31 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=10
     
     data <- joint_stats(coal_data = coal_data, samp_data = samp_data)
     
-    formula <- Y ~ -1 + beta0 +
-      f(time, model="rw1", hyper = hyper, constr = FALSE) +
-      f(time2, w, copy="time", fixed=FALSE, param=c(0, beta1_prec))
+    if (is.null(fns))
+    {
+      formula <- Y ~ -1 + beta0 +
+        f(time, model="rw1", hyper = hyper, constr = FALSE) +
+        f(time2, w, copy="time", fixed=FALSE, param=c(0, beta1_prec))
+    }
+    else
+    {
+      vals <- NULL
+      bins <- sum(data$beta0 == 0)
+      for (fni in fns)
+      {
+        if (log_fns)
+          vals <- cbind(vals, c(rep(0, bins), log(fni(samp_data$time))))
+        else
+          vals <- cbind(vals, c(rep(0, bins), fni(samp_data$time)))
+      }
+      data$fn <- vals
+      
+      formula <- Y ~ -1 + beta0 + fn +
+        f(time, model="rw1", hyper = hyper, constr = FALSE) +
+        f(time2, w, copy="time", fixed=FALSE, param=c(0, beta1_prec))
+    }
+    
+    family <- c("poisson", "poisson")
   }
   else
     stop("Invalid use_samp value, should be boolean.")
@@ -348,30 +371,15 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, lengthout=10
     
     lc_many <- INLA::inla.make.lincombs(time = A)
   }
+  else
+  {
+    lc_many <- NULL
+  }
   
-  if (!derivative && !use_samp)
-  {
-    mod <- INLA::inla(formula, family = "poisson", data = data, offset = data$E_log,
-                      control.predictor = list(compute=TRUE))
-  }
-  else if (derivative && !use_samp)
-  {
-    mod <- INLA::inla(formula, family = "poisson", data = data, lincomb = lc_many,
-                      offset = data$E_log, control.predictor = list(compute=TRUE),
-                      control.inla = list(lincomb.derived.only=FALSE))
-  }
-  else if (!derivative && use_samp)
-  {
-    mod <- INLA::inla(formula, family = c("poisson", "poisson"), data = data,
-                      offset = data$E_log, control.predictor = list(compute=TRUE))
-  }
-  else if (derivative && use_samp)
-  {
-    mod <- INLA::inla(formula, family = c("poisson", "poisson"), data = data,
-                      lincomb = lc_many, offset = data$E_log,
-                      control.predictor = list(compute=TRUE),
-                      control.inla = list(lincomb.derived.only=FALSE))
-  }
+  mod <- INLA::inla(formula, family = family, data = data,
+                    lincomb = lc_many, offset = data$E_log,
+                    control.predictor = list(compute=TRUE),
+                    control.inla = list(lincomb.derived.only=FALSE))
   
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
 }
@@ -410,6 +418,84 @@ infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout
   #names(lc1) = "lc1"
   
   mod <- INLA::inla(formula, family = "poisson", data = data, lincomb = lc_many,
+                    control.predictor = list(compute=TRUE),
+                    control.inla = list(lincomb.derived.only=FALSE))
+  
+  return(list(result = mod, data = data, grid = grid, x = coal_data$time))
+}
+
+infer_samp_exper <- function(samp_times, fns, n_sampled = NULL, lengthout = 100,
+                             prec_alpha = 0.01, prec_beta = 0.01)
+{
+  grid <- seq(min(samp_times),max(samp_times),length.out=lengthout+1)
+  
+  samp_data <- samp_stats(grid = grid, samp_times = samp_times,
+                          n_sampled = n_sampled)
+  
+  vals = NULL
+  for (fni in fns)
+  {
+    vals = cbind(vals, log(fni(samp_data$time)))
+  }
+  
+  data <- with(samp_data, list(y = count, time = time, E_log = E_log))
+  data$fn=vals
+  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  formula_sampling <- y ~ 1 + fn + f(time, model="rw1", hyper = hyper, constr=FALSE)
+  
+  mod <- INLA::inla(formula_sampling, family="poisson", data=data,
+                    offset=data$E_log, control.predictor=list(compute=TRUE))
+  
+  return(list(result = mod, data = data, grid = grid, x = samp_data$time))
+}
+
+infer_coal_samp_exper <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
+                                  lengthout=100, prec_alpha=0.01, prec_beta=0.01,
+                                  beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
+                                  simplify = FALSE, events_only = FALSE)
+{
+  if (min(coal_times) < min(samp_times))
+    stop("First coalescent time occurs before first sampling time")
+  
+  if (max(samp_times) > max(coal_times))
+    stop("Last sampling time occurs after last coalescent time")
+  
+  grid <- seq(min(samp_times), max(coal_times), length.out = lengthout+1)
+  
+  if (is.null(n_sampled))
+    n_sampled <- rep(1, length(samp_times))
+  
+  coal_data <- coal_stats(grid = grid, samp_times = samp_times, n_sampled = n_sampled,
+                          coal_times = coal_times)
+  
+  if (simplify)
+    coal_data <- with(coal_data, condense_stats(time=time, event=event, E=E))
+  
+  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  
+  if (events_only)
+    samp_data <- samp_stats(grid = grid, samp_times = samp_times)
+  else
+    samp_data <- samp_stats(grid = grid, samp_times = samp_times,
+                            n_sampled = n_sampled)
+  
+  data <- joint_stats(coal_data = coal_data, samp_data = samp_data)
+  
+  vals <- NULL
+  bins <- sum(data$beta0 == 0)
+  for (fni in fns)
+  {
+    vals <- cbind(vals, c(rep(0, bins), log(fni(samp_data$time))))
+  }
+  data$fn <- vals
+  
+  formula <- Y ~ -1 + beta0 + fn +
+    f(time, model="rw1", hyper = hyper, constr = FALSE) +
+    f(time2, w, copy="time", fixed=FALSE, param=c(0, beta1_prec))
+  
+  family <- c("poisson", "poisson")
+  
+  mod <- INLA::inla(formula, family = family, data = data, offset = data$E_log,
                     control.predictor = list(compute=TRUE),
                     control.inla = list(lincomb.derived.only=FALSE))
   
