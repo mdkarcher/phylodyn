@@ -156,6 +156,34 @@ coal_samp_loglik = function(init, f, beta0, beta1)
   return(llcoal + llsamp)
 }
 
+coal_samp_fns_loglik = function(init, f, fs, beta0, beta1, betas)
+{
+  if (init$ng != length(f))
+    stop(paste("Incorrect length for fs; should be", init$ng))
+  
+  if (init$ng != dim(fs)[1])
+    stop(paste("Incorrect number of rows for fs; should be", init$ng))
+  
+  f = rep(f, init$gridrep)
+  fs = fs[rep(1:init$ng, init$gridrep),]
+  
+  llnocoal = init$D * init$C * exp(-f)
+  
+  lls = - init$y * f - llnocoal
+  #print(lls)
+  
+  #print(init$count)
+  llsampevents = beta1 * init$count * f + diag(init$count) %*% fs %*% betas
+  #print(llsampevents[!is.na(init$count)])
+  llsampnoevents = init$D * exp(beta0 + f * beta1 + fs %*% betas)
+  #print(llsampnoevents[!is.na(init$count)])
+  llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  
+  llcoal = sum(lls[!is.nan(lls)])
+  
+  return(llcoal + llsamp)
+}
+
 U = function(theta, init, invC, alpha, beta, grad=FALSE)
 {
   D = length(theta)
