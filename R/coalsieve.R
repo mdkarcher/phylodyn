@@ -3,7 +3,9 @@
 #' @param samp_times numeric vector of sampling times.
 #' @param n_sampled numeric vector of samples taken per sampling time.
 #' @param traj function that returns effective population size at time t.
-#' @param upper numeric upper limit on \code{traj} function on its support.
+#' @param method which sampling method to use.
+#' @param val_upper numeric.
+#' @param lower_bound numeric lower limit of \code{traj} function on its support.
 #' @param ... additional arguments to be passed to \code{traj} function.
 #'   
 #' @return A list containing vectors of coalescent times \code{coal_times}, 
@@ -14,7 +16,75 @@
 #' 
 #' @examples
 #' coalsim(0:2, 3:1, unif_traj, lower_bound=10, level=10)
-coalsim <- function(samp_times, n_sampled, traj, lower_bound, ...)
+coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lower_bound=1, ...)
+{
+  if (method == "tt")
+  {
+    result = coalsim_tt(samp_times, n_sampled, traj, val_upper, ...)
+  }
+  else if (method == "thin")
+  {
+    result = coalsim_tt(samp_times, n_sampled, traj, lower_bound, ...)
+  }
+  else
+  {
+    stop("Argument method not recognized.")
+  }
+  
+  return(result)
+}
+
+#' @export
+coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10)
+{
+  traj_inv <- function(t) 1/traj(t)
+  hazard <- function(t, lins, start, target) .5*lins*(lins-1)*integrate(traj_inv, start, start+t)$value - target
+  
+  coal_times = NULL
+  lineages = NULL
+  
+  curr = 1
+  active_lineages = n_sampled[curr]
+  time = samp_times[curr]
+  
+  while (time <= max(samp_times) || active_lineages > 1)
+  {
+    if (active_lineages == 1)
+    {
+      curr <- curr + 1
+      active_lineages <- active_lineages + n_sampled[curr]
+      time <- samp_times[curr]
+    }
+    
+    #time = time + rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
+    target <- rexp(1)
+    y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
+                 lower=0, upper=val_upper, extendInt = "upX")$root
+    
+    while(curr < length(samp_times) && time + y >= samp_times[curr+1])
+    {
+      target <- -hazard(t = samp_times[curr+1] - time, lins = active_lineages,
+                        start = time, target = target)
+      curr <- curr + 1
+      active_lineages <- active_lineages + n_sampled[curr]
+      time <- samp_times[curr]
+      
+      y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
+                   lower=0, upper=val_upper, extendInt = "upX")$root
+    }
+    
+    time <- time + y
+    coal_times = c(coal_times, time)
+    lineages = c(lineages, active_lineages)
+    active_lineages = active_lineages - 1
+  }
+  
+  return(list(coal_times = coal_times, lineages = lineages,
+              intercoal_times = c(coal_times[1], diff(coal_times)),
+              samp_times = samp_times, n_sampled = n_sampled))
+}
+
+coalsim_thin <- function(samp_times, n_sampled, traj, lower_bound, ...)
 {
   coal_times = NULL
   lineages = NULL
@@ -163,56 +233,6 @@ coalgen_thinning_iso <- function(sample,traj_inv,upper=25,...)
     }
   }
   return(list(intercoal_times=c(out[1],diff(out)),lineages=seq(n,2,-1), coal_times=out))
-}
-
-#' @export
-coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10)
-{
-  traj_inv <- function(t) 1/traj(t)
-  hazard <- function(t, lins, start, target) .5*lins*(lins-1)*integrate(traj_inv, start, start+t)$value - target
-  
-  coal_times = NULL
-  lineages = NULL
-  
-  curr = 1
-  active_lineages = n_sampled[curr]
-  time = samp_times[curr]
-  
-  while (time <= max(samp_times) || active_lineages > 1)
-  {
-    if (active_lineages == 1)
-    {
-      curr <- curr + 1
-      active_lineages <- active_lineages + n_sampled[curr]
-      time <- samp_times[curr]
-    }
-    
-    #time = time + rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
-    target <- rexp(1)
-    y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
-                 lower=0, upper=val_upper, extendInt = "upX")$root
-    
-    while(curr < length(samp_times) && time + y >= samp_times[curr+1])
-    {
-      target <- -hazard(t = samp_times[curr+1] - time, lins = active_lineages,
-                        start = time, target = target)
-      curr <- curr + 1
-      active_lineages <- active_lineages + n_sampled[curr]
-      time <- samp_times[curr]
-      
-      y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
-                   lower=0, upper=val_upper, extendInt = "upX")$root
-    }
-    
-    time <- time + y
-    coal_times = c(coal_times, time)
-    lineages = c(lineages, active_lineages)
-    active_lineages = active_lineages - 1
-  }
-  
-  return(list(coal_times = coal_times, lineages = lineages,
-              intercoal_times = c(coal_times[1], diff(coal_times)),
-              samp_times = samp_times, n_sampled = n_sampled))
 }
 
 coalgen_transformation_hetero <- function(sample, trajectory,val_upper=10)
