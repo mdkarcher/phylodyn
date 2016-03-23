@@ -601,8 +601,8 @@ sampling = function(data, para, alg, setting, init, verbose=TRUE)
     {
       cholC_betas = matrix(0, nrow = nrow(cholC)+2, ncol = ncol(cholC)+2)
       cholC_betas[1:nrow(cholC), 1:ncol(cholC)] = cholC/sqrt(theta[Ngrid])
-      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(100)
-      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(100)
+      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(1000)
+      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(1000)
       
       #ll = function(f) coal_samp_loglik(init = lik_init, f = f[1:(Ngrid-1)], beta0 = f[Ngrid], beta1 = f[Ngrid+1])
       res = ESS(q_cur = c(theta[-Ngrid], betas), l_cur = u, loglik = ll, cholC = cholC_betas)
@@ -827,7 +827,7 @@ sampling_ESS = function(data, para, setting, init, samp_alg = "none", kappa_alg 
   
   # start MCMC run
   start_time = Sys.time()
-  cat('Running ESS', alg ,' sampling...\n')
+  cat('Running ESS', samp_alg ,' sampling...\n')
   for(Iter in 1:NSAMP)
   {
     if (samp_alg == "none")
@@ -881,8 +881,8 @@ sampling_ESS = function(data, para, setting, init, samp_alg = "none", kappa_alg 
     {
       cholC_betas = matrix(0, nrow = nrow(cholC)+2, ncol = ncol(cholC)+2)
       cholC_betas[1:nrow(cholC), 1:ncol(cholC)] = cholC/sqrt(kappa)
-      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(100)
-      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(100)
+      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(1000)
+      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(1000)
       
       #ll = function(f) coal_samp_loglik(init = lik_init, f = f[1:(Ngrid-1)], beta0 = f[Ngrid], beta1 = f[Ngrid+1])
       res = ESS(q_cur = c(f, betas), l_cur = u, loglik = ll, cholC = cholC_betas)
@@ -981,6 +981,36 @@ burnin_subsample = function(res, burnin = 0, subsample = 1)
   pos_summ = res$pos_summ[indices, ]
   
   cleaned_result = list(samp=samp, pos_summ = pos_summ, grid = res$grid)
+}
+
+update_burnin_subsample = function(res, burnin = 0, subsample = 1)
+{
+  Ngrid = res$Ngrid
+  cleaned_res = burnin_subsample(res = res, burnin = burnin, subsample = subsample)
+  
+  logfmat = cleaned_res$samp[,1:(Ngrid-1)]
+  if (res$alg == "ESS" && res$samp_alg %in% c("MH", "ESS"))
+  {
+    params = cleaned_res$samp[,Ngrid:(Ngrid+2)]
+  }
+  else
+  {
+    params = matrix(cleaned_res$samp[,Ngrid])
+  }
+  estimates = calculate_estimates(logfmat = logfmat, params = params, grid = res$grid)
+  
+  res$cleaned_res = cleaned_res
+  res$estimates = estimates
+  
+  res$med = estimates$fmed
+  res$low = estimates$flow
+  res$hi = estimates$fhi
+  
+  res$med_fun = estimates$fmed_fun
+  res$low_fun = estimates$flow_fun
+  res$hi_fun = estimates$fhi_fun
+  
+  return(res)
 }
 
 calculate_estimates = function(logfmat, params, grid)
@@ -1130,6 +1160,11 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
                         init = init)
   }
   
+  res_MCMC$alg = alg
+  res_MCMC$samp_alg = samp_alg
+  res_MCMC$kappa_alg = kappa_alg
+  res_MCMC$Ngrid = Ngrid
+  
   cleaned_res = burnin_subsample(res = res_MCMC, burnin = nburnin)
   
   logfmat = cleaned_res$samp[,1:(Ngrid-1)]
@@ -1153,6 +1188,12 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   res_MCMC$med_fun = estimates$fmed_fun
   res_MCMC$low_fun = estimates$flow_fun
   res_MCMC$hi_fun = estimates$fhi_fun
+  
+  res_MCMC$grid = grid
+  res_MCMC$x = midpts
+  res_MCMC$samp_times = samp_times
+  res_MCMC$n_sampled = n_sampled
+  res_MCMC$coal_times = coal_times
   
   return(res_MCMC)
 }
