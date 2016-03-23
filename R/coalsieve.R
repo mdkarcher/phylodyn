@@ -24,7 +24,7 @@ coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lowe
   }
   else if (method == "thin")
   {
-    result = coalsim_tt(samp_times, n_sampled, traj, lower_bound, ...)
+    result = coalsim_thin(samp_times, n_sampled, traj, lower_bound, ...)
   }
   else
   {
