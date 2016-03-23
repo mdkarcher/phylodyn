@@ -437,6 +437,130 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
   }
 }
 
+plot_MCMC = function(MCMC_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
+                     lty=1, lwd=2, col="black", main="", log="y",
+                     ylab="Effective Population Size",
+                     xlab="Time", xmarline = 3, axlabs=NULL,
+                     traj_lty=2, traj_lwd=2, traj_col=col,
+                     newplot=TRUE, credible_region=TRUE,
+                     heatmaps=TRUE, heatmap_labels=TRUE,
+                     heatmap_labels_side="right", heatmap_width=7,
+                     yscale = 1, ...)
+{
+  grid = MCMC_out$grid
+  if (is.null(xlim))
+  {
+    xlim=c(max(grid), min(grid))
+  }
+  
+  mask = MCMC_out$x >= min(xlim) & MCMC_out$x <= max(xlim)
+  
+  t = MCMC_out$x[mask]
+  
+  y = MCMC_out$med_fun(t) * yscale
+  yhi = MCMC_out$hi_fun(t) * yscale
+  ylo = MCMC_out$low_fun(t) * yscale
+  
+  if (newplot)
+  {
+    if (is.null(ylim))
+    {
+      ymax=max(yhi)
+      ymin=min(ylo)
+    }
+    else
+    {
+      ymin=min(ylim)
+      ymax=max(ylim)
+    }
+    
+    if (heatmaps)
+    {
+      yspan=ymax/ymin
+      yextra=yspan^(1/10)
+      ylim=c(ymin/(yextra^1.35), ymax)
+    }
+    else
+    {
+      ylim=c(ymin, ymax)
+    }
+    
+    if (is.null(axlabs))
+    {
+      plot(1,1,type="n",log=log,
+           xlab=xlab, ylab=ylab, main=main,
+           xlim=xlim, ylim=ylim, ...)
+    }
+    else
+    {
+      plot(1,1,type="n",log=log,
+           xlab="", ylab=ylab, main=main,
+           xlim=xlim, ylim=ylim, xaxt = "n", ...)
+      axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
+      mtext(text = xlab, side = 1, line = xmarline)
+    }
+  }
+  
+  if (credible_region)
+  {
+    shade_band(x = t, ylo = ylo, yhi = yhi, col="lightgray")
+  }
+  
+  if (!is.null(traj))
+  {
+    lines(t, traj(t), lwd=traj_lwd, lty=traj_lty, col=traj_col)
+  }
+  
+  if (newplot)
+  {
+    if (heatmaps)
+    {
+      samps = rep(MCMC_out$samp_times, MCMC_out$n_sampled)
+      samps = samps[samps <= max(xlim) & samps >= min(xlim)]
+      
+      coals = MCMC_out$coal_times
+      coals = coals[coals <= max(xlim) & coals >= min(xlim)]
+      
+      breaks = seq(min(xlim), max(xlim), length.out=nbreaks)
+      h_samp = hist(samps, breaks=breaks, plot=FALSE)
+      h_coal = hist(coals, breaks=breaks, plot=FALSE)
+      
+      hist2heat(h_samp, y=ymin/yextra^0.5, wd=heatmap_width)
+      hist2heat(h_coal, y=ymin/yextra, wd=heatmap_width)
+      
+      #points(samps, rep(ymin/yextra^0.5, length(samps)), pch=3) 
+      #points(coals, rep(ymin/yextra, length(coals)), pch=4)
+      
+      if (heatmap_labels)
+      {
+        if (heatmap_labels_side == "left")
+        {
+          lab_x = max(xlim)
+          lab_adj = 0
+        }
+        else if (heatmap_labels_side == "right")
+        {
+          lab_x = min(xlim)
+          lab_adj = 1
+        }
+        else
+        {
+          warning('heatmap_labels_side not "left" or "right", defaulting to right')
+          lab_x = min(xlim)
+          lab_adj = 1
+        }
+        
+        text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
+             adj = c(lab_adj, 0), cex = 0.7)
+        text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
+             adj = c(lab_adj, 1), cex = 0.7)
+      }
+    }
+  }
+  
+  lines(t, y, lwd=lwd, col=col, lty=lty)
+}
+
 plot_BNPR_old = function(BNPR_out, traj=NULL, xlim=NULL, ...)
 {
   mod = BNPR_out$result$summary.random$time
