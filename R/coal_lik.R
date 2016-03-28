@@ -1,7 +1,7 @@
 #### Coalescent likelihood functions ####
 # Compute log likelihood of coalescent model, energy function in HMC algorithms, and metric tensor needed in aMALA.
 
-coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
+coal_lik_init_old = function(samp_times, n_sampled, coal_times, grid)
 {
   ns = length(samp_times)
   nc = length(coal_times)
@@ -76,7 +76,7 @@ coal_loglik = function(init, f, grad=FALSE)
   }
 }
 
-coal_samp_lik_init = function(samp_times, n_sampled, coal_times, grid)
+coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
 {
   ns = length(samp_times)
   nc = length(coal_times)
@@ -147,9 +147,37 @@ coal_samp_loglik = function(init, f, beta0, beta1)
   #print(init$count)
   llsampevents = beta1 * init$count * f
   #print(llsampevents[!is.na(init$count)])
-  llsampnoevents = init$D * beta0 * exp(f)^beta1
+  llsampnoevents = init$D * exp(beta0) * exp(f)^beta1
   #print(llsampnoevents[!is.na(init$count)])
-  llsamp = init$ns * log(beta0) + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  
+  llcoal = sum(lls[!is.nan(lls)])
+  
+  return(llcoal + llsamp)
+}
+
+coal_samp_fns_loglik = function(init, f, fs, beta0, beta1, betas)
+{
+  if (init$ng != length(f))
+    stop(paste("Incorrect length for fs; should be", init$ng))
+  
+  if (init$ng != dim(fs)[1])
+    stop(paste("Incorrect number of rows for fs; should be", init$ng))
+  
+  f = rep(f, init$gridrep)
+  fs = fs[rep(1:init$ng, init$gridrep),]
+  
+  llnocoal = init$D * init$C * exp(-f)
+  
+  lls = - init$y * f - llnocoal
+  #print(lls)
+  
+  #print(init$count)
+  llsampevents = beta1 * init$count * f + diag(init$count) %*% fs %*% betas
+  #print(llsampevents[!is.na(init$count)])
+  llsampnoevents = init$D * exp(beta0 + f * beta1 + fs %*% betas)
+  #print(llsampnoevents[!is.na(init$count)])
+  llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
   
   llcoal = sum(lls[!is.nan(lls)])
   
@@ -166,13 +194,13 @@ U = function(theta, init, invC, alpha, beta, grad=FALSE)
   {
     loglik = coal_loglik(init, f)
     logpri = ((D-1)/2+alpha)*tau - (t(f)%*%invCf/2+beta)*exp(tau)
-    return(-(loglik+logpri))
+    return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
   }
   else
   {
     dloglik = c(coal_loglik(init, f, grad),0)
     dlogpri = c(-invCf*exp(tau),((D-1)/2+alpha)-(t(f)%*%invCf/2+beta)*exp(tau))
-    return(-(dloglik+dlogpri))
+    return(list(dloglik = -dloglik, dlogpri = -dlogpri, dlogpos = -(dloglik+dlogpri)))
   }
 }
 
@@ -186,13 +214,13 @@ U_kappa = function(theta, init, invC, alpha, beta, grad=FALSE)
   {
     loglik = coal_loglik(init, f)
     logpri = ((D-1)/2+alpha-1)*log(kappa) - (t(f)%*%invCf/2+beta)*kappa
-    return(-(loglik+logpri))
+    return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
   }
   else
   {
     dloglik = c(coal_loglik(init, f, grad),0)
     dlogpri = c(-invCf*kappa,((D-1)/2+alpha-1)/kappa-(t(f)%*%invCf/2+beta))
-    return(-(dloglik+dlogpri))
+    return(list(dloglik = -dloglik, dlogpri = -dlogpri, dlogpos = -(dloglik+dlogpri)))
   }
 }
 
@@ -206,7 +234,7 @@ U_split = function(theta, init, invC, alpha, beta, grad=FALSE)
   {
     loglik = coal_loglik(init, f)
     logpri = ((D-1)/2+alpha)*tau - (t(f)%*%invCf/2+beta)*exp(tau)
-    return(-(loglik+logpri))
+    return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
   }
   else
   {
