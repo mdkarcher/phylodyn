@@ -1,0 +1,170 @@
+Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies
+==========================================================================
+
+
+This R code implements the method described in "Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies" by Palacios JA, Wakeley J, and Ramachandran S (doi: http://dx.doi.org/10.1101/019216). The method is applied to a test dataset (data/Bottle_20c.txt). The commands given below can be altered and run again using the [knitr]( http://yihui.name/knitr/) package, by editing the document Readme.Rmd. 
+
+**Newick files preparation**
+----------------------------
+
+This program takes a file of local genealogies (with n>2) in [Newick](http://evolution.genetics.washington.edu/phylip/newicktree.html) format as input. Our example dataset  is in the data folder (Bottle_20c.txt). In this example, we use [MaCS](https://code.google.com/p/macs/) with the following command lines
+
+```
+./macs 20 300000 -t 4.0 -eN 0 1 -eN 0.3 0.1 -eN 0.5 1 -T -r .002 -h 1 -s 1420826310 >outMacs.tree
+```
+The file outMacs.tree created above contains more information than needed for our analysis, which only requires gene genealogies. With the following command, we extract the gene genealogies in Newick format
+```
+awk '$1~"NEWICK_TREE"' outMacs.tree | awk -F\] '{print $2}' >Bottle_20.txt
+```
+
+**R Code**
+---------------
+
+R code to generate results is given in src/coal_lik_BSMC.R, so we only need to load it in our R session. We also rely on the R package *ape* to read Newick-formated genealogies and R package *spam* for sparse computations. Your working directory should contain this Readme file and you should have a*ape* and *spam* installed into R before proceeding.
+
+```{r results="hide"}
+
+library("ape")
+library("spam")
+path<-getwd()
+lib<-paste(path,"/data/",sep="")
+lib2<-paste(path,"/src/",sep="")
+source(paste(lib2,"coal_lik_BSMC.R",sep=""))
+MyTree <- read.tree(paste(lib,"Bottle_20c.txt",sep=""))
+```
+
+**Data Preparation**
+----------------------
+
+For this example, we will run our algorithm on the first 50 local genealogies (sim=50) and scale time by 10 (scaling=10). Our algorithm searches the new and deleted coalescent times by comparing the coalescent times of consecutive genealogies and we define a tolerance (tol=.00001) to set whether two coalescent times are different ($t_{a} \neq t_{b}$ if $|t_{a}-t_{b}|>tol$). In our experiments, a tolerance level of .00001 works well when the time to the most recent common ancestor is of the order of 2-10. 
+
+```{r}
+n <- length(MyTree[[1]]$tip.label)
+sim<-length(MyTree) 
+sim
+sim<-50 #For this example, the first 50 genealogies
+scaling<-10
+tol<-.00001 #tolerance factor to detect difference between branch lengths
+D<-read_times(MyTree,n,sim,scaling)
+```
+
+Matrix D is a matrix with sim=50 rows and n-1=19 columns with coalescent times. To see the summary of the time to the most recent common ancestor time, run the command:
+
+```{r}
+summary(D[,dim(D)[2]])
+```
+
+Next, we define our discretization of the population size function. After testing many different number of change points, we find that 100 regularly spaced change points provides a good resolution of $N(t)$
+
+```{r}
+window<-max(D)+.0001
+grid.size<-100
+grid<-seq(0,window,length.out=grid.size)
+grid<-c(grid,max(D)+.0002)
+```
+
+We then adjust all our sufficient statistics for our chosen discretization  
+
+```{r}
+info<-find_info2(MyTree,D,sim,n,tol,scaling)
+```
+
+**MCMC Sampling**
+-----------------------
+
+For all our results in the manuscript, we used the seed value 2014 with 50000 iterations (NSAMP=50000) and a burnin of 1000 iterations (NBURNIN=1000). For this tutorial we use 50 iterations and 5 iterations of burnin. 
+
+```{r}
+set.seed(2014)
+alg=1
+TrjL=1; Nleap=15; stepsz=TrjL/Nleap
+stepsz<-.01
+#NSAMP=50000; NBURNIN=1000 #Original parameters used in the paper
+NSAMP=50; NBURNIN=5
+Ngrid<-length(grid)-1
+# hyperparameter in prior of tau
+alpha=1e-3; beta=1e-3
+#MCMC sampling preparation
+SAMP=list(2)
+SAMP[[1]]=matrix(NA,NSAMP-NBURNIN,Ngrid) # transformed effective population size
+SAMP[[2]]=rep(NA,NSAMP-NBURNIN) # precision parameter in Brownian motion
+acpi=0;acpt=0
+PRINT<-T
+#Initial Values
+f_init=rep(0.5,Ngrid)
+theta <- c(log(f_init),-1.6)+.0001 
+Nleap<-15
+stepsz<-.1
+alldata<-get.data(grid,sim,D,n,coal_lik_init,info$info_times,info$Fl,info$latent,info$t_new,info$t_del)
+U<-function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad)
+current.u<-U(theta,F)
+current.grad<-U(theta,T)
+
+start_time = Sys.time()
+for(Iter in 1:NSAMP){
+  
+  if(PRINT&&Iter%%50==0){
+    cat(Iter, ' iterations have been finished!\n' )
+    cat('Online acceptance rate is ',acpi/50,'\n')
+    acpi=0
+  }
+  res=eval(parse(text='splitHMC'))(theta,function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad),alldata$rtEV,alldata$EVC,stepsz,Nleap,current.u,current.grad)
+  theta=res$q;
+  current.u<-res$current.u
+  current.grad<-res$current.grad
+  N<-exp(theta[1:(length(theta)-1)])
+  acpi=acpi+res$Ind
+  if(Iter>NBURNIN){
+    SAMP[[1]][Iter-NBURNIN,]<-theta[1:(length(theta)-1)]
+    SAMP[[2]][Iter-NBURNIN]<-theta[length(theta)]
+    acpt<-acpt+res$Ind
+  }
+}
+stop_time = Sys.time()
+time=stop_time-start_time
+cat('\nTime consumed : ',time)
+
+```
+
+**Summary of Results**
+--------------------------
+
+We compute the posterior median and 95% BCIs of log N(t) and plot the results:
+
+```{r}
+#Bayesian Summary of log(N(t))
+ini<-1
+med=apply(SAMP[[1]][ini:(Iter-NBURNIN-1),],2,median); 
+low=apply(SAMP[[1]][ini:(Iter-NBURNIN-1),],2,function(x)quantile(x,.025))
+up=apply(SAMP[[1]][ini:(Iter-NBURNIN-1),],2,function(x)quantile(x,.975))
+
+results<-cbind(grid/scaling,c(low[1]-log(scaling),low-log(scaling)),c(med[1]-log(scaling),med-log(scaling)),c(up[1],up)-log(scaling))
+```
+
+```{r fig.path=paste(path,"/results/",sep=""), plot_bottleneck}
+
+##Plot results
+plot(results[,1],results[,3],type="l",xlim=c(1,0),ylim=c(-3,3),ylab="log N(t)",xlab="No generations",col="white")
+plot.res(results)
+
+##True trajectory
+x<-sort(c(0.299999,0.3,0.49999,0.5,seq(0,4,length.out=100)))
+y<-x
+y[x<.3]<-log(.5)
+y[x>=.3 & x<.5]<-log(.1/2)
+y[x>=.5]<-log(.5)
+points(x,y,lty=2,type="l",lwd=1.5)
+
+```  
+
+**NOTE**
+------
+
+This R-markdown file was generated with RStudio and using the Knit HTML button. Altenatively, you could use the following R commands:
+
+```
+library(knitr)
+knit("Readme.Rmd")
+knit2html("Readme.Rmd")
+```
+
