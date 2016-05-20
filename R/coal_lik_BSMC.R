@@ -100,56 +100,57 @@ get_F_values<-function(latent,init,Fl){
   }
   return(myF.list)
 }
-    
-coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
-{
-  ns = length(samp_times)
-  nc = length(coal_times)
-  ng = length(grid)-1
+
+#Duplicated in phylodyn
+#coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
+#{
+# ns = length(samp_times)
+# nc = length(coal_times)
+# ng = length(grid)-1
   
-  if (length(samp_times) != length(n_sampled))
-    stop("samp_times vector of differing length than n_sampled vector.")
+# if (length(samp_times) != length(n_sampled))
+#   stop("samp_times vector of differing length than n_sampled vector.")
   
-  if (length(coal_times) != sum(n_sampled) - 1)
-    stop("Incorrect length of coal_times: should be sum(n_sampled) - 1.")
+# if (length(coal_times) != sum(n_sampled) - 1)
+#   stop("Incorrect length of coal_times: should be sum(n_sampled) - 1.")
   
-  if (max(samp_times, coal_times) > max(grid))
-    stop("Grid does not envelop all sampling and/or coalescent times.")
+# if (max(samp_times, coal_times) > max(grid))
+#   stop("Grid does not envelop all sampling and/or coalescent times.")
   
-  t = sort(unique(c(samp_times, coal_times, grid)))
-  l = rep(0, length(t))
+# t = sort(unique(c(samp_times, coal_times, grid)))
+# l = rep(0, length(t))
   
-  for (i in 1:ns)
-    l[t >= samp_times[i]] = l[t >= samp_times[i]] + n_sampled[i]
+# for (i in 1:ns)
+#   l[t >= samp_times[i]] = l[t >= samp_times[i]] + n_sampled[i]
   
-  for (i in 1:nc)
-    l[t >= coal_times[i]] = l[t >= coal_times[i]] - 1
+# for (i in 1:nc)
+#   l[t >= coal_times[i]] = l[t >= coal_times[i]] - 1
   
   #print(l)
   
-  if (sum((l < 1) & (t >= min(samp_times))) > 0)
-    stop("Number of active lineages falls below 1 after the first sampling point.")
+# if (sum((l < 1) & (t >= min(samp_times))) > 0)
+#   stop("Number of active lineages falls below 1 after the first sampling point.")
   
-  mask = l > 0
-  t = t[mask]
-  l = head(l[mask], -1)
+# mask = l > 0
+# t = t[mask]
+# l = head(l[mask], -1)
   
-  gridrep = rep(0, ng)
-  for (i in 1:ng)
-    gridrep[i] = sum(t > grid[i] & t <= grid[i+1])
+# gridrep = rep(0, ng)
+# for (i in 1:ng)
+#   gridrep[i] = sum(t > grid[i] & t <= grid[i+1])
   
   
-  C = 0.5 * l * (l-1)
-  D = diff(t)
+# C = 0.5 * l * (l-1)
+# D = diff(t)
   
-  y = rep(0, length(D))
-  y[t[-1] %in% coal_times] = 1
+# y = rep(0, length(D))
+# y[t[-1] %in% coal_times] = 1
   
-  rep_idx = cumsum(gridrep)
-  rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
+# rep_idx = cumsum(gridrep)
+# rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
   
-  return(list(t=t, l=l, C=C, D=D, y=y, gridrep=gridrep, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
-}
+# return(list(t=t, l=l, C=C, D=D, y=y, gridrep=gridrep, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
+#}
 
 
 
@@ -283,18 +284,19 @@ U_split_smc = function(theta, init, invC, alpha, beta, grad=F)
 }
 
 
-precBM = function(times, delta=1e-6)
-{
-  D=length(times)
-  diff1<-diff(times); diff1[diff1==0]<-delta;
-  diff<-1/diff1
-  Q<-spam(0,D,D)
-  if (D>2) Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[1:(D-2)]+diff[2:(D-1)],diff[D-1])
-  else Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[D-1])
+#Duplicated. It is coal_lik.R
+#precBM = function(times, delta=1e-6)
+#{
+#  D=length(times)
+#  diff1<-diff(times); diff1[diff1==0]<-delta;
+#  diff<-1/diff1
+#  Q<-spam(0,D,D)
+#  if (D>2) Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[1:(D-2)]+diff[2:(D-1)],diff[D-1])
+#  else Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[D-1])
   
-  Q[cbind(1:(D-1),2:D)]=-diff[1:(D-1)]; Q[cbind(2:D,1:(D-1))]=-diff[1:(D-1)]
-  return(Q)
-}
+# Q[cbind(1:(D-1),2:D)]=-diff[1:(D-1)]; Q[cbind(2:D,1:(D-1))]=-diff[1:(D-1)]
+# return(Q)
+#}
 
 
 
@@ -404,6 +406,7 @@ find_info2<-function(MyTree,D,sim,n,tol,cor=1){
     return(list(info_times=info_times,Fl=Fl,latent=latent,t_new=t_new,t_del=t_del))
 }
 
+#This function needs to be improved
 
 find_sufficient<-function(D,sim,n,tol){
     ##This function returns three vectors of statistics needed for likelihood calculations
