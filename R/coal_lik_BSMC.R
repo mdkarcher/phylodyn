@@ -407,7 +407,7 @@ find_info2<-function(MyTree,D,sim,n,tol,cor=1){
                     
                 }
             }}}
-    return(list(info_times=info_times,Fl=Fl,latent=latent,t_new=t_new,t_del=t_del))
+    return(list(info_times=info_times,Fl=Fl,latent=latent,t_new=t_new,t_del=t_del,D=D,sim=sim,n=n))
 }
 
 #This function needs to be improved
