@@ -1,3 +1,7 @@
+#### Sequentially Markov Coalescent likelihood functions (SMC') ####
+# Compute log likelihood under the SMC' model and other auxiliary funcitons
+
+
 find.children.length<-function(tree,tdel,cor=1){
     #find the branch length of the branches that coalesced at time tdel
     #look at tdel found at tree2 but search for it in tree1
