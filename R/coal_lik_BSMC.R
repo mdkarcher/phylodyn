@@ -484,33 +484,34 @@ find_sufficient<-function(D,sim,n,tol){
 }
 
 
-splitHMC = function (current.q, U, rtEV, EVC, eps=.1, L=5,current.U,current.grad){
+#Declared a little bit different in Phyloinfer.R
+#splitHMC = function (current.q, U, rtEV, EVC, eps=.1, L=5,current.U,current.grad){
     #Function from Lan S, Palacios JA, Karcher, M, Minin VN, Babak Shahbaba. An efficient Bayesian inference framework for coalescent-based nonparametric phylodynamics. 2015
     #   browser()
     
     # initialization
-    D=length(current.q)
-    q=current.q
+#D=length(current.q)
+#   q=current.q
     
     # sample momentum
-    p <- rnorm(D)
+#   p <- rnorm(D)
     
     # calculate current energy
     
-    current.E <- current.U + sum(p^2)/2
+#   current.E <- current.U + sum(p^2)/2
     
     # current.E <- U(q) + sum(p^2)/2
     
     
-    randL = ceiling(runif(1)*L)
-    p = p - eps/2*current.grad #corrected Feb 22,2015 p-(eps/2)*current.grad
+#   randL = ceiling(runif(1)*L)
+#   p = p - eps/2*current.grad #corrected Feb 22,2015 p-(eps/2)*current.grad
     
     # p = p - (eps/2)*U(q,T)/sqrt(sum(U(q,T)^2))
-    qT = rtEV*(t(EVC)%*%q[-D]); pT = t(EVC)%*%p[-D]
-    A=t(qT)%*%qT;
+#   qT = rtEV*(t(EVC)%*%q[-D]); pT = t(EVC)%*%p[-D]
+#   A=t(qT)%*%qT;
     # Alternate full steps for position and momentum
-    for (l in 1:randL)
-    {
+#   for (l in 1:randL)
+#   {
         
         
         # Make a half step for the initial half dynamics
@@ -519,45 +520,45 @@ splitHMC = function (current.q, U, rtEV, EVC, eps=.1, L=5,current.U,current.grad
         # 	  p[D] = sqrt(C1)*tanh((-sqrt(C1)*eps/2+C2)/2)
         #	  q[D] = log((C1-p[D]^2)/A)
         
-        p[D] <- p[D] - eps/2*A/2*exp(q[D])
-        q[D] <- q[D] + eps/2*p[D]
+#       p[D] <- p[D] - eps/2*A/2*exp(q[D])
+#       q[D] <- q[D] + eps/2*p[D]
         
         # Make a full step for the middle dynamics
-        Cpx = complex(mod=1,arg=-rtEV*exp(q[D]/2)*eps)*complex(re=qT*exp(q[D]/2),im=pT)
-        qT = Re(Cpx)*exp(-q[D]/2); pT = Im(Cpx)
-        q[-D] = EVC%*%(qT/rtEV)
+#       Cpx = complex(mod=1,arg=-rtEV*exp(q[D]/2)*eps)*complex(re=qT*exp(q[D]/2),im=pT)
+#       qT = Re(Cpx)*exp(-q[D]/2); pT = Im(Cpx)
+#       q[-D] = EVC%*%(qT/rtEV)
         
         # Make a half step for the last half dynamics
-        A=t(qT)%*%qT;
+#       A=t(qT)%*%qT;
         #	  C1=p[D]^2+A*exp(q[D]); C2=2*atanh(p[D]/sqrt(C1))
         #	  p[D] = sqrt(C1)*tanh((-sqrt(C1)*eps/2+C2)/2)
         #	  q[D] = log((C1-p[D]^2)/A)
         
-        q[D] <- q[D] + eps/2*p[D]
-        p[D] <- p[D] - eps/2*A/2*exp(q[D])
+#       q[D] <- q[D] + eps/2*p[D]
+#       p[D] <- p[D] - eps/2*A/2*exp(q[D])
         
-        g = U(q,T)
+#       g = U(q,T)
         #  g<-g/sqrt(sum(g^2))
-        if(l!=randL){
-            pT = pT - eps*(t(EVC)%*%g[-D]); p[D] = p[D] - eps*g[D]
-        }
-    }
-    p[-D] = EVC%*%pT - eps/2*g[-D]; p[D] = p[D] - eps/2*g[D]
+#       if(l!=randL){
+#           pT = pT - eps*(t(EVC)%*%g[-D]); p[D] = p[D] - eps*g[D]
+#       }
+#   }
+#   p[-D] = EVC%*%pT - eps/2*g[-D]; p[D] = p[D] - eps/2*g[D]
     
     
     
     # Evaluate potential and kinetic energies at start and end of trajectory
-    new.u<-U(q)
-    proposed.E <- new.u + sum(p^2)/2
+#   new.u<-U(q)
+#   proposed.E <- new.u + sum(p^2)/2
     
     # Accept or reject the state at end of trajectory, returning either
     # the position at the end of the trajectory or the initial position
-    logAP = -proposed.E + current.E
+#   logAP = -proposed.E + current.E
     
-    if( is.finite(logAP)&(log(runif(1))<min(0,logAP)) ) return (list(q = q, Ind = 1,current.u=new.u,current.grad=g))
-    else return (list(q = current.q, Ind = 0,current.u=current.u,current.grad=current.grad))
+#   if( is.finite(logAP)&(log(runif(1))<min(0,logAP)) ) return (list(q = q, Ind = 1,current.u=new.u,current.grad=g))
+#   else return (list(q = current.q, Ind = 0,current.u=current.u,current.grad=current.grad))
     
-}
+#}
 
 
 get.data<-function(grid,sim,D,n,coal_lik_init,info_times,Fl,latent,t_new,t_del){
@@ -623,8 +624,10 @@ for (j in 2:sim){
             if (sum(I[j,])==0) {break}
     }
 }
-midpts<-grid[-length(grid)]+diff(grid)/2
 
+#midpts<-grid[-length(grid)]+diff(grid)/2
+
+#Note that this function is a bit different than Q_matrix. Fix this code
 Q.matrix<-function(input,s.noise,signal){
     n2<-nrow(input)
     diff1<-diff(input)
