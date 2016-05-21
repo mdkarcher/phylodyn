@@ -1203,7 +1203,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
 # SMC' sampler. This is the main function for inference from local genealogies
 #' @export
 smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
-stepsz=.1, Nleap=15,szkappa=NULL, rand_leap=TRUE,scaling=10)
+stepsz=.1, Nleap=15, rand_leap=TRUE,scaling=10)
 {
    
     Ngrid<-length(grid)-1
@@ -1233,7 +1233,7 @@ for(Iter in 1:nsamp){
     }
     res=eval(parse(text='splitHMC'))(theta,current.u,current.grad,function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad),alldata$rtEV,alldata$EVC,stepsz,Nleap,rand_leap)
     theta=res$q;
-    current.u<-res$current.u
+    current.u<-res$current.u$logpos
     current.grad<-res$current.grad
     N<-exp(theta[1:(length(theta)-1)])
     acpi=acpi+res$Ind
