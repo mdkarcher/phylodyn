@@ -1233,8 +1233,8 @@ for(Iter in 1:nsamp){
     }
     res=eval(parse(text='splitHMC'))(theta,current.u,current.grad,function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad),alldata$rtEV,alldata$EVC,stepsz,Nleap,rand_leap)
     theta=res$q;
-    current.u<-res$current.u$logpos
-    current.grad<-res$current.grad
+    current.u<-res$u
+    current.grad<-res$du
     N<-exp(theta[1:(length(theta)-1)])
     acpi=acpi+res$Ind
     if(Iter>nburnin){
