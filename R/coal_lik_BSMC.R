@@ -632,27 +632,28 @@ for (j in 2:sim){
 midpts<-grid[-length(grid)]+diff(grid)/2
 
 #Note that this function is a bit different than Q_matrix. Fix this code
-Q.matrix<-function(input,s.noise,signal){
-    n2<-nrow(input)
-    diff1<-diff(input)
-    diff1[diff1==0]<-s.noise #correction for dividing over 0
-    diff<-(1/(signal*diff1))
-    Q<-spam(0,n2,n2)
-    if (n2>2){
-        Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)} else {Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)}
-    Q[cbind(seq(1,n2-1),seq(2,n2))]<--diff[1:(n2-1)]
-    Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
-    return(Q)}
+#There is a wraper
+#Q.matrix<-function(input,s.noise,signal){
+#   n2<-nrow(input)
+#   diff1<-diff(input)
+#   diff1[diff1==0]<-s.noise #correction for dividing over 0
+#   diff<-(1/(signal*diff1))
+#   Q<-spam::spam(0,n2,n2)
+#   if (n2>2){
+#       Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)} else {Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)}
+#   Q[cbind(seq(1,n2-1),seq(2,n2))]<--diff[1:(n2-1)]
+#   Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
+#   return(Q)}
 
 
 
-invC<-Q.matrix(as.matrix(midpts),0,1)
+invC<-Q_matrix(as.matrix(midpts),0,1)
 diag(invC)<-diag(invC)+.000001 #fudge to be able to compute the cholC
 #invC[1,1]<-invC[1,1]+.00001
-eig=eigen(invC,T)
+eig=spam::eigen.spam(invC,T)
 EV=eig$values; EVC=eig$vectors
 
-Cm=solve(invC)
+Cm=spam::solve.spam(invC)
 cholC<-chol(Cm)
 rtEV=sqrt(EV)
 lik_init =list(Z=Z,Delta=Delta,I=I,Nrep=Nrep,C=C,B=B,ng=(length(grid)-1),Fl=Fl,latent=latent)
