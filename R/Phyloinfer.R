@@ -1221,7 +1221,7 @@ stepsz=.1, Nleap=15,szkappa=NULL, rand_leap=TRUE,scaling=10)
     alldata<-get.data(grid,data$sim,data$D,data$n,coal_lik_init,data$info_times,data$Fl,data$latent,data$t_new,data$t_del)
 
     U<-function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad)
-    current.u<-U(theta,F)
+    current.u<-U(theta,F)$logpos
     current.grad<-U(theta,T)
 
 for(Iter in 1:nsamp){
