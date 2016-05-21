@@ -1244,9 +1244,9 @@ for(Iter in 1:nsamp){
     }
 }
 ini<-1
-med=apply(SAMP[[1]][ini:(Iter-NBURNIN-1),],2,median);
-low=apply(SAMP[[1]][ini:(Iter-NBURNIN-1),],2,function(x)quantile(x,.025))
-up=apply(SAMP[[1]][ini:(Iter-NBURNIN-1),],2,function(x)quantile(x,.975))
+med=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,median);
+low=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,function(x)quantile(x,.025))
+up=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,function(x)quantile(x,.975))
 
 results<-cbind(grid/scaling,c(low[1]-log(scaling),low-log(scaling)),c(med[1]-log(scaling),med-log(scaling)),c(up[1],up)-log(scaling))
 return(results)
