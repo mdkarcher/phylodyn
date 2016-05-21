@@ -310,16 +310,16 @@ read_times<-function(MyTree,n,sim,factor){
 
 if (n>2){
   D<-matrix(nrow=sim,ncol=n-1)
-  D[1,]<-cumsum(coalescent.intervals(MyTree[[1]])$interval.length)*factor
-  if (max(node.depth.edgelength(MyTree[[1]]))>coalescent.intervals(MyTree[[1]])$total.depth) {
-    D[1,]<-D[1,]+factor*(max(node.depth.edgelength(MyTree[[1]]))-coalescent.intervals(MyTree[[1]])$total.depth)
+  D[1,]<-cumsum(ape::coalescent.intervals(MyTree[[1]])$interval.length)*factor
+  if (max(node.depth.edgelength(MyTree[[1]]))>ape::coalescent.intervals(MyTree[[1]])$total.depth) {
+      D[1,]<-D[1,]+factor*(max(node.depth.edgelength(MyTree[[1]]))-ape::coalescent.intervals(MyTree[[1]])$total.depth)
   }
  
   for (j in 1:sim){
-    D[j,]<-factor*cumsum(coalescent.intervals(MyTree[[j]])$interval.length)
+      D[j,]<-factor*cumsum(ape::coalescent.intervals(MyTree[[j]])$interval.length)
     
-    if (max(node.depth.edgelength(MyTree[[j]]))>coalescent.intervals(MyTree[[j]])$total.depth) {
-      D[j,]<-D[j,]+factor*(max(node.depth.edgelength(MyTree[[j]]))-coalescent.intervals(MyTree[[j]])$total.depth)
+    if (max(ape::node.depth.edgelength(MyTree[[j]]))>ape::coalescent.intervals(MyTree[[j]])$total.depth) {
+        D[j,]<-D[j,]+factor*(max(ape::node.depth.edgelength(MyTree[[j]]))-ape::coalescent.intervals(MyTree[[j]])$total.depth)
     }
   }
   
@@ -327,7 +327,7 @@ if (n>2){
     else{
         D<-rep(0,sim)
         for (j in 1:sim){
-            D[j]<-factor*max(node.depth.edgelength(MyTree[[j]]))*factor
+            D[j]<-factor*max(ape::node.depth.edgelength(MyTree[[j]]))*factor
         }
         return(D)
         
