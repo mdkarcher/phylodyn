@@ -648,7 +648,9 @@ midpts<-grid[-length(grid)]+diff(grid)/2
 
 
 invC<-Q_matrix(as.matrix(midpts),0,1)
-diag(invC)<-diag(invC)+.000001 #fudge to be able to compute the cholC
+invC[1,1] <- invC[1,1]+.00001 #fudge to be able to compute the cholC
+
+#diag(invC)<-diag(invC)+.000001 #fudge to be able to compute the cholC
 #invC[1,1]<-invC[1,1]+.00001
 eig=spam::eigen.spam(invC,T)
 EV=eig$values; EVC=eig$vectors
