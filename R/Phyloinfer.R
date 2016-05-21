@@ -1082,6 +1082,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   if (nugget == "1,1")
     invC[1,1] <- invC[1,1]+.0001 # nugget at (1,1)
   else if (nugget == "diag")
+  #Julia: I had a warning when using this--needs to be corrected
     diag(invC)<-diag(invC)+.0001 # nugget for the whole diagonal
   else if (nugget == "none")
     warning("No nugget may result in a non-full-rank matrix.")
@@ -1201,7 +1202,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
 
 # SMC' sampler. This is the main function for inference from local genealogies
 #' @export
-smcp_sampling = function(data,  nsamp, nburnin, grid, prec_alpha = 1e-3, prec_beta = 1e-3,
+smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
 stepsz=.1, Nleap=15,szkappa=NULL, rand_leap=TRUE,scaling=10)
 {
    
