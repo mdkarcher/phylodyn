@@ -278,8 +278,8 @@ U_split_smc = function(theta, init, invC, alpha, beta, grad=F)
 	if(!grad){
 		loglik = coal_loglik_smc(init, f)
 		logpri = ((D-1)/2+alpha-1)*tau - (t(f)%*%invCf/2+beta)*exp(tau)
-		return(-(loglik+logpri))
-	}
+        return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
+    }
 	else{
 		dU_res = -c(coal_loglik_smc(init, f, grad),((D-1)/2+alpha-1)-beta*exp(tau))
 		return(dU_res)
