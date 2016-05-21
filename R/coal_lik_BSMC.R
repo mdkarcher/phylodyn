@@ -629,7 +629,7 @@ for (j in 2:sim){
     }
 }
 
-#midpts<-grid[-length(grid)]+diff(grid)/2
+midpts<-grid[-length(grid)]+diff(grid)/2
 
 #Note that this function is a bit different than Q_matrix. Fix this code
 Q.matrix<-function(input,s.noise,signal){
@@ -643,6 +643,8 @@ Q.matrix<-function(input,s.noise,signal){
     Q[cbind(seq(1,n2-1),seq(2,n2))]<--diff[1:(n2-1)]
     Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
     return(Q)}
+
+
 
 invC<-Q.matrix(as.matrix(midpts),0,1)
 diag(invC)<-diag(invC)+.000001 #fudge to be able to compute the cholC
