@@ -7,7 +7,7 @@ find.children.length<-function(tree,tdel,cor=1){
     #look at tdel found at tree2 but search for it in tree1
     edges<-tree$edge
     x<-tree$Nnode+1
-    values0<-max(node.depth.edgelength(tree))-node.depth.edgelength(tree)
+    values0<-max(ape::node.depth.edgelength(tree))-ape::node.depth.edgelength(tree)
     values0<-values0*cor
     values1<-values0[(x+1):length(values0)]
     values<-sort(values1,decreasing=T)
@@ -37,7 +37,7 @@ create.F<-function(tree,n){
       #n is the number of individual samples 
       edges<-tree$edge
       x<-tree$Nnode+1
-      values1<-max(node.depth.edgelength(tree))-node.depth.edgelength(tree)
+      values1<-max(ape::node.depth.edgelength(tree))-ape::node.depth.edgelength(tree)
       values1<-values1[(x+1):length(values1)]
       values<-sort(values1,decreasing=T)
       correct.label<-seq(x+1,2*x-1)
@@ -311,8 +311,8 @@ read_times<-function(MyTree,n,sim,factor){
 if (n>2){
   D<-matrix(nrow=sim,ncol=n-1)
   D[1,]<-cumsum(ape::coalescent.intervals(MyTree[[1]])$interval.length)*factor
-  if (max(node.depth.edgelength(MyTree[[1]]))>ape::coalescent.intervals(MyTree[[1]])$total.depth) {
-      D[1,]<-D[1,]+factor*(max(node.depth.edgelength(MyTree[[1]]))-ape::coalescent.intervals(MyTree[[1]])$total.depth)
+  if (max(ape::node.depth.edgelength(MyTree[[1]]))>ape::coalescent.intervals(MyTree[[1]])$total.depth) {
+      D[1,]<-D[1,]+factor*(max(ape::node.depth.edgelength(MyTree[[1]]))-ape::coalescent.intervals(MyTree[[1]])$total.depth)
   }
  
   for (j in 1:sim){
