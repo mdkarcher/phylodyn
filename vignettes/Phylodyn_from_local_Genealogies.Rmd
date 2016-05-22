@@ -1,0 +1,106 @@
+Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies
+==========================================================================
+
+
+This R code implements the method described in "Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies" by Palacios JA, Wakeley J, and Ramachandran S (doi: http://dx.doi.org/10.1101/019216). The method is applied to a test dataset (data/Bottle_20c.txt).
+
+
+**Newick files preparation (optional)**
+----------------------------
+
+This program takes a file of local genealogies (with n>2) in [Newick](http://evolution.genetics.washington.edu/phylip/newicktree.html) format as input. Our example dataset  is in the data folder (Bottle_20c.txt). In this example, we use [MaCS](https://code.google.com/p/macs/) with the following command lines
+
+```
+./macs 20 300000 -t 4.0 -eN 0 1 -eN 0.3 0.1 -eN 0.5 1 -T -r .002 -h 1 -s 1420826310 >outMacs.tree
+```
+The file outMacs.tree created above contains more information than needed for our analysis, which only requires gene genealogies. With the following command, we extract the gene genealogies in Newick format
+```
+awk '$1~"NEWICK_TREE"' outMacs.tree | awk -F\] '{print $2}' >Bottle_20.txt
+```
+
+**R Code**
+---------------
+We start by loading the library and reading our data
+```{r}
+library("phylodyn")
+setwd("..")
+getwd()
+MyTree<-ape::read.tree("data/Bottle_20c.txt")
+setwd(paste(getwd(),"/vignettes",sep=""))
+```
+Our method assumes that genealogies are a realization of the Sequentially Markov Coalescent model [SMC'](http://bmcgenet.biomedcentral.com/articles/10.1186/1471-2156-7-16)
+
+
+
+**Data Preparation**
+----------------------
+
+For this example, we will run our algorithm on the first 50 local genealogies (sim=50) and scale time by 10 (scaling=10). Our algorithm searches the new and deleted coalescent times by comparing the coalescent times of consecutive genealogies and we define a tolerance (tol=.00001) to set whether two coalescent times are different ($t_{a} \neq t_{b}$ if $|t_{a}-t_{b}|>tol$). In our experiments, a tolerance level of .00001 works well when the time to the most recent common ancestor is of the order of 2-10. 
+
+```{r}
+n <- length(MyTree[[1]]$tip.label)
+sim<-length(MyTree) 
+sim
+sim<-50 #For this example, the first 50 genealogies
+scaling<-10
+tol<-.00001 #tolerance factor to detect difference between branch lengths
+D<-read_times(MyTree,n,sim,scaling)
+```
+
+Matrix D is a matrix with sim=50 rows and n-1=19 columns with coalescent times. To see the summary of the time to the most recent common ancestor time, run the command:
+
+```{r}
+summary(D[,dim(D)[2]])
+```
+
+Next, we define our discretization of the population size function. After testing many different number of change points, we find that 100 regularly spaced change points provides a good resolution of $N(t)$
+
+```{r}
+window<-max(D)+.0001
+grid.size<-100
+grid<-seq(0,window,length.out=grid.size)
+grid<-c(grid,max(D)+.0002)
+```
+
+We then adjust all our sufficient statistics for our chosen discretization  
+
+```{r}
+info<-find_info2(MyTree,D,sim,n,tol,scaling)
+```
+
+**MCMC Sampling**
+-----------------------
+
+For all our results in the manuscript, we used the seed value 2014 with 50000 iterations (NSAMP=50000) and a burnin of 1000 iterations (NBURNIN=1000). For this tutorial we use 50 iterations and 5 iterations of burnin. 
+
+```{r}
+set.seed(2014)
+res_MCMC = smcp_sampling(data = info, nsamp = 50,
+                         nburnin = 5,grid)
+
+```
+
+**Summary of Results**
+--------------------------
+
+We compute the posterior median and 95% BCIs of log N(t) and plot the results:
+
+```{r}
+
+##Plot results
+results<-res_MCMC
+plot(results[,1],results[,3],type="l",xlim=c(1,0),ylim=c(-3,3),ylab="log N(t)",xlab="No generations",col="white")
+plot.res(results)
+
+##True trajectory
+x<-sort(c(0.299999,0.3,0.49999,0.5,seq(0,4,length.out=100)))
+y<-x
+y[x<.3]<-log(.5)
+y[x>=.3 & x<.5]<-log(.1/2)
+y[x>=.5]<-log(.5)
+points(x,y,lty=2,type="l",lwd=1.5)
+
+```  
+
+
+
