@@ -102,5 +102,8 @@ points(x,y,lty=2,type="l",lwd=1.5)
 
 ```  
 
+References
+---
+1. Palacios, JA, Wakeley, J, and Ramachandran, S. Bayesian nonparametric inference of population size changes from sequential genealogies. *Genetics* 2015 Vol. 201:281-304
 
 
