@@ -10,10 +10,10 @@
 #   u: log-likelihood of new state
 #   Ind: proposal acceptance indicator
 
-ESS = function(q_cur, l_cur, loglik, cholC)
+ESS = function(q_cur, l_cur, loglik, cholC, ...)
 {  
   # choose ellipse
-  nu = t(cholC) %*% rnorm(length(q_cur))
+  nu = crossprod(cholC, rnorm(length(q_cur)))
   
   # log-likelihood threshold
   u = runif(1)
@@ -25,7 +25,8 @@ ESS = function(q_cur, l_cur, loglik, cholC)
   t_max <- t
   
   q <- q_cur*cos(t) + nu*sin(t)
-  l <- loglik(q)
+  l <- loglik(q, ...)
+  
   while (l < logy)
   {
     # shrink the bracket and try a new point
@@ -40,7 +41,8 @@ ESS = function(q_cur, l_cur, loglik, cholC)
     
     t <- runif(1, t_min, t_max)
     q <- q_cur*cos(t) + nu*sin(t)
-    l <- loglik(q)
+    
+    l <- loglik(q, ...)
   }
   
   return(list(q=q, u=l, Ind=1))
@@ -375,7 +377,8 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=
 # Normal log-prior
 log_mvnorm_prior <- function(x, prec, mu=rep(0, length(x)))
 {
-  return(-0.5 * t(x-mu) %*% prec %*% (x-mu))
+  x_mu = x - mu
+  return(-0.5 * crossprod(x_mu, prec %*% x_mu))
 }
 
 # Gamma log-prior for kappa
@@ -394,6 +397,37 @@ log_tau_prior <- function(tau, alpha, beta)
 log_betas_prior <- function(betas, betas_prec = diag(1/100, 1/100))
 {
   return(log_mvnorm_prior(x = betas, prec = betas_prec))
+}
+
+# Computes a summary of the posterior
+compute_pos_summ = function(samp_alg, loglikf, f, kappa, invC, alpha, beta, lik_init,
+                            betas = NULL, betas_prec = diag(1/100, 1/100), covar_vals = NULL,
+                            loglik = NULL, logpri = NULL)
+{
+  if (is.null(loglik))
+  {
+    if (samp_alg %in% c("fixed", "MH"))
+      loglik = loglikf(f, lik_init, betas, covar_vals)
+    else if (samp_alg == "ESS")
+      loglik = loglikf(c(f, betas), lik_init, length(f)+1, covar_vals)
+    else
+      loglik = loglikf(f, lik_init)
+  }
+  
+  if (is.null(logpri))
+  {
+    logpri = log_mvnorm_prior(x = f, prec = invC * kappa) +
+      log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
+    if (samp_alg %in% c("MH", "ESS"))
+    {
+      logbetapri = log_betas_prior(betas, betas_prec)
+      logpri = logpri + logbetapri
+    }
+  }
+  
+  logpos = logpri + loglik
+  
+  return(list(loglik = loglik, logpri = logpri, logpos = logpos))
 }
 
 # Intrinsic precision matrix
@@ -423,554 +457,6 @@ Q_matrix <- function(input, s_noise, signal)
 Q.matrix = function(...)
 {
   return(Q_matrix(...))
-}
-
-#### Sampling wrappers ####
-
-# This serves as a black box to sample distributions using HMC algorithms provided data and basic settings. #
-sampling = function(data, para, alg, setting, init, verbose=TRUE)
-{
-  # pass the data and parameters
-  lik_init = data$lik_init # f_offset = data$f_offset
-  Ngrid = lik_init$ng+1
-  alpha = para$alpha
-  beta = para$beta
-  invC = para$invC
-  rtEV = para$rtEV
-  EVC = para$EVC
-  cholC = para$cholC
-  
-  # MCMC sampling setting
-  stepsz = setting$stepsz
-  Nleap  = setting$Nleap
-  if (alg=='aMALA')
-    szkappa = setting$szkappa
-  
-  if (alg=="HMC" | alg == "splitHMC")
-  {
-    rand_leap = setting$rand_leap
-  }
-  
-  if (alg == "ESSwS")
-  {
-    betas = para$betas
-  }
-  
-  # storage of posterior samples
-  NSAMP = setting$NSAMP
-  #NBURNIN = setting$NBURNIN
-  NBURNIN = 0
-  
-  samp = matrix(NA, NSAMP - NBURNIN, Ngrid) # all parameters together
-  acpi = 0
-  acpt = rep(NA, NSAMP - NBURNIN)
-  
-  # storage of log prior, log likelihood, and log posterior
-  logpri = rep(NA, NSAMP - NBURNIN)
-  loglik = rep(NA, NSAMP - NBURNIN)
-  logpos = rep(NA, NSAMP - NBURNIN)
-  
-  # initialization
-  theta = init$theta
-  u = init$u
-  du = init$du
-  
-  if (alg %in% c("ESSwS-MH", "ESSwS-ESS"))
-  {
-    betas = init$betas
-    betas_out = NULL
-  }
-  
-  if (alg == "HMC")
-  {
-    Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
-                                         alpha = alpha, beta = beta, grad = grad)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "tau")
-  }
-  else if (alg == "splitHMC")
-  {
-    Ufun = function(theta, grad=FALSE) U_split(theta = theta, init = lik_init, invC = invC,
-                                               alpha = alpha, beta = beta, grad = grad)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "tau")
-  }
-  else if (alg == "MALA")
-  {
-    Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
-                                         alpha = alpha, beta = beta, grad = grad)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "tau")
-  }
-  else if (alg == "aMALA")
-  {
-    Ufun = function(theta, grad=FALSE) U_kappa(theta = theta, init = lik_init, invC = invC,
-                                               alpha = alpha, beta = beta, grad = grad)
-    Mf = function(theta) Met(theta, lik_init, invC)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  }
-  else if (alg == "ESS")
-  {
-    ll = function(f) coal_loglik(init = lik_init, f = f)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  }
-  else if (alg == "ESSwS")
-  {
-    ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  }
-  else if (alg == "ESSwS-MH")
-  {
-    ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  }
-  else if (alg == "ESSwS-ESS")
-  {
-    ll = function(f) coal_samp_loglik(init = lik_init, f = f[1:(Ngrid-1)], beta0 = f[Ngrid], beta1 = f[Ngrid+1])
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  }
-  
-  # start MCMC run
-  start_time = Sys.time()
-  cat('Running ', alg ,' sampling...\n')
-  for(Iter in 1:NSAMP)
-  {
-    if (alg == "HMC")
-    {
-      #Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
-      #                                     alpha = alpha, beta = beta, grad = grad)
-      res = HMC(theta, u, du, Ufun, stepsz, Nleap, rand_leap)
-    }
-    else if (alg == "splitHMC")
-    {
-      #Ufun = function(theta, grad=FALSE) U_split(theta = theta, init = lik_init, invC = invC,
-      #                                           alpha = alpha, beta = beta, grad = grad)
-      res = splitHMC(theta, u, du, Ufun, rtEV, EVC, stepsz, Nleap, rand_leap)
-    }
-    else if (alg == "MALA")
-    {
-      #Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
-      #                                     alpha = alpha, beta = beta, grad = grad)
-      res = MALA(theta, u, du, Ufun, stepsz)
-    }
-    else if (alg == "aMALA")
-    {
-      #Ufun = function(theta, grad=FALSE) U_kappa(theta = theta, init = lik_init, invC = invC,
-      #                                           alpha = alpha, beta = beta, grad = grad)
-      #Mf = function(theta) Met(theta, lik_init, invC)
-      res = aMALA(q_cur = theta, u_cur = u, U = Ufun, Mf = Mf, c = szkappa, eps = stepsz)
-    }
-    else if (alg == "ESS")
-    {
-      #ll = function(f) coal_loglik(init = lik_init, f = f)
-      res = ESS(q_cur = theta[-Ngrid], l_cur = u, loglik = ll, cholC = cholC/sqrt(theta[Ngrid]))
-      pos_summ = list(loglik = res$u)
-      pos_summ$logpri = log_mvnorm_prior(x = res$q, prec = invC * theta[Ngrid]) +
-                       log_kappa_prior(kappa = theta[Ngrid], alpha = alpha, beta = beta)
-      pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      res$pos_summ = pos_summ
-    }
-    else if (alg == "ESSwS")
-    {
-      #ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-      res = ESS(q_cur = theta[-Ngrid], l_cur = u, loglik = ll, cholC = cholC/sqrt(theta[Ngrid]))
-      pos_summ = list(loglik = res$u)
-      pos_summ$logpri = log_mvnorm_prior(x = res$q, prec = invC * theta[Ngrid]) +
-                       log_kappa_prior(kappa = theta[Ngrid], alpha = alpha, beta = beta)
-      pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      res$pos_summ = pos_summ
-    }
-    else if (alg == "ESSwS-MH")
-    {
-      # Metropolis step for betas
-      new_beta0 = rnorm(n = 1, mean = betas[1], sd = 0.1)
-      new_beta1 = rnorm(n = 1, mean = betas[2], sd = 0.1)
-      new_u = coal_samp_loglik(init = lik_init, f = theta[-Ngrid], beta0 = new_beta0, beta1 = new_beta1)
-      if (new_u > u || log(runif(n = 1)) < new_u - u)
-      {
-        u = new_u
-        betas = c(new_beta0, new_beta1)
-      }
-      
-      #ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-      res = ESS(q_cur = theta[-Ngrid], l_cur = u, loglik = ll, cholC = cholC/sqrt(theta[Ngrid]))
-      pos_summ = list(loglik = res$u)
-      pos_summ$logpri = log_mvnorm_prior(x = res$q, prec = invC * theta[Ngrid]) +
-                       log_kappa_prior(kappa = theta[Ngrid], alpha = alpha, beta = beta)
-      pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      res$pos_summ = pos_summ
-    }
-    else if (alg == "ESSwS-ESS")
-    {
-      cholC_betas = matrix(0, nrow = nrow(cholC)+2, ncol = ncol(cholC)+2)
-      cholC_betas[1:nrow(cholC), 1:ncol(cholC)] = cholC/sqrt(theta[Ngrid])
-      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(1000)
-      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(1000)
-      
-      #ll = function(f) coal_samp_loglik(init = lik_init, f = f[1:(Ngrid-1)], beta0 = f[Ngrid], beta1 = f[Ngrid+1])
-      res = ESS(q_cur = c(theta[-Ngrid], betas), l_cur = u, loglik = ll, cholC = cholC_betas)
-      pos_summ = list(loglik = res$u)
-      pos_summ$logpri = log_mvnorm_prior(x = res$q[1:(Ngrid-1)], prec = invC * theta[Ngrid]) +
-        log_mvnorm_prior(x = res$q[Ngrid:(Ngrid+1)], prec = diag(c(1/100, 1/100))) +
-        log_kappa_prior(kappa = theta[Ngrid], alpha = alpha, beta = beta)
-      pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      res$pos_summ = pos_summ
-    }
-    else
-    {
-      stop('The algorithm is not in the list!')
-    }
-    
-    acpi <- acpi+res$Ind
-    
-    if (alg %in% c("ESS", "ESSwS", "ESSwS-MH"))
-    {
-      theta[1:(Ngrid-1)] <- res$q
-      
-      # Gibbs sample kappa for ESS
-      theta[Ngrid] <- rgamma(1,alpha+(Ngrid-1)/2, beta + t(theta[-Ngrid]) %*% invC %*% theta[-Ngrid]/2)
-    }
-    else if (alg == "ESSwS-ESS")
-    {
-      theta[1:(Ngrid-1)] <- res$q[1:(Ngrid-1)]
-      betas = res$q[Ngrid:(Ngrid+1)]
-      
-      # Gibbs sample kappa for ESS
-      theta[Ngrid] <- rgamma(1,alpha+(Ngrid-1)/2, beta + t(theta[1:(Ngrid-1)]) %*% invC %*% theta[1:(Ngrid-1)]/2)
-    }
-    else
-    {
-      theta[1:Ngrid] <- res$q
-    }
-    #theta[1:(Ngrid-(alg=='ESS'))]=res$q
-    
-    u <- res$u
-    if (alg %in% c('HMC','splitHMC','MALA'))
-      du <- res$du
-    
-    # save posterior samples after burnin
-    if (Iter > NBURNIN)
-    {
-      samp[Iter - NBURNIN, ] <- theta
-      acpt[Iter - NBURNIN] <- res$Ind
-      
-      logpri[Iter - NBURNIN] <- res$pos_summ$logpri
-      loglik[Iter - NBURNIN] <- res$pos_summ$loglik
-      logpos[Iter - NBURNIN] <- res$pos_summ$logpos
-      
-      if (alg %in% c("ESSwS-MH", "ESSwS-ESS"))
-      {
-        betas_out = rbind(betas_out, betas, deparse.level = 0)
-      }
-    }
-    
-    if(verbose && Iter %% 100 == 0)
-    {
-      cat(Iter, ' iterations have been finished!\n' )
-      cat('Online acceptance rate is ',acpi/100,'\n')
-      acpi=0
-    }
-  }
-  stop_time <- Sys.time()
-  time <- stop_time-start_time
-  cat('\nTime consumed : ',time)
-  #acpt <- acpt/(NSAMP-NBURNIN)
-  cat('\nFinal Acceptance Rate: ', sum(acpt) / (NSAMP-NBURNIN),'\n')
-  
-  pos_summ = data.frame(acpt=acpt, logpri = logpri, loglik = loglik, logpos = logpos)
-  
-  result = list(samp=samp, alg=alg, time=time, pos_summ = pos_summ)
-  if (alg %in% c("ESSwS-MH", "ESSwS-ESS"))
-  {
-    result$betas = betas_out
-  }
-  
-  return(result)
-}
-
-MH_betas = function(betas, lik_init, f, u)
-{
-  # Metropolis step for betas
-  new_beta0 = rnorm(n = 1, mean = betas[1], sd = 0.1)
-  new_beta1 = rnorm(n = 1, mean = betas[2], sd = 0.1)
-  new_u = coal_samp_loglik(init = lik_init, f = f, beta0 = new_beta0, beta1 = new_beta1)
-  if (new_u > u || log(runif(n = 1)) < new_u - u)
-  {
-    result = list(betas = c(new_beta0, new_beta1), u = new_u, ind = 1)
-  }
-  else
-  {
-    result = list(betas = betas, u = u, ind = 0)
-  }
-  return(result)
-}
-
-whiten_kappa = function(kappa, f, lik_init, cholC, invtcholC, loglikf, u, alpha, beta, prop_sd = 1)
-{
-  nu = (invtcholC * sqrt(kappa)) %*% f
-  new_kappa = rlnorm(n = 1, meanlog = log(kappa), sdlog = prop_sd)
-  new_f = (t(cholC) / sqrt(new_kappa)) %*% nu
-  
-  new_u = coal_loglik(init = lik_init, f = new_f) # plus other terms
-  udiff = new_u - u
-  priordiff = log_kappa_prior(kappa = new_kappa, alpha = alpha, beta = beta) -
-    log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-  propdiff = dlnorm(x = log(kappa), meanlog = log(new_kappa), sdlog = prop_sd) - 
-    dlnorm(x = log(new_kappa), meanlog = log(kappa), sdlog = prop_sd)
-  
-  if (log(runif(n = 1)) < udiff + priordiff + propdiff)
-  {
-    result = list(kappa = new_kappa, f = new_f)
-  }
-  else
-  {
-    result = list(kappa = kappa, f = f)
-  }
-  
-  return(result)
-}
-
-compute_pos_summ = function(samp_alg, loglikf, f, kappa, invC, alpha, beta,
-                            betas=NULL, betas_prec=diag(1/100, 1/100))
-{
-  if (samp_alg == "ESS")
-    loglik = loglikf(c(f, betas))
-  else
-    loglik = loglikf(f)
-  
-  
-  logpri = log_mvnorm_prior(x = f, prec = invC * kappa) +
-    log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-  if (samp_alg %in% c("wS_MH", "wS_ESS"))
-    logpri = logpri + log_betas_prior(betas, betas_prec)
-  
-  logpos = logpri + loglik
-  
-  return(list(loglik = loglik, logpri = logpri, logpos = logpos))
-}
-
-sampling_ESS = function(data, para, setting, init, samp_alg = "none", kappa_alg = "gibbs", surrogate = FALSE, verbose=TRUE)
-{
-  # pass the data and parameters
-  lik_init = data$lik_init # f_offset = data$f_offset
-  Ngrid = lik_init$ng+1
-  alpha = para$alpha
-  beta = para$beta
-  invC = para$invC
-  #rtEV = para$rtEV
-  #EVC = para$EVC
-  cholC = para$cholC
-  
-  # MCMC sampling setting
-  #stepsz = setting$stepsz
-  #Nleap  = setting$Nleap
-  #if (alg=='aMALA')
-  #  szkappa = setting$szkappa
-  
-  #if (alg=="HMC" | alg == "splitHMC")
-  #{
-  #  rand_leap = setting$rand_leap
-  #}
-  
-  # storage of posterior samples
-  NSAMP = setting$NSAMP
-  #NBURNIN = setting$NBURNIN
-  NBURNIN = 0
-  
-  #samp = matrix(NA, NSAMP - NBURNIN, Ngrid) # all parameters together
-  #colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  
-  # initialization
-  #theta = init$theta
-  f = init$theta[1:(Ngrid-1)]
-  kappa = init$theta[Ngrid]
-  u = init$u
-  #du = init$du
-  
-  #acpi = 0
-  acpt = rep(1, NSAMP - NBURNIN)
-  
-  fmat = matrix(NA, nrow = NSAMP - NBURNIN, ncol = length(f))
-  kappas = rep(NA, NSAMP - NBURNIN)
-  
-  if (samp_alg %in% c("MH", "ESS"))
-  {
-    betas_out = matrix(NA, nrow = NSAMP - NBURNIN, ncol = 2)
-  }
-  
-  # storage of log prior, log likelihood, and log posterior
-  logpri = rep(NA, NSAMP - NBURNIN)
-  loglik = rep(NA, NSAMP - NBURNIN)
-  logpos = rep(NA, NSAMP - NBURNIN)
-  
-  if (samp_alg == "none")
-  {
-    ll = function(f) coal_loglik(init = lik_init, f = f)
-  }
-  else if (samp_alg == "fixed")
-  {
-    betas = para$betas
-    ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-  }
-  else if (samp_alg == "MH")
-  {
-    betas = init$betas
-    ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-  }
-  else if (samp_alg == "ESS")
-  {
-    betas = init$betas
-    ll = function(f) coal_samp_loglik(init = lik_init, f = f[1:(Ngrid-1)], beta0 = f[Ngrid], beta1 = f[Ngrid+1])
-  }
-  
-  if (kappa_alg == "whiten")
-  {
-    invtcholC = solve(t(cholC))
-  }
-  
-  # start MCMC run
-  start_time = Sys.time()
-  cat('Running ESS', samp_alg ,' sampling...\n')
-  for(Iter in 1:NSAMP)
-  {
-    if (samp_alg == "none")
-    {
-      #ll = function(f) coal_loglik(init = lik_init, f = f)
-      res = ESS(q_cur = f, l_cur = u, loglik = ll, cholC = cholC/sqrt(kappa))
-      f = res$q
-      
-      #pos_summ = list(loglik = res$u)
-      #pos_summ$logpri = log_mvnorm_prior(x = f, prec = invC * kappa) +
-      #  log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-      #pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      #res$pos_summ = pos_summ
-    }
-    else if (samp_alg == "fixed")
-    {
-      #ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-      res = ESS(q_cur = f, l_cur = u, loglik = ll, cholC = cholC/sqrt(kappa))
-      f = res$q
-      
-      #pos_summ = list(loglik = res$u)
-      #pos_summ$logpri = log_mvnorm_prior(x = f, prec = invC * kappa) +
-      #  log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-      #pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      #res$pos_summ = pos_summ
-    }
-    else if (samp_alg == "MH")
-    {
-      ## Metropolis step for betas
-      #new_beta0 = rnorm(n = 1, mean = betas[1], sd = 0.1)
-      #new_beta1 = rnorm(n = 1, mean = betas[2], sd = 0.1)
-      #new_u = coal_samp_loglik(init = lik_init, f = f, beta0 = new_beta0, beta1 = new_beta1)
-      #if (new_u > u || log(runif(n = 1)) < new_u - u)
-      #{
-      #  u = new_u
-      #  betas = c(new_beta0, new_beta1)
-      #}
-      MH_betas(betas = betas, lik_init = lik_init, f = f, u = u)$betas
-      
-      #ll = function(f) coal_samp_loglik(init = lik_init, f = f, beta0 = betas[1], beta1 = betas[2])
-      res = ESS(q_cur = f, l_cur = u, loglik = ll, cholC = cholC/sqrt(kappa))
-      f = res$q
-      
-      #pos_summ = list(loglik = res$u)
-      #pos_summ$logpri = log_mvnorm_prior(x = f, prec = invC * kappa) +
-      #  log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-      #pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      #res$pos_summ = pos_summ
-    }
-    else if (samp_alg == "ESS")
-    {
-      cholC_betas = matrix(0, nrow = nrow(cholC)+2, ncol = ncol(cholC)+2)
-      cholC_betas[1:nrow(cholC), 1:ncol(cholC)] = cholC/sqrt(kappa)
-      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(1000)
-      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(1000)
-      
-      #ll = function(f) coal_samp_loglik(init = lik_init, f = f[1:(Ngrid-1)], beta0 = f[Ngrid], beta1 = f[Ngrid+1])
-      res = ESS(q_cur = c(f, betas), l_cur = u, loglik = ll, cholC = cholC_betas)
-      f = res$q[1:(Ngrid-1)]
-      betas = res$q[Ngrid:(Ngrid+1)]
-      
-      #pos_summ = list(loglik = res$u)
-      #pos_summ$logpri = log_mvnorm_prior(x = f, prec = invC * theta[Ngrid]) +
-      #  log_mvnorm_prior(x = betas, prec = diag(c(1/100, 1/100))) +
-      #  log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-      #pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-      #res$pos_summ = pos_summ
-    }
-    else
-    {
-      stop('The ESS subalgorithm is not in the list!')
-    }
-    
-    #acpi <- acpi+res$Ind
-    
-    if (kappa_alg == "gibbs")
-    {
-      kappa <- rgamma(1,alpha+(Ngrid-1)/2, beta + t(f) %*% invC %*% f/2)
-    }
-    else if (kappa_alg == "whiten")
-    {
-      kappa_res <- whiten_kappa(kappa = kappa, f = f, lik_init = lik_init,
-                                cholC = cholC, invtcholC = invtcholC,
-                                loglikf = ll, u = u, alpha = alpha, beta = beta)
-      kappa <- kappa_res$kappa
-      f <- kappa_res$f
-    }
-    else
-      stop("Kappa operator not recognized.")
-    
-    pos_summ = compute_pos_summ(samp_alg = samp_alg, loglikf = ll, f = f, kappa = kappa,
-                                invC = invC, alpha = alpha, beta = beta, betas = betas)
-    u <- pos_summ$loglik
-    
-    # save posterior samples after burnin
-    if (Iter > NBURNIN)
-    {
-      fmat[Iter - NBURNIN, ] <- f
-      kappas[Iter - NBURNIN] <- kappa
-      
-      if (samp_alg %in% c("MH", "ESS"))
-      {
-        betas_out[Iter - NBURNIN, ] <- betas
-      }
-      #acpt[Iter - NBURNIN] <- res$Ind
-      
-      logpri[Iter - NBURNIN] <- pos_summ$logpri
-      loglik[Iter - NBURNIN] <- pos_summ$loglik
-      logpos[Iter - NBURNIN] <- pos_summ$logpos
-      
-      #if (samp_alg %in% c("MH", "ESS"))
-      #{
-      #  betas_out = rbind(betas_out, betas, deparse.level = 0)
-      #}
-    }
-    
-    if (verbose && Iter %% 100 == 0)
-    {
-      cat(Iter, ' iterations have been finished!\n' )
-      cat('Online acceptance rate is ', 1,'\n')
-      #acpi=0
-    }
-  }
-  stop_time <- Sys.time()
-  time <- stop_time-start_time
-  cat('\nTime consumed : ',time)
-  #acpt <- acpt/(NSAMP-NBURNIN)
-  cat('\nFinal Acceptance Rate: ', sum(acpt) / (NSAMP-NBURNIN),'\n')
-  
-  pos_summ = data.frame(acpt=acpt, logpri = logpri, loglik = loglik, logpos = logpos)
-  
-  if (samp_alg %in% c("MH", "ESS"))
-  {
-    samp = cbind(fmat, kappas, betas_out)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa", "beta0", "beta1")
-  }
-  else
-  {
-    samp = cbind(fmat, kappas)
-    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
-  }
-  
-  return(list(samp=samp, alg="ESS", time=time, pos_summ = pos_summ, samp_alg = samp_alg))
 }
 
 burnin_subsample = function(res, burnin = 0, subsample = 1)
@@ -1042,10 +528,480 @@ calculate_estimates = function(logfmat, params, grid)
               pmed = pmed, plow = plow, phi = phi))
 }
 
+
+#### Sampling functions ####
+
+#MH_betas = function(curr_betas, lik_init, f, curr_pos_summ, proposal_sds = c(0.1, 0.1))
+MH_betas = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
+                    invC, alpha, beta, betas_prec = diag(1/100, 1/100),
+                    covar_vals = covar_vals, proposal_sds = c(0.1, 0.1))
+{
+  # Metropolis step for betas
+  new_betas = rnorm(n = length(curr_betas), mean = curr_betas, sd = proposal_sds)
+  
+  new_pos_summ = compute_pos_summ(samp_alg = "MH", loglikf = loglikf, f = f,
+                                  kappa = kappa, invC = invC, lik_init = lik_init,
+                                  alpha = alpha, beta = beta, betas = new_betas,
+                                  betas_prec = betas_prec, covar_vals = covar_vals)
+  #new_ll = coal_samp_loglik(init = lik_init, f = f, beta0 = new_beta0, beta1 = new_beta1)
+  
+  if (new_pos_summ$logpos > curr_pos_summ$logpos ||
+      log(runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
+  {
+    result = list(betas = new_betas, pos_summ = new_pos_summ, ind = 1)
+  }
+  else
+  {
+    result = list(betas = curr_betas, pos_summ = curr_pos_summ, ind = 0)
+  }
+  return(result)
+}
+
+MH_betas_rscan = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
+                          invC, alpha, beta, betas_prec = diag(1/100, 1/100),
+                          covar_vals = covar_vals, proposal_sds = rep(0.1, length(curr_betas)),
+                          niter = length(curr_betas))
+{
+  n = length(curr_betas)
+  rscan = sample(x = 1:n, size = niter, replace = TRUE)
+  inds = vector(mode="list", length=n)
+  
+  new_betas = curr_betas
+  for (idx in rscan)
+  {
+    new_betas[idx] = rnorm(n = 1, mean = curr_betas[idx], sd = proposal_sds[idx])
+    
+    new_pos_summ = compute_pos_summ(samp_alg = "MH", loglikf = loglikf, f = f,
+                                    kappa = kappa, invC = invC, lik_init = lik_init,
+                                    alpha = alpha, beta = beta, betas = new_betas,
+                                    betas_prec = betas_prec, covar_vals = covar_vals)
+    
+    if (new_pos_summ$logpos > curr_pos_summ$logpos ||
+        log(runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
+    {
+      curr_betas = new_betas
+      curr_pos_summ = new_pos_summ
+      inds[[idx]] = c(inds[[idx]], 1)
+    }
+    else
+    {
+      new_betas = curr_betas
+      inds[[idx]] = c(inds[[idx]], 0)
+    }
+  }
+  
+  result = list(betas = curr_betas, pos_summ = curr_pos_summ, inds = inds)
+  
+  return(result)
+}
+
+whiten_kappa = function(kappa, f, lik_init, cholC, invtcholC, loglikf, u, alpha, beta, prop_sd = 1)
+{
+  nu = (invtcholC * sqrt(kappa)) %*% f
+  new_kappa = rlnorm(n = 1, meanlog = log(kappa), sdlog = prop_sd)
+  new_f = (t(cholC) / sqrt(new_kappa)) %*% nu
+  
+  new_u = coal_loglik(init = lik_init, f = new_f) # plus other terms
+  udiff = new_u - u
+  priordiff = log_kappa_prior(kappa = new_kappa, alpha = alpha, beta = beta) -
+    log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
+  propdiff = dlnorm(x = log(kappa), meanlog = log(new_kappa), sdlog = prop_sd) - 
+    dlnorm(x = log(new_kappa), meanlog = log(kappa), sdlog = prop_sd)
+  
+  if (log(runif(n = 1)) < udiff + priordiff + propdiff)
+  {
+    result = list(kappa = new_kappa, f = new_f)
+  }
+  else
+  {
+    result = list(kappa = kappa, f = f)
+  }
+  
+  return(result)
+}
+
+# This serves as a black box to sample distributions using HMC algorithms provided data and basic settings. #
+sampling = function(data, para, alg, setting, init, verbose=TRUE, printevery=100)
+{
+  # pass the data and parameters
+  lik_init = data$lik_init # f_offset = data$f_offset
+  Ngrid = lik_init$ng+1
+  alpha = para$alpha
+  beta = para$beta
+  invC = para$invC
+  rtEV = para$rtEV
+  EVC = para$EVC
+  cholC = para$cholC
+  
+  # MCMC sampling setting
+  stepsz = setting$stepsz
+  Nleap  = setting$Nleap
+  if (alg=='aMALA')
+    szkappa = setting$szkappa
+  
+  if (alg=="HMC" | alg == "splitHMC")
+  {
+    rand_leap = setting$rand_leap
+  }
+  
+  if (alg == "ESSwS")
+  {
+    betas = para$betas
+  }
+  
+  # storage of posterior samples
+  NSAMP = setting$NSAMP
+  NBURNIN = setting$NBURNIN
+  NSUBSAMP = setting$NSUBSAMP
+  recorded_iters = seq.int(from = NBURNIN+1, to = NSAMP, by = NSUBSAMP)
+  
+  samp = matrix(NA, length(recorded_iters), Ngrid) # all parameters together
+  acpi = 0
+  acpt = rep(NA, length(recorded_iters))
+  
+  # storage of log prior, log likelihood, and log posterior
+  logpri = rep(NA, length(recorded_iters))
+  loglik = rep(NA, length(recorded_iters))
+  logpos = rep(NA, length(recorded_iters))
+  
+  # initialization
+  theta = init$theta
+  u = init$u
+  du = init$du
+  
+  if (alg %in% c("ESSwS-MH", "ESSwS-ESS"))
+  {
+    betas = init$betas
+    betas_out = NULL
+  }
+  
+  if (alg == "HMC")
+  {
+    Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
+                                         alpha = alpha, beta = beta, grad = grad)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "tau")
+  }
+  else if (alg == "splitHMC")
+  {
+    Ufun = function(theta, grad=FALSE) U_split(theta = theta, init = lik_init, invC = invC,
+                                               alpha = alpha, beta = beta, grad = grad)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "tau")
+  }
+  else if (alg == "MALA")
+  {
+    Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
+                                         alpha = alpha, beta = beta, grad = grad)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "tau")
+  }
+  else if (alg == "aMALA")
+  {
+    Ufun = function(theta, grad=FALSE) U_kappa(theta = theta, init = lik_init, invC = invC,
+                                               alpha = alpha, beta = beta, grad = grad)
+    Mf = function(theta) Met(theta, lik_init, invC)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
+  }
+
+  # start MCMC run
+  start_time = Sys.time()
+  cat('Running ', alg ,' sampling...\n')
+  for(iter in 1:NSAMP)
+  {
+    if (alg == "HMC")
+    {
+      #Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
+      #                                     alpha = alpha, beta = beta, grad = grad)
+      res = HMC(theta, u, du, Ufun, stepsz, Nleap, rand_leap)
+    }
+    else if (alg == "splitHMC")
+    {
+      #Ufun = function(theta, grad=FALSE) U_split(theta = theta, init = lik_init, invC = invC,
+      #                                           alpha = alpha, beta = beta, grad = grad)
+      res = splitHMC(theta, u, du, Ufun, rtEV, EVC, stepsz, Nleap, rand_leap)
+    }
+    else if (alg == "MALA")
+    {
+      #Ufun = function(theta, grad=FALSE) U(theta = theta, init = lik_init, invC = invC,
+      #                                     alpha = alpha, beta = beta, grad = grad)
+      res = MALA(theta, u, du, Ufun, stepsz)
+    }
+    else if (alg == "aMALA")
+    {
+      #Ufun = function(theta, grad=FALSE) U_kappa(theta = theta, init = lik_init, invC = invC,
+      #                                           alpha = alpha, beta = beta, grad = grad)
+      #Mf = function(theta) Met(theta, lik_init, invC)
+      res = aMALA(q_cur = theta, u_cur = u, U = Ufun, Mf = Mf, c = szkappa, eps = stepsz)
+    }
+    else
+    {
+      stop('The algorithm is not in the list!')
+    }
+    
+    acpi <- acpi+res$Ind
+    
+    theta[1:Ngrid] <- res$q
+
+    u <- res$u
+    if (alg %in% c('HMC','splitHMC','MALA'))
+      du <- res$du
+    
+    # save posterior samples after burnin
+    output_index = match(x = iter, table = recorded_iters)
+    if (!is.na(output_index))
+    {
+      samp[output_index, ] <- theta
+      acpt[output_index] <- res$Ind
+      
+      logpri[output_index] <- res$pos_summ$logpri
+      loglik[output_index] <- res$pos_summ$loglik
+      logpos[output_index] <- res$pos_summ$logpos
+    }
+    
+    if(verbose && iter %% printevery == 0)
+    {
+      cat(iter, ' iterations have been finished!\n' )
+      cat('Online acceptance rate is ',acpi/printevery,'\n')
+      acpi=0
+    }
+  }
+  stop_time <- Sys.time()
+  time <- stop_time-start_time
+  cat('\nTime consumed : ', time, units(time))
+  #acpt <- acpt/(NSAMP-NBURNIN)
+  cat('\nFinal Acceptance Rate: ', sum(acpt) / (NSAMP-NBURNIN),'\n')
+  
+  pos_summ = data.frame(acpt=acpt, logpri = logpri, loglik = loglik, logpos = logpos)
+  
+  result = list(samp=samp, alg=alg, time=time, pos_summ = pos_summ)
+
+  return(result)
+}
+
+ESS_none_ll = function(f, lik_init)
+{
+  return(coal_loglik(init = lik_init, f = f))
+}
+
+ESS_betas_ll = function(f, lik_init, betas, covar_vals = NULL) 
+{
+  fs = cbind(f, covar_vals, deparse.level = 0)
+  return(coal_loglik(init = lik_init, f = f) +
+           samp_loglik(init = lik_init, fs = fs, betas = betas))
+}
+
+ESS_ext_ll = function(f, lik_init, Ngrid, covar_vals = NULL) 
+{
+  nbetas = length(f) - Ngrid + 1
+  return(coal_loglik(init = lik_init, f = f[1:(Ngrid-1)]) +
+           samp_loglik(init = lik_init,
+                       fs = cbind(f[1:(Ngrid-1)], covar_vals, deparse.level = 0),
+                       betas = f[Ngrid:(Ngrid+nbetas-1)]))
+}
+
+sampling_ESS = function(data, para, setting, init,
+                        samp_alg = "none", kappa_alg = "gibbs",
+                        verbose=TRUE, printevery=100)
+{
+  # pass the data and parameters
+  lik_init = data$lik_init
+  covar_vals = data$covar_vals
+  Ngrid = lik_init$ng+1
+  
+  alpha = para$alpha
+  beta = para$beta
+  invC = para$invC
+  cholC = para$cholC
+  beta_vars = para$beta_vars
+  
+  proposal_sds = setting$proposal_sds
+  
+  # storage of posterior samples
+  NSAMP = setting$NSAMP
+  NBURNIN = setting$NBURNIN
+  NSUBSAMP = setting$NSUBSAMP
+  recorded_iters = seq.int(from = NBURNIN+1, to = NSAMP, by = NSUBSAMP)
+  
+  # initialization
+  f = init$theta[1:(Ngrid-1)]
+  kappa = init$theta[Ngrid]
+  #u = init$u
+  
+  #acpi = 0
+  acpt = rep(1, length(recorded_iters))
+  
+  fmat = matrix(NA, nrow = length(recorded_iters), ncol = length(f))
+  kappas = rep(NA, length(recorded_iters))
+  
+  # storage of log prior, log likelihood, and log posterior
+  logpri = rep(NA, length(recorded_iters))
+  loglik = rep(NA, length(recorded_iters))
+  logpos = rep(NA, length(recorded_iters))
+  
+  if (samp_alg == "none")
+  {
+    ll = ESS_none_ll
+  }
+  else if (samp_alg == "fixed")
+  {
+    betas = para$betas
+    ll = ESS_betas_ll
+  }
+  else if (samp_alg == "MH")
+  {
+    betas = init$betas
+    ll = ESS_betas_ll
+  }
+  else if (samp_alg == "ESS")
+  {
+    betas = init$betas
+    ll = ESS_ext_ll
+  }
+  
+  if (samp_alg %in% c("MH", "ESS"))
+  {
+    betas_out = matrix(NA, nrow = length(recorded_iters), ncol = length(betas))
+  }
+  
+  pos_summ = compute_pos_summ(samp_alg = samp_alg, loglikf = ll, f = f,
+                              kappa = kappa, invC = invC, lik_init = lik_init,
+                              alpha = alpha, beta = beta, betas = betas,
+                              betas_prec = diag(1/beta_vars), covar_vals = covar_vals)
+  
+  if (kappa_alg == "whiten")
+  {
+    invtcholC = solve(t(cholC))
+  }
+  
+  # start MCMC run
+  start_time = Sys.time()
+  cat('Running ESS', samp_alg ,' sampling...\n')
+  for(iter in 1:NSAMP)
+  {
+    if (samp_alg == "none")
+    {
+      res = ESS(q_cur = f, l_cur = pos_summ$loglik, loglik = ll,
+                cholC = cholC/sqrt(kappa), lik_init = lik_init)
+      f = res$q
+    }
+    else if (samp_alg == "fixed")
+    {
+      res = ESS(q_cur = f, l_cur = pos_summ$loglik, loglik = ll,
+                cholC = cholC/sqrt(kappa), lik_init = lik_init,
+                betas = betas, covar_vals = covar_vals)
+      f = res$q
+    }
+    else if (samp_alg == "MH")
+    {
+      MH_res = MH_betas_rscan(curr_betas = betas, curr_pos_summ = pos_summ,
+                              loglikf = ll, lik_init = lik_init, f = f, kappa = kappa,
+                              invC = invC, alpha = alpha, beta = beta,
+                              betas_prec = diag(1/beta_vars), covar_vals = covar_vals,
+                              proposal_sds = proposal_sds)
+      betas = MH_res$betas
+      pos_summ = MH_res$pos_summ
+      
+      res = ESS(q_cur = f, l_cur = pos_summ$loglik, loglik = ll,
+                cholC = cholC/sqrt(kappa), lik_init = lik_init,
+                betas = betas, covar_vals = covar_vals)
+      f = res$q
+    }
+    else if (samp_alg == "ESS")
+    {
+      cholC_betas = matrix(0, nrow = nrow(cholC)+2, ncol = ncol(cholC)+2)
+      cholC_betas[1:nrow(cholC), 1:ncol(cholC)] = cholC/sqrt(kappa)
+      cholC_betas[nrow(cholC)+1, ncol(cholC)+1] = sqrt(beta_vars[1])
+      cholC_betas[nrow(cholC)+2, ncol(cholC)+2] = sqrt(beta_vars[2])
+      
+      res = ESS(q_cur = c(f, betas), l_cur = pos_summ$loglik, loglik = ll,
+                cholC = cholC_betas, lik_init = lik_init,
+                Ngrid = Ngrid, covar_vals = covar_vals)
+      f = res$q[1:(Ngrid-1)]
+      betas = res$q[Ngrid:(Ngrid+1)]
+    }
+    else
+    {
+      stop('The ESS subalgorithm is not in the list!')
+    }
+    
+    #acpi <- acpi+res$Ind
+    
+    if (kappa_alg == "gibbs")
+    {
+      kappa <- rgamma(1, alpha + (Ngrid-1)/2, beta + crossprod(f, invC %*% f)/2)
+    }
+    else if (kappa_alg == "whiten")
+    {
+      kappa_res <- whiten_kappa(kappa = kappa, f = f, lik_init = lik_init,
+                                cholC = cholC, invtcholC = invtcholC,
+                                loglikf = ll, u = pos_summ$loglik, alpha = alpha, beta = beta)
+      kappa <- kappa_res$kappa
+      f <- kappa_res$f
+    }
+    else
+      stop("Kappa operator not recognized.")
+    
+    pos_summ = compute_pos_summ(samp_alg = samp_alg, loglikf = ll, f = f,
+                                lik_init = lik_init, kappa = kappa, invC = invC,
+                                alpha = alpha, beta = beta, betas = betas,
+                                betas_prec = diag(1/beta_vars), covar_vals = covar_vals)
+    #u <- pos_summ$loglik
+    
+    # save posterior samples after burnin
+    output_index = match(x = iter, table = recorded_iters)
+    if (!is.na(output_index))
+    {
+      fmat[output_index, ] <- f
+      kappas[output_index] <- kappa
+      
+      if (samp_alg %in% c("MH", "ESS"))
+      {
+        betas_out[output_index, ] <- betas
+      }
+      #acpt[output_index] <- res$Ind
+      
+      logpri[output_index] <- pos_summ$logpri
+      loglik[output_index] <- pos_summ$loglik
+      logpos[output_index] <- pos_summ$logpos
+    }
+    
+    if (verbose && iter %% printevery == 0)
+    {
+      cat(iter, ' iterations have been finished!\n' )
+      cat('Online acceptance rate is ', 1,'\n')
+      #acpi=0
+    }
+  }
+  stop_time <- Sys.time()
+  time <- stop_time-start_time
+  cat('\nTime consumed : ', time, units(time))
+  #acpt <- acpt/(NSAMP-NBURNIN)
+  cat('\nFinal Acceptance Rate: ', sum(acpt) / length(recorded_iters),'\n')
+  
+  pos_summ = data.frame(acpt=acpt, logpri = logpri, loglik = loglik, logpos = logpos)
+  
+  if (samp_alg %in% c("MH", "ESS"))
+  {
+    samp = cbind(fmat, kappas, betas_out)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa", paste("beta", 0:(length(betas)-1)))
+  }
+  else
+  {
+    samp = cbind(fmat, kappas)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
+  }
+  
+  return(list(samp=samp, alg="ESS", time=time, pos_summ = pos_summ,
+              samp_alg = samp_alg, kappa_alg = kappa_alg))
+}
+
 # wrapper that encapsulates sampler above with good defaults
 #' @export
-mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,
-                         TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL, betas=c(0,0), samp_alg = "none", kappa_alg = "gibbs")
+mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
+                         nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,
+                         TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL,
+                         f_init = rep(1, Ngrid-1), kappa = 1,
+                         covariates=NULL, betas=rep(0, 2+length(covariates)),
+                         samp_alg = "none", kappa_alg = "gibbs",
+                         beta_vars = rep(100, length(betas)), printevery=100)
 {
   # add ability to parse genealogy objects as well as lists
   samp_times = data$samp_times
@@ -1072,6 +1028,15 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   intl = grid[2]-grid[1]
   midpts = grid[-1]-intl/2
   
+  covar_vals = NULL
+  if (!is.null(covariates))
+  {
+    for (fcn in covariates)
+    {
+      covar_vals = cbind(covar_vals, log(fcn(midpts)), deparse.level = 0)
+    }
+  }
+  
   # initialize likelihood calculation
   lik_init = coal_lik_init(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)
   
@@ -1096,7 +1061,9 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   cholC = chol(C)
   
   # initializations
-  theta = rep(1,Ngrid)
+  #theta = rep(1,Ngrid)
+  theta = c(f_init, kappa)
+  
   if (alg == "HMC")
   {
     u  = U(theta,lik_init,invC,prec_alpha,prec_beta)$logpos
@@ -1119,22 +1086,8 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   }
   else if (alg == "ESS")
   {
-    u  = coal_loglik(init = lik_init, f = theta[-Ngrid])
-    du = NULL
-  }
-  else if (alg == "ESSwS")
-  {
-    u  = coal_samp_loglik(init = lik_init, f = theta[-Ngrid], beta0 = betas[1], beta1 = betas[2])
-    du = NULL
-  }
-  else if (alg == "ESSwS-MH")
-  {
-    u  = coal_samp_loglik(init = lik_init, f = theta[-Ngrid], beta0 = betas[1], beta1 = betas[2])
-    du = NULL
-  }
-  else if (alg == "ESSwS-ESS")
-  {
-    u  = coal_samp_loglik(init = lik_init, f = theta[-Ngrid], beta0 = betas[1], beta1 = betas[2])
+    u = NULL
+    #u  = coal_loglik(init = lik_init, f = theta[-Ngrid])
     du = NULL
   }
   else
@@ -1143,21 +1096,26 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   }
   
   # MCMC sampling preparation
-  data = list(lik_init=lik_init)
-  para = list(alpha=prec_alpha,beta=prec_beta,invC=invC,rtEV=rtEV,EVC=EVC,cholC=cholC, betas=betas)
-  setting = list(stepsz=stepsz,Nleap=Nleap,NSAMP=nsamp,NBURNIN=nburnin,szkappa = szkappa,rand_leap=rand_leap)
-  init = list(theta=theta,u=u,du=du, betas=betas)
+  data = list(lik_init = lik_init, covar_vals = covar_vals)
+  para = list(alpha = prec_alpha, beta = prec_beta, invC = invC, rtEV = rtEV,
+              EVC = EVC, cholC = cholC, betas = betas, beta_vars = beta_vars)
+  setting = list(stepsz = stepsz, Nleap = Nleap,
+                 NSAMP = nsamp, NBURNIN = nburnin, NSUBSAMP = nsubsamp,
+                 szkappa = szkappa, rand_leap=rand_leap,
+                 proposal_sds = rep(0.3, length(betas)))
+  init = list(theta = theta, u = u, du = du, betas = betas)
   
   # Run MCMC sampler
   if (alg == "ESS")
   {
     res_MCMC = sampling_ESS(data = data, para = para, setting = setting,
-                            init = init, samp_alg = samp_alg, kappa_alg = kappa_alg)
+                            init = init, samp_alg = samp_alg, kappa_alg = kappa_alg,
+                            printevery = printevery)
   }
   else
   {
     res_MCMC = sampling(data = data, para = para, alg = alg, setting = setting,
-                        init = init)
+                        init = init, printevery = printevery)
   }
   
   res_MCMC$alg = alg
@@ -1165,20 +1123,20 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   res_MCMC$kappa_alg = kappa_alg
   res_MCMC$Ngrid = Ngrid
   
-  cleaned_res = burnin_subsample(res = res_MCMC, burnin = nburnin)
+  #cleaned_res = burnin_subsample(res = res_MCMC, burnin = 0)
   
-  logfmat = cleaned_res$samp[,1:(Ngrid-1)]
+  logfmat = res_MCMC$samp[,1:(Ngrid-1)]
   if (alg == "ESS" && samp_alg %in% c("MH", "ESS"))
   {
-    params = cleaned_res$samp[,Ngrid:(Ngrid+2)]
+    params = res_MCMC$samp[,Ngrid:(Ngrid+2)]
   }
   else
   {
-    params = matrix(cleaned_res$samp[,Ngrid])
+    params = matrix(res_MCMC$samp[,Ngrid])
   }
   estimates = calculate_estimates(logfmat = logfmat, params = params, grid = grid)
   
-  res_MCMC$cleaned_res = cleaned_res
+  #res_MCMC$cleaned_res = cleaned_res
   res_MCMC$estimates = estimates
   
   res_MCMC$med = estimates$fmed
@@ -1196,94 +1154,4 @@ mcmc_sampling = function(data, alg, nsamp, nburnin, Ngrid=100, nugget="1,1", pre
   res_MCMC$coal_times = coal_times
   
   return(res_MCMC)
-}
-
-sampling_old = function(data, para, alg, setting, init, verbose=TRUE)
-{
-  # pass the data and parameters
-  lik_init = data$lik_init # f_offset = data$f_offset
-  Ngrid = lik_init$ng+1
-  alpha = para$alpha
-  beta = para$beta
-  invC = para$invC
-  rtEV = para$rtEV
-  EVC = para$EVC
-  cholC = para$cholC
-  
-  # MCMC sampling setting
-  stepsz = setting$stepsz
-  Nleap  = setting$Nleap
-  if (alg=='aMALA')
-    szkappa = setting$szkappa
-  
-  if (alg=="HMC" | alg == "splitHMC")
-  {
-    rand_leap = setting$rand_leap
-  }
-  
-  
-  # storage of posterior samples
-  NSAMP = setting$NSAMP
-  NBURNIN = setting$NBURNIN
-  samp = matrix(NA,NSAMP-NBURNIN,Ngrid) # all parameters together
-  acpi = 0
-  acpt = 0
-  
-  # initialization
-  theta = init$theta
-  u = init$u
-  du = init$du
-  
-  # start MCMC run
-  start_time = Sys.time()
-  cat('Running ', alg ,' sampling...\n')
-  for(Iter in 1:NSAMP)
-  {
-    if(verbose&&Iter%%100==0)
-    {
-      cat(Iter, ' iterations have been finished!\n' )
-      cat('Online acceptance rate is ',acpi/100,'\n')
-      acpi=0
-    }
-    
-    # sample the whole parameter
-    #tryCatch({res=switch(alg,
-    #                     HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap,rand_leap),
-    #                     splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=FALSE)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap,rand_leap),
-    #                     MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
-    #                     aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=FALSE)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
-    #                     ESS=eval(parse(text='ESS'))(theta[-Ngrid],u,function(f)coal_loglik(lik_init,f),cholC/sqrt(theta[Ngrid])),
-    #                     stop('The algorithm is not in the list!'));
-    #          theta[1:(Ngrid-(alg=='ESS'))]=res$q;u=res[[2]];if(any(grepl(alg,c('HMC','splitHMC','MALA'))))du=res$du;
-    #          acpi=acpi+res$Ind}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
-    res=switch(alg,
-               HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap,rand_leap),
-               splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=FALSE)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap,rand_leap),
-               MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
-               aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=FALSE)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
-               ESS=eval(parse(text='ESS'))(theta[-Ngrid],u,function(f)coal_loglik(lik_init,f),cholC/sqrt(theta[Ngrid])),
-               stop('The algorithm is not in the list!'));
-    theta[1:(Ngrid-(alg=='ESS'))]=res$q
-    u=res[[2]]
-    if(any(grepl(alg,c('HMC','splitHMC','MALA'))))du=res$du
-    acpi=acpi+res$Ind
-    # Gibbs sample kappa for ESS
-    if(alg=='ESS')
-      theta[Ngrid]=rgamma(1,alpha+(Ngrid-1)/2,beta+t(theta[-Ngrid])%*%invC%*%theta[-Ngrid]/2)
-    
-    # save posterior samples after burnin
-    if(Iter>NBURNIN)
-    {
-      samp[Iter-NBURNIN,]<-theta
-      acpt<-acpt+res$Ind
-    }
-    
-  }
-  stop_time = Sys.time()
-  time = stop_time-start_time
-  cat('\nTime consumed : ',time)
-  acpt = acpt/(NSAMP-NBURNIN)
-  cat('\nFinal Acceptance Rate: ',acpt,'\n')
-  
-  return(list(samp=samp,time=time,acpt=acpt))
 }
