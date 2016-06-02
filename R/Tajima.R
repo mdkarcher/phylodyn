@@ -80,16 +80,33 @@ group.data<-function(sort.main,n){
 
 bring.branch.lengths<-function(u,F){
   #u is the vector of intercoalescent times
-  #given u and F, returns branch lengths ln+1,ln,ln-1,...,l3
+  #given u and F, returns branch lengths ln+1,ln,ln-1,...,l3 and family sizes
   dimf<-nrow(F)
   diffM<-F[2:(dimf),2:dimf]-F[2:dimf,1:(dimf-1)]
-  d<-rep(0,dimf) #for corresponding ln+1,ln,ln-1,...,l3
-  d[1]<-u[1]
+  d<-rep(u[1],dimf) #for corresponding ln+1,ln,ln-1,...,l3
+  firstzero<-rep(0,dimf-2) #for corresponding Sn,Sn-1,..S2
+  familysize<-rep(2,dimf)
   coal_times<-cumsum(u)
   for (j in 1:(dimf-2)){
-    firstzero<-min(seq(j,(dimf-1))[diffM[j:(dimf-1),j]==0])
-    d[j+1]<-coal_times[firstzero]-coal_times[j]
+    firstzero[j]<-min(seq(j,(dimf-1))[diffM[j:(dimf-1),j]==0])
+    d[j+1]<-coal_times[firstzero[j]]-coal_times[j]
   }
+  
   d[dimf]<-u[dimf]
-  return(d)
+  firstzerotrans<-dimf+2-firstzero
+  for (i in 1:(dimf-2)){
+    count<-sum(firstzerotrans==(dimf-i+1))
+    if (count==0){
+      familysize[i+1]<-2
+    }
+    if (count==1){
+      familysize[i+1]<-familysize[seq(1,dimf-2)[firstzerotrans==(dimf-i+1)]]+1
+    }
+    if (count==2){
+      familysize[i+1]<-familysize[min(seq(1,(dimf-2))[firstzerotrans==(dimf-i+1)])]+familysize[max(seq(1,(dimf-2))[firstzerotrans==(dimf-i+1)])]
+    }
+    
+  }
+  familysize[length(familysize)]<-dimf+1
+  return(list(d=d,familysize=familysize))
 }
