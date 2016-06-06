@@ -1,6 +1,6 @@
 ##Code for Tajima-based inference from a single locus
 
-sufficient.stats<-function(groups,n){
+sufficient_stats<-function(groups,n){
   ##Dan Gusfield Algorithm 1.1 and 1.2 
   l<-length(groups$mut.groups)
   O<-matrix(0,nrow=n,ncol=l)
@@ -38,7 +38,9 @@ sufficient.stats<-function(groups,n){
   leaves<-apply(Index,1,max)
   card<-rev(groups$cardinality)
   carriers<-rev(groups$carriers) #I don't use this
-  mylist<-list(list(d=0,x=0,y=0,parent=0))
+  mylist<-list(list(d=0,x=0,y=0,parent=0,order=0))
+  orderlist<-0
+  parentlist<-0
   L<-apply(Lmat,2,max) #this vector has the nesting information, it has parents nodes
   parents<-sort(unique(L),d=T)
   i<-2
@@ -52,7 +54,9 @@ sufficient.stats<-function(groups,n){
     #offspringsize<-frequency[offspring]
     offspringsizelist<-unique(offspringsize)
     for (k in offspringsizelist){
-      mylist[[i]]<-list(d=k,x=sum(offspringsize==k),y=card[offspring[offspringsize==k]],parent=j)  
+      mylist[[i]]<-list(d=k,x=sum(offspringsize==k),y=card[offspring[offspringsize==k]],parent=j,order=min(offspring[offspringsize==k])) 
+      parentlist<-c(parentlist,j)
+      orderlist<-c(orderlist,min(offspring[offspringsize==k]))
       for (le in offspring[offspringsize==k]){
         leaves[leaves==le]<-j
       }
@@ -61,10 +65,12 @@ sufficient.stats<-function(groups,n){
     
   }
   mylist[[1]]<-NULL
-  return(mylist)
+  orderlist<-orderlist[-1]
+  parentlist<-parentlist[-1]
+  return(list(mylist=mylist,nodes=cbind(orderlist,parentlist)))
 }
 
-group.data<-function(sort.main,n){
+group_data<-function(sort.main,n){
   mut.groups<-unique(sort.main$x)
   new.label<-seq(1,length(mut.groups))
   cardinality<-rep(0,length(mut.groups))
@@ -78,14 +84,16 @@ group.data<-function(sort.main,n){
   return(list(carriers=carriers,cardinality=cardinality,mut.groups=mut.groups))
 }
 
-bring.branch.lengths<-function(u,F){
+bring_branch_lengths<-function(u,F){
   #u is the vector of intercoalescent times
   #given u and F, returns branch lengths ln+1,ln,ln-1,...,l3 and family sizes
   dimf<-nrow(F)
   diffM<-F[2:(dimf),2:dimf]-F[2:dimf,1:(dimf-1)]
   d<-rep(u[1],dimf) #for corresponding ln+1,ln,ln-1,...,l3
-  firstzero<-rep(0,dimf-2) #for corresponding Sn,Sn-1,..S2
-  familysize<-rep(2,dimf)
+  firstzero<-rep(0,dimf-2) 
+  familysize<-rep(2,dimf)#for corresponding Sn,Sn-1,..S2
+  clades_offspring<-0
+  clades_parents<-0
   coal_times<-cumsum(u)
   for (j in 1:(dimf-2)){
     firstzero[j]<-min(seq(j,(dimf-1))[diffM[j:(dimf-1),j]==0])
@@ -101,12 +109,18 @@ bring.branch.lengths<-function(u,F){
     }
     if (count==1){
       familysize[i+1]<-familysize[seq(1,dimf-2)[firstzerotrans==(dimf-i+1)]]+1
+      clades_offspring<-c(clades_offspring,seq(1,dimf-2)[firstzerotrans==(dimf-i+1)])
+      clades_parents<-c(clades_parents,i+1)
+      
     }
     if (count==2){
       familysize[i+1]<-familysize[min(seq(1,(dimf-2))[firstzerotrans==(dimf-i+1)])]+familysize[max(seq(1,(dimf-2))[firstzerotrans==(dimf-i+1)])]
+      clades_offspring<-c(clades_offspring,min(seq(1,(dimf-2))[firstzerotrans==(dimf-i+1)]),max(seq(1,(dimf-2))[firstzerotrans==(dimf-i+1)]))
+      clades_parents<-c(clades_parents,i+1,i+1)
     }
     
   }
-  familysize[length(familysize)]<-dimf+1
-  return(list(d=d,familysize=familysize))
+  familysize<-familysize[-dimf]
+  familysize<-c(1,familysize)
+  return(list(d=d,familysize=familysize,nodes=cbind(clades_offspring[-1],clades_parents[-1])))
 }
