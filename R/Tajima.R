@@ -96,7 +96,9 @@ bring_branch_lengths<-function(u,F){
   clades_parents<-0
   coal_times<-cumsum(u)
   for (j in 1:(dimf-2)){
-    firstzero[j]<-min(seq(j,(dimf-1))[diffM[j:(dimf-1),j]==0])
+    condition<-diffM[j:(dimf-1),j]==0
+    if (sum(condition)>0){ firstzero[j]<-min(seq(j,(dimf-1))[condition])}else{firstzero[j]<-dimf}
+    
     d[j+1]<-coal_times[firstzero[j]]-coal_times[j]
   }
   
