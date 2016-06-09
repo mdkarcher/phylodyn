@@ -55,7 +55,7 @@ sufficient_stats<-function(groups,n){
     #offspringsize<-frequency[offspring]
     offspringsizelist<-unique(offspringsize)
     for (k in offspringsizelist){
-      mylist[[i]]<-list(x=sum(offspringsize==k),y=card[offspring[offspringsize==k]) 
+      mylist[[i]]<-list(x=sum(offspringsize==k),y=card[offspring[offspringsize==k]]) 
       famsize<-c(famsize,k)
       parentlist<-c(parentlist,j)
       orderlist<-c(orderlist,min(offspring[offspringsize==k]))
