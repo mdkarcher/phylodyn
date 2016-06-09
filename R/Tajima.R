@@ -89,6 +89,7 @@ bring_branch_lengths<-function(u,F){
   #given u and F, returns branch lengths ln+1,ln,ln-1,...,l3 and family sizes
   dimf<-nrow(F)
   diffM<-F[2:(dimf),2:dimf]-F[2:dimf,1:(dimf-1)]
+  singletons<-seq(1,dimf)[diff(F[,1])<0]
   d<-rep(u[1],dimf) #for corresponding ln+1,ln,ln-1,...,l3
   firstzero<-rep(0,dimf-2) 
   familysize<-rep(2,dimf)#for corresponding Sn,Sn-1,..S2
@@ -124,5 +125,5 @@ bring_branch_lengths<-function(u,F){
   }
   familysize<-familysize[-dimf]
   familysize<-c(1,familysize)
-  return(list(d=d,familysize=familysize,nodes=cbind(clades_offspring[-1],clades_parents[-1])))
+  return(list(d=d,familysize=familysize,nodes=cbind(clades_offspring[-1],clades_parents[-1]),singletons=singletons))
 }
