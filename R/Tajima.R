@@ -38,7 +38,7 @@ sufficient_stats<-function(groups,n){
   leaves<-apply(Index,1,max)
   card<-rev(groups$cardinality)
   carriers<-rev(groups$carriers) #I don't use this
-  mylist<-list(list(x=0,y=0)
+  mylist<-list(list(x=0,y=0))
   orderlist<-0
   parentlist<-0
   famsize<-0
