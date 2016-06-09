@@ -38,9 +38,10 @@ sufficient_stats<-function(groups,n){
   leaves<-apply(Index,1,max)
   card<-rev(groups$cardinality)
   carriers<-rev(groups$carriers) #I don't use this
-  mylist<-list(list(d=0,x=0,y=0,parent=0,order=0))
+  mylist<-list(list(x=0,y=0)
   orderlist<-0
   parentlist<-0
+  famsize<-0
   L<-apply(Lmat,2,max) #this vector has the nesting information, it has parents nodes
   parents<-sort(unique(L),d=T)
   i<-2
@@ -54,7 +55,8 @@ sufficient_stats<-function(groups,n){
     #offspringsize<-frequency[offspring]
     offspringsizelist<-unique(offspringsize)
     for (k in offspringsizelist){
-      mylist[[i]]<-list(d=k,x=sum(offspringsize==k),y=card[offspring[offspringsize==k]],parent=j,order=min(offspring[offspringsize==k])) 
+      mylist[[i]]<-list(x=sum(offspringsize==k),y=card[offspring[offspringsize==k]])) 
+      famsize<-c(famsize,k)
       parentlist<-c(parentlist,j)
       orderlist<-c(orderlist,min(offspring[offspringsize==k]))
       for (le in offspring[offspringsize==k]){
@@ -65,9 +67,7 @@ sufficient_stats<-function(groups,n){
     
   }
   mylist[[1]]<-NULL
-  orderlist<-orderlist[-1]
-  parentlist<-parentlist[-1]
-  return(list(mylist=mylist,nodes=cbind(orderlist,parentlist)))
+  return(list(mylist=mylist,nodes=cbind(orderlist[-1],parentlist[-1],famsize[-1])))
 }
 
 group_data<-function(sort.main,n){
