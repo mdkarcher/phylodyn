@@ -6,12 +6,12 @@
 \title{Bayesian nonparametric phylodynamic reconstruction.}
 \usage{
 BNPR(data, lengthout = 100, pref = FALSE, prec_alpha = 0.01,
-  prec_beta = 0.01, beta1_prec = 0.001, simplify = TRUE,
-  derivative = FALSE, forward = TRUE)
+  prec_beta = 0.01, beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
+  simplify = TRUE, derivative = FALSE, forward = TRUE)
 
 BNPR_PS(data, lengthout = 100, prec_alpha = 0.01, prec_beta = 0.01,
-  beta1_prec = 0.001, simplify = TRUE, derivative = FALSE,
-  forward = TRUE)
+  beta1_prec = 0.001, fns = NULL, log_fns = TRUE, simplify = TRUE,
+  derivative = FALSE, forward = TRUE)
 }
 \arguments{
 \item{data}{\code{phylo} object or list containing vectors of coalescent

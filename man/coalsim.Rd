@@ -4,7 +4,8 @@
 \alias{coalsim}
 \title{Simulate from inhomogeneous, heterochronous coalescent.}
 \usage{
-coalsim(samp_times, n_sampled, traj, lower_bound, ...)
+coalsim(samp_times, n_sampled, traj, method = "tt", val_upper = 10,
+  lower_bound = 1, ...)
 }
 \arguments{
 \item{samp_times}{numeric vector of sampling times.}
@@ -13,9 +14,13 @@ coalsim(samp_times, n_sampled, traj, lower_bound, ...)
 
 \item{traj}{function that returns effective population size at time t.}
 
-\item{...}{additional arguments to be passed to \code{traj} function.}
+\item{method}{which sampling method to use.}
 
-\item{upper}{numeric upper limit on \code{traj} function on its support.}
+\item{val_upper}{numeric.}
+
+\item{lower_bound}{numeric lower limit of \code{traj} function on its support.}
+
+\item{...}{additional arguments to be passed to \code{traj} function.}
 }
 \value{
 A list containing vectors of coalescent times \code{coal_times},

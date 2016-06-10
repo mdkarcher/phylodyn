@@ -809,3 +809,142 @@ calculate_moller_hetero_pref_old <- function(coal.factor,s,event,lengthout,prec_
     
     return(list(result=mod.pref,grid=grid, x = field))
 }
+
+sampling_old = function(data, para, alg, setting, init, verbose=TRUE)
+{
+  # pass the data and parameters
+  lik_init = data$lik_init # f_offset = data$f_offset
+  Ngrid = lik_init$ng+1
+  alpha = para$alpha
+  beta = para$beta
+  invC = para$invC
+  rtEV = para$rtEV
+  EVC = para$EVC
+  cholC = para$cholC
+  
+  # MCMC sampling setting
+  stepsz = setting$stepsz
+  Nleap  = setting$Nleap
+  if (alg=='aMALA')
+    szkappa = setting$szkappa
+  
+  if (alg=="HMC" | alg == "splitHMC")
+  {
+    rand_leap = setting$rand_leap
+  }
+  
+  
+  # storage of posterior samples
+  NSAMP = setting$NSAMP
+  NBURNIN = setting$NBURNIN
+  samp = matrix(NA,NSAMP-NBURNIN,Ngrid) # all parameters together
+  acpi = 0
+  acpt = 0
+  
+  # initialization
+  theta = init$theta
+  u = init$u
+  du = init$du
+  
+  # start MCMC run
+  start_time = Sys.time()
+  cat('Running ', alg ,' sampling...\n')
+  for(Iter in 1:NSAMP)
+  {
+    if(verbose&&Iter%%100==0)
+    {
+      cat(Iter, ' iterations have been finished!\n' )
+      cat('Online acceptance rate is ',acpi/100,'\n')
+      acpi=0
+    }
+    
+    # sample the whole parameter
+    #tryCatch({res=switch(alg,
+    #                     HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap,rand_leap),
+    #                     splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=FALSE)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap,rand_leap),
+    #                     MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
+    #                     aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=FALSE)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
+    #                     ESS=eval(parse(text='ESS'))(theta[-Ngrid],u,function(f)coal_loglik(lik_init,f),cholC/sqrt(theta[Ngrid])),
+    #                     stop('The algorithm is not in the list!'));
+    #          theta[1:(Ngrid-(alg=='ESS'))]=res$q;u=res[[2]];if(any(grepl(alg,c('HMC','splitHMC','MALA'))))du=res$du;
+    #          acpi=acpi+res$Ind}, error=function(e){cat("ERROR :",conditionMessage(e), "\n")})
+    res=switch(alg,
+               HMC=eval(parse(text='HMC'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz,Nleap,rand_leap),
+               splitHMC=eval(parse(text='splitHMC'))(theta,u,du,function(theta,grad=FALSE)U_split(theta,lik_init,invC,alpha,beta,grad),rtEV,EVC,stepsz,Nleap,rand_leap),
+               MALA=eval(parse(text='MALA'))(theta,u,du,function(theta,grad=FALSE)U(theta,lik_init,invC,alpha,beta,grad),stepsz),
+               aMALA=eval(parse(text='aMALA'))(theta,u,function(theta,grad=FALSE)U_kappa(theta,lik_init,invC,alpha,beta,grad),function(theta)Met(theta,lik_init,invC),szkappa,stepsz),
+               ESS=eval(parse(text='ESS'))(theta[-Ngrid],u,function(f)coal_loglik(lik_init,f),cholC/sqrt(theta[Ngrid])),
+               stop('The algorithm is not in the list!'));
+    theta[1:(Ngrid-(alg=='ESS'))]=res$q
+    u=res[[2]]
+    if(any(grepl(alg,c('HMC','splitHMC','MALA'))))du=res$du
+    acpi=acpi+res$Ind
+    # Gibbs sample kappa for ESS
+    if(alg=='ESS')
+      theta[Ngrid]=rgamma(1,alpha+(Ngrid-1)/2,beta+t(theta[-Ngrid])%*%invC%*%theta[-Ngrid]/2)
+    
+    # save posterior samples after burnin
+    if(Iter>NBURNIN)
+    {
+      samp[Iter-NBURNIN,]<-theta
+      acpt<-acpt+res$Ind
+    }
+    
+  }
+  stop_time = Sys.time()
+  time = stop_time-start_time
+  cat('\nTime consumed : ',time)
+  acpt = acpt/(NSAMP-NBURNIN)
+  cat('\nFinal Acceptance Rate: ',acpt,'\n')
+  
+  return(list(samp=samp,time=time,acpt=acpt))
+}
+
+coal_lik_init_old = function(samp_times, n_sampled, coal_times, grid)
+{
+  ns = length(samp_times)
+  nc = length(coal_times)
+  ng = length(grid)-1
+  
+  if (length(samp_times) != length(n_sampled))
+    stop("samp_times vector of differing length than n_sampled vector.")
+  
+  if (length(coal_times) != sum(n_sampled) - 1)
+    stop("Incorrect length of coal_times: should be sum(n_sampled) - 1.")
+  
+  if (max(samp_times, coal_times) > max(grid))
+    stop("Grid does not envelop all sampling and/or coalescent times.")
+  
+  t = sort(unique(c(samp_times, coal_times, grid)))
+  l = rep(0, length(t))
+  
+  for (i in 1:ns)
+    l[t >= samp_times[i]] = l[t >= samp_times[i]] + n_sampled[i]
+  
+  for (i in 1:nc)
+    l[t >= coal_times[i]] = l[t >= coal_times[i]] - 1
+  
+  #print(l)
+  
+  if (sum((l < 1) & (t >= min(samp_times))) > 0)
+    stop("Number of active lineages falls below 1 after the first sampling point.")
+  
+  mask = l > 0
+  t = t[mask]
+  l = head(l[mask], -1)
+  
+  gridrep = rep(0, ng)
+  for (i in 1:ng)
+    gridrep[i] = sum(t > grid[i] & t <= grid[i+1])
+  
+  C = 0.5 * l * (l-1)
+  D = diff(t)
+  
+  y = rep(0, length(D))
+  y[t[-1] %in% coal_times] = 1
+  
+  rep_idx = cumsum(gridrep)
+  rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
+  
+  return(list(t=t, l=l, C=C, D=D, y=y, gridrep=gridrep, ns=sum(n_sampled), nc=nc, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
+}
