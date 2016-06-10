@@ -1,9 +1,13 @@
+#### Sequentially Markov Coalescent likelihood functions (SMC') ####
+# Compute log likelihood under the SMC' model and other auxiliary funcitons
+
+
 find.children.length<-function(tree,tdel,cor=1){
     #find the branch length of the branches that coalesced at time tdel
     #look at tdel found at tree2 but search for it in tree1
     edges<-tree$edge
     x<-tree$Nnode+1
-    values0<-max(node.depth.edgelength(tree))-node.depth.edgelength(tree)
+    values0<-max(ape::node.depth.edgelength(tree))-ape::node.depth.edgelength(tree)
     values0<-values0*cor
     values1<-values0[(x+1):length(values0)]
     values<-sort(values1,decreasing=T)
@@ -33,7 +37,7 @@ create.F<-function(tree,n){
       #n is the number of individual samples 
       edges<-tree$edge
       x<-tree$Nnode+1
-      values1<-max(node.depth.edgelength(tree))-node.depth.edgelength(tree)
+      values1<-max(ape::node.depth.edgelength(tree))-ape::node.depth.edgelength(tree)
       values1<-values1[(x+1):length(values1)]
       values<-sort(values1,decreasing=T)
       correct.label<-seq(x+1,2*x-1)
@@ -100,55 +104,7 @@ get_F_values<-function(latent,init,Fl){
   }
   return(myF.list)
 }
-    
-# coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
-# {
-#   ns = length(samp_times)
-#   nc = length(coal_times)
-#   ng = length(grid)-1
-#   
-#   if (length(samp_times) != length(n_sampled))
-#     stop("samp_times vector of differing length than n_sampled vector.")
-#   
-#   if (length(coal_times) != sum(n_sampled) - 1)
-#     stop("Incorrect length of coal_times: should be sum(n_sampled) - 1.")
-#   
-#   if (max(samp_times, coal_times) > max(grid))
-#     stop("Grid does not envelop all sampling and/or coalescent times.")
-#   
-#   t = sort(unique(c(samp_times, coal_times, grid)))
-#   l = rep(0, length(t))
-#   
-#   for (i in 1:ns)
-#     l[t >= samp_times[i]] = l[t >= samp_times[i]] + n_sampled[i]
-#   
-#   for (i in 1:nc)
-#     l[t >= coal_times[i]] = l[t >= coal_times[i]] - 1
-#   
-#   #print(l)
-#   
-#   if (sum((l < 1) & (t >= min(samp_times))) > 0)
-#     stop("Number of active lineages falls below 1 after the first sampling point.")
-#   
-#   mask = l > 0
-#   t = t[mask]
-#   l = head(l[mask], -1)
-#   
-#   gridrep = rep(0, ng)
-#   for (i in 1:ng)
-#     gridrep[i] = sum(t > grid[i] & t <= grid[i+1])
-#   
-#   C = 0.5 * l * (l-1)
-#   D = diff(t)
-#   
-#   y = rep(0, length(D))
-#   y[t[-1] %in% coal_times] = 1
-#   
-#   rep_idx = cumsum(gridrep)
-#   rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
-#   
-#   return(list(t=t, l=l, C=C, D=D, y=y, gridrep=gridrep, ng=ng, rep_idx=rep_idx, args=list(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)))
-# }
+
 
 
 
@@ -272,8 +228,8 @@ U_split_smc = function(theta, init, invC, alpha, beta, grad=F)
 	if(!grad){
 		loglik = coal_loglik_smc(init, f)
 		logpri = ((D-1)/2+alpha-1)*tau - (t(f)%*%invCf/2+beta)*exp(tau)
-		return(-(loglik+logpri))
-	}
+        return(list(loglik = -loglik, logpri = -logpri, logpos = -(loglik+logpri)))
+    }
 	else{
 		dU_res = -c(coal_loglik_smc(init, f, grad),((D-1)/2+alpha-1)-beta*exp(tau))
 		return(dU_res)
@@ -282,18 +238,19 @@ U_split_smc = function(theta, init, invC, alpha, beta, grad=F)
 }
 
 
-precBM = function(times, delta=1e-6)
-{
-  D=length(times)
-  diff1<-diff(times); diff1[diff1==0]<-delta;
-  diff<-1/diff1
-  Q<-spam(0,D,D)
-  if (D>2) Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[1:(D-2)]+diff[2:(D-1)],diff[D-1])
-  else Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[D-1])
+#Duplicated. It is coal_lik.R
+#precBM = function(times, delta=1e-6)
+#{
+#  D=length(times)
+#  diff1<-diff(times); diff1[diff1==0]<-delta;
+#  diff<-1/diff1
+#  Q<-spam(0,D,D)
+#  if (D>2) Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[1:(D-2)]+diff[2:(D-1)],diff[D-1])
+#  else Q[cbind(1:D,1:D)]<-c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[D-1])
   
-  Q[cbind(1:(D-1),2:D)]=-diff[1:(D-1)]; Q[cbind(2:D,1:(D-1))]=-diff[1:(D-1)]
-  return(Q)
-}
+# Q[cbind(1:(D-1),2:D)]=-diff[1:(D-1)]; Q[cbind(2:D,1:(D-1))]=-diff[1:(D-1)]
+# return(Q)
+#}
 
 
 
@@ -303,16 +260,16 @@ read_times<-function(MyTree,n,sim,factor){
 
 if (n>2){
   D<-matrix(nrow=sim,ncol=n-1)
-  D[1,]<-cumsum(coalescent.intervals(MyTree[[1]])$interval.length)*factor
-  if (max(node.depth.edgelength(MyTree[[1]]))>coalescent.intervals(MyTree[[1]])$total.depth) {
-    D[1,]<-D[1,]+factor*(max(node.depth.edgelength(MyTree[[1]]))-coalescent.intervals(MyTree[[1]])$total.depth)
+  D[1,]<-cumsum(ape::coalescent.intervals(MyTree[[1]])$interval.length)*factor
+  if (max(ape::node.depth.edgelength(MyTree[[1]]))>ape::coalescent.intervals(MyTree[[1]])$total.depth) {
+      D[1,]<-D[1,]+factor*(max(ape::node.depth.edgelength(MyTree[[1]]))-ape::coalescent.intervals(MyTree[[1]])$total.depth)
   }
  
   for (j in 1:sim){
-    D[j,]<-factor*cumsum(coalescent.intervals(MyTree[[j]])$interval.length)
+      D[j,]<-factor*cumsum(ape::coalescent.intervals(MyTree[[j]])$interval.length)
     
-    if (max(node.depth.edgelength(MyTree[[j]]))>coalescent.intervals(MyTree[[j]])$total.depth) {
-      D[j,]<-D[j,]+factor*(max(node.depth.edgelength(MyTree[[j]]))-coalescent.intervals(MyTree[[j]])$total.depth)
+    if (max(ape::node.depth.edgelength(MyTree[[j]]))>ape::coalescent.intervals(MyTree[[j]])$total.depth) {
+        D[j,]<-D[j,]+factor*(max(ape::node.depth.edgelength(MyTree[[j]]))-ape::coalescent.intervals(MyTree[[j]])$total.depth)
     }
   }
   
@@ -320,7 +277,7 @@ if (n>2){
     else{
         D<-rep(0,sim)
         for (j in 1:sim){
-            D[j]<-factor*max(node.depth.edgelength(MyTree[[j]]))*factor
+            D[j]<-factor*max(ape::node.depth.edgelength(MyTree[[j]]))*factor
         }
         return(D)
         
@@ -400,9 +357,10 @@ find_info2<-function(MyTree,D,sim,n,tol,cor=1){
                     
                 }
             }}}
-    return(list(info_times=info_times,Fl=Fl,latent=latent,t_new=t_new,t_del=t_del))
+    return(list(info_times=info_times,Fl=Fl,latent=latent,t_new=t_new,t_del=t_del,D=D,sim=sim,n=n))
 }
 
+#This function needs to be improved
 
 find_sufficient<-function(D,sim,n,tol){
     ##This function returns three vectors of statistics needed for likelihood calculations
@@ -480,33 +438,34 @@ find_sufficient<-function(D,sim,n,tol){
 }
 
 
-splitHMC = function (current.q, U, rtEV, EVC, eps=.1, L=5,current.U,current.grad){
+#Declared a little bit different in Phyloinfer.R
+#splitHMC = function (current.q, U, rtEV, EVC, eps=.1, L=5,current.U,current.grad){
     #Function from Lan S, Palacios JA, Karcher, M, Minin VN, Babak Shahbaba. An efficient Bayesian inference framework for coalescent-based nonparametric phylodynamics. 2015
     #   browser()
     
     # initialization
-    D=length(current.q)
-    q=current.q
+#D=length(current.q)
+#   q=current.q
     
     # sample momentum
-    p <- rnorm(D)
+#   p <- rnorm(D)
     
     # calculate current energy
     
-    current.E <- current.U + sum(p^2)/2
+#   current.E <- current.U + sum(p^2)/2
     
     # current.E <- U(q) + sum(p^2)/2
     
     
-    randL = ceiling(runif(1)*L)
-    p = p - eps/2*current.grad #corrected Feb 22,2015 p-(eps/2)*current.grad
+#   randL = ceiling(runif(1)*L)
+#   p = p - eps/2*current.grad #corrected Feb 22,2015 p-(eps/2)*current.grad
     
     # p = p - (eps/2)*U(q,T)/sqrt(sum(U(q,T)^2))
-    qT = rtEV*(t(EVC)%*%q[-D]); pT = t(EVC)%*%p[-D]
-    A=t(qT)%*%qT;
+#   qT = rtEV*(t(EVC)%*%q[-D]); pT = t(EVC)%*%p[-D]
+#   A=t(qT)%*%qT;
     # Alternate full steps for position and momentum
-    for (l in 1:randL)
-    {
+#   for (l in 1:randL)
+#   {
         
         
         # Make a half step for the initial half dynamics
@@ -515,45 +474,45 @@ splitHMC = function (current.q, U, rtEV, EVC, eps=.1, L=5,current.U,current.grad
         # 	  p[D] = sqrt(C1)*tanh((-sqrt(C1)*eps/2+C2)/2)
         #	  q[D] = log((C1-p[D]^2)/A)
         
-        p[D] <- p[D] - eps/2*A/2*exp(q[D])
-        q[D] <- q[D] + eps/2*p[D]
+#       p[D] <- p[D] - eps/2*A/2*exp(q[D])
+#       q[D] <- q[D] + eps/2*p[D]
         
         # Make a full step for the middle dynamics
-        Cpx = complex(mod=1,arg=-rtEV*exp(q[D]/2)*eps)*complex(re=qT*exp(q[D]/2),im=pT)
-        qT = Re(Cpx)*exp(-q[D]/2); pT = Im(Cpx)
-        q[-D] = EVC%*%(qT/rtEV)
+#       Cpx = complex(mod=1,arg=-rtEV*exp(q[D]/2)*eps)*complex(re=qT*exp(q[D]/2),im=pT)
+#       qT = Re(Cpx)*exp(-q[D]/2); pT = Im(Cpx)
+#       q[-D] = EVC%*%(qT/rtEV)
         
         # Make a half step for the last half dynamics
-        A=t(qT)%*%qT;
+#       A=t(qT)%*%qT;
         #	  C1=p[D]^2+A*exp(q[D]); C2=2*atanh(p[D]/sqrt(C1))
         #	  p[D] = sqrt(C1)*tanh((-sqrt(C1)*eps/2+C2)/2)
         #	  q[D] = log((C1-p[D]^2)/A)
         
-        q[D] <- q[D] + eps/2*p[D]
-        p[D] <- p[D] - eps/2*A/2*exp(q[D])
+#       q[D] <- q[D] + eps/2*p[D]
+#       p[D] <- p[D] - eps/2*A/2*exp(q[D])
         
-        g = U(q,T)
+#       g = U(q,T)
         #  g<-g/sqrt(sum(g^2))
-        if(l!=randL){
-            pT = pT - eps*(t(EVC)%*%g[-D]); p[D] = p[D] - eps*g[D]
-        }
-    }
-    p[-D] = EVC%*%pT - eps/2*g[-D]; p[D] = p[D] - eps/2*g[D]
+#       if(l!=randL){
+#           pT = pT - eps*(t(EVC)%*%g[-D]); p[D] = p[D] - eps*g[D]
+#       }
+#   }
+#   p[-D] = EVC%*%pT - eps/2*g[-D]; p[D] = p[D] - eps/2*g[D]
     
     
     
     # Evaluate potential and kinetic energies at start and end of trajectory
-    new.u<-U(q)
-    proposed.E <- new.u + sum(p^2)/2
+#   new.u<-U(q)
+#   proposed.E <- new.u + sum(p^2)/2
     
     # Accept or reject the state at end of trajectory, returning either
     # the position at the end of the trajectory or the initial position
-    logAP = -proposed.E + current.E
+#   logAP = -proposed.E + current.E
     
-    if( is.finite(logAP)&(log(runif(1))<min(0,logAP)) ) return (list(q = q, Ind = 1,current.u=new.u,current.grad=g))
-    else return (list(q = current.q, Ind = 0,current.u=current.u,current.grad=current.grad))
+#   if( is.finite(logAP)&(log(runif(1))<min(0,logAP)) ) return (list(q = q, Ind = 1,current.u=new.u,current.grad=g))
+#   else return (list(q = current.q, Ind = 0,current.u=current.u,current.grad=current.grad))
     
-}
+#}
 
 
 get.data<-function(grid,sim,D,n,coal_lik_init,info_times,Fl,latent,t_new,t_del){
@@ -619,27 +578,34 @@ for (j in 2:sim){
             if (sum(I[j,])==0) {break}
     }
 }
+
 midpts<-grid[-length(grid)]+diff(grid)/2
 
-Q.matrix<-function(input,s.noise,signal){
-    n2<-nrow(input)
-    diff1<-diff(input)
-    diff1[diff1==0]<-s.noise #correction for dividing over 0
-    diff<-(1/(signal*diff1))
-    Q<-spam(0,n2,n2)
-    if (n2>2){
-        Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)} else {Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)}
-    Q[cbind(seq(1,n2-1),seq(2,n2))]<--diff[1:(n2-1)]
-    Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
-    return(Q)}
+#Note that this function is a bit different than Q_matrix. Fix this code
+#There is a wraper
+#Q.matrix<-function(input,s.noise,signal){
+#   n2<-nrow(input)
+#   diff1<-diff(input)
+#   diff1[diff1==0]<-s.noise #correction for dividing over 0
+#   diff<-(1/(signal*diff1))
+#   Q<-spam::spam(0,n2,n2)
+#   if (n2>2){
+#       Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)} else {Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)}
+#   Q[cbind(seq(1,n2-1),seq(2,n2))]<--diff[1:(n2-1)]
+#   Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
+#   return(Q)}
 
-invC<-Q.matrix(as.matrix(midpts),0,1)
-diag(invC)<-diag(invC)+.000001 #fudge to be able to compute the cholC
+
+
+invC<-Q_matrix(as.matrix(midpts),0,1)
+invC[1,1] <- invC[1,1]+.00001 #fudge to be able to compute the cholC
+
+#diag(invC)<-diag(invC)+.000001 #fudge to be able to compute the cholC
 #invC[1,1]<-invC[1,1]+.00001
-eig=eigen(invC,T)
+eig=spam::eigen.spam(invC,T)
 EV=eig$values; EVC=eig$vectors
 
-Cm=solve(invC)
+Cm=spam::solve.spam(invC)
 cholC<-chol(Cm)
 rtEV=sqrt(EV)
 lik_init =list(Z=Z,Delta=Delta,I=I,Nrep=Nrep,C=C,B=B,ng=(length(grid)-1),Fl=Fl,latent=latent)

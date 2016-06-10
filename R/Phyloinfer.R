@@ -1047,6 +1047,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
   if (nugget == "1,1")
     invC[1,1] <- invC[1,1]+.0001 # nugget at (1,1)
   else if (nugget == "diag")
+  #Julia: I had a warning when using this--needs to be corrected
     diag(invC)<-diag(invC)+.0001 # nugget for the whole diagonal
   else if (nugget == "none")
     warning("No nugget may result in a non-full-rank matrix.")
@@ -1155,3 +1156,59 @@ mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
   
   return(res_MCMC)
 }
+
+# SMC' sampler. This is the main function for inference from local genealogies
+#' @export
+smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
+                         stepsz=.1, Nleap=15, rand_leap=TRUE,scaling=10)
+{
+  Ngrid<-length(grid)-1
+  
+  #MCMC sampling preparation
+  SAMP = list(2)
+  SAMP[[1]] = matrix(NA,nsamp-nburnin,Ngrid) # transformed effective population size
+  SAMP[[2]] = rep(NA,nsamp-nburnin) # precision parameter in Brownian motion
+  acpi = 0
+  acpt = 0
+  PRINT = TRUE
+  
+  #Initial Values
+  f_init = rep(0.5,Ngrid)
+  theta <- c(log(f_init),-1.6)+.0001
+  alldata <- get.data(grid,data$sim,data$D,data$n,coal_lik_init,data$info_times,data$Fl,data$latent,data$t_new,data$t_del)
+  
+  U<-function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad)
+  current.u<-U(theta,F)$logpos
+  current.grad<-U(theta,T)
+  
+  for(Iter in 1:nsamp)
+  {
+    if(PRINT&&Iter%%50==0)
+    {
+      cat(Iter, ' iterations have been finished!\n' )
+      cat('Online acceptance rate is ',acpi/50,'\n')
+      acpi=0
+    }
+    res=eval(parse(text='splitHMC'))(theta,current.u,current.grad,function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad),alldata$rtEV,alldata$EVC,stepsz,Nleap,rand_leap)
+    theta=res$q;
+    current.u<-res$u
+    current.grad<-res$du
+    N<-exp(theta[1:(length(theta)-1)])
+    acpi=acpi+res$Ind
+    if(Iter>nburnin)
+    {
+      SAMP[[1]][Iter-nburnin,]<-theta[1:(length(theta)-1)]
+      SAMP[[2]][Iter-nburnin]<-theta[length(theta)]
+      acpt<-acpt+res$Ind
+    }
+  }
+  ini<-1
+  med=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,median);
+  low=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,function(x)quantile(x,.025))
+  up=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,function(x)quantile(x,.975))
+  
+  results<-cbind(grid/scaling,c(low[1]-log(scaling),low-log(scaling)),c(med[1]-log(scaling),med-log(scaling)),c(up[1],up)-log(scaling))
+  return(results)
+}
+
+
