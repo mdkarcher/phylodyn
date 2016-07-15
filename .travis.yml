@@ -1,0 +1,4 @@
+# Sample .travis.yml for R projects
+
+language: r
+cache: packages
