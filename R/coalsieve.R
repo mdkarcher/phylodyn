@@ -3,9 +3,12 @@
 #' @param samp_times numeric vector of sampling times.
 #' @param n_sampled numeric vector of samples taken per sampling time.
 #' @param traj function that returns effective population size at time t.
-#' @param method which sampling method to use.
-#' @param val_upper numeric.
-#' @param lower_bound numeric lower limit of \code{traj} function on its support.
+#' @param method which sampling method to use. "tt" invoke time-transformation
+#'   method, "thin" invokes thinning method.
+#' @param val_upper numeric used by time-transformation method to set a starting
+#'   point for its dynamic numerical integration upper bound.
+#' @param lower_bound numeric lower limit of \code{traj} function on its
+#'   support.  Used only by thinning method.
 #' @param ... additional arguments to be passed to \code{traj} function.
 #'   
 #' @return A list containing vectors of coalescent times \code{coal_times}, 
@@ -15,7 +18,7 @@
 #' @export
 #' 
 #' @examples
-#' coalsim(0:2, 3:1, unif_traj, lower_bound=10, level=10)
+#' coalsim(0:2, 3:1, unif_traj, lower_bound=10)
 coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lower_bound=1, ...)
 {
   if (method == "tt")
@@ -35,9 +38,9 @@ coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lowe
 }
 
 #' @export
-coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10)
+coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
 {
-  traj_inv <- function(t) 1/traj(t)
+  traj_inv <- function(t) 1/traj(t, ...)
   hazard <- function(t, lins, start, target) .5*lins*(lins-1)*integrate(traj_inv, start, start+t)$value - target
   
   coal_times = NULL

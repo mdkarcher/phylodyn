@@ -15,13 +15,13 @@ function.}
 \item{rate}{exponential decay rate.}
 }
 \value{
-A vector containing a value of \code{level} for every element in
-  \code{t}.
+A vector containing the trajectory value corresponding to every
+  element in \code{t}.
 }
 \description{
 Exponential trajectory
 }
 \examples{
-unif_traj(0:10, scale = 100)
+exp_traj(0:10, scale = 100, rate = 0.5)
 }
 

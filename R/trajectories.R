@@ -48,12 +48,12 @@ unif_traj_inv = function(t, level=100)
 #' @param scale value to return at \code{t=0}.
 #' @param rate exponential decay rate.
 #'
-#' @return A vector containing a value of \code{level} for every element in
-#'   \code{t}.
+#' @return A vector containing the trajectory value corresponding to every
+#'   element in \code{t}.
 #' @export
 #'
 #' @examples
-#' unif_traj(0:10, scale = 100)
+#' exp_traj(0:10, scale = 100, rate = 0.5)
 exp_traj = function(t, scale=1000, rate=1)
 {
   return(scale * exp(-t*rate))

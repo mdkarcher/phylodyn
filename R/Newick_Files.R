@@ -143,6 +143,7 @@ write.xml<-function(...,file = "",model)
   {
     ntree <- length(obj)
   }
+  # TODO: Remove stringr dependency
   library(stringr)
   dates<-str_split_fixed(obj[[1]]$tip.label,"_",n=2)[,2]
   #The labels

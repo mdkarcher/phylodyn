@@ -14,11 +14,14 @@ coalsim(samp_times, n_sampled, traj, method = "tt", val_upper = 10,
 
 \item{traj}{function that returns effective population size at time t.}
 
-\item{method}{which sampling method to use.}
+\item{method}{which sampling method to use. "tt" invoke time-transformation
+method, "thin" invokes thinning method.}
 
-\item{val_upper}{numeric.}
+\item{val_upper}{numeric used by time-transformation method to set a starting
+point for its dynamic numerical integration upper bound.}
 
-\item{lower_bound}{numeric lower limit of \code{traj} function on its support.}
+\item{lower_bound}{numeric lower limit of \code{traj} function on its
+support.  Used only by thinning method.}
 
 \item{...}{additional arguments to be passed to \code{traj} function.}
 }
@@ -32,6 +35,6 @@ A list containing vectors of coalescent times \code{coal_times},
 Simulate from inhomogeneous, heterochronous coalescent.
 }
 \examples{
-coalsim(0:2, 3:1, unif_traj, lower_bound=10, level=10)
+coalsim(0:2, 3:1, unif_traj, lower_bound=10)
 }
 
