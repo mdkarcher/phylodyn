@@ -4,7 +4,7 @@ author: "Julia Palacios"
 date: "October 12, 2015"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Regional Influenza}
+  %\VignetteIndexEntry{Phylodyn from local genealogies}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
@@ -34,10 +34,8 @@ awk '$1~"NEWICK_TREE"' outMacs.tree | awk -F\] '{print $2}' >Bottle_20.txt
 We start by loading the library and reading our data
 ```{r}
 library("phylodyn")
-setwd("..")
 getwd()
-MyTree<-ape::read.tree("data/Bottle_20c.txt")
-setwd(paste(getwd(),"/vignettes",sep=""))
+MyTree<-ape::read.tree("../data/Bottle_20c.txt")
 ```
 Our method assumes that genealogies are a realization of the Sequentially Markov Coalescent model [SMC'](http://bmcgenet.biomedcentral.com/articles/10.1186/1471-2156-7-16)
 
@@ -101,7 +99,7 @@ We compute the posterior median and 95% BCIs of log N(t) and plot the results:
 ##Plot results
 results<-res_MCMC
 plot(results[,1],results[,3],type="l",xlim=c(1,0),ylim=c(-3,3),ylab="log N(t)",xlab="No generations",col="white")
-plot.res(results)
+plot_res(results) 
 
 ##True trajectory
 x<-sort(c(0.299999,0.3,0.49999,0.5,seq(0,4,length.out=100)))

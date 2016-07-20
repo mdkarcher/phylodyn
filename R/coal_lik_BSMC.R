@@ -616,7 +616,7 @@ get.data<-function(grid,sim,D,n,coal_lik_init,info_times,Fl,latent,t_new,t_del){
 }
 
 #' @export
-plot.res <- function(results) {
+plot_res <- function(results) {
   temp.time = c(0,rep(results[,1], each = 2))
   temp.time<-temp.time[-(length(temp.time))]
   temp.popsize1 = rep(results[,2], each = 2)
