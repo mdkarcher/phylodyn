@@ -1,3 +1,14 @@
+---
+title: "Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies"
+author: "Julia Palacios"
+date: "October 12, 2015"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Regional Influenza}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
 Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies
 ==========================================================================
 
