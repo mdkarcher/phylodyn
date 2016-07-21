@@ -70,7 +70,8 @@ for (i in 1:4)
   data = list(samp_times=samp_times, n_sampled=n_sampled, coal_times=gene[[i]]$coal_times)
   for (j in 1:5)
   {
-    res_MCMC[[i]][[j]] = mcmc_sampling(data, alg[j], nsamp, nburnin)
+    res_MCMC[[i]][[j]] = mcmc_sampling(data = data, alg = alg[j],
+                                       nsamp = nsamp, nburnin = nburnin)
   }
 }
 ```
