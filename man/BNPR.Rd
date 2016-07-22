@@ -28,6 +28,11 @@ sampled per sampling time \code{n_sampled}.}
 \item{beta1_prec}{numeric specifying precision for normal prior on
 \eqn{\beta_1}.}
 
+\item{fns}{list containing functions of covariates.}
+
+\item{log_fns}{logical whether or not to to apply a log-transformation to
+the output of the functions in \code{fns}.}
+
 \item{simplify}{logical whether to fully bucket all Poisson points.}
 
 \item{derivative}{logical whether to calculate estimates of the

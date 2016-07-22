@@ -37,6 +37,9 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #'   \eqn{\tau}.
 #' @param beta1_prec numeric specifying precision for normal prior on 
 #'   \eqn{\beta_1}.
+#' @param fns list containing functions of covariates.
+#' @param log_fns logical whether or not to to apply a log-transformation to
+#'   the output of the functions in \code{fns}.
 #' @param simplify logical whether to fully bucket all Poisson points.
 #' @param derivative logical whether to calculate estimates of the 
 #'   log-derivative.
