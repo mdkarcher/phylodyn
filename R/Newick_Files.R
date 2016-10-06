@@ -12,11 +12,11 @@
 #' plot(tree1$newick)
 generate_newick<-function(args)
 {
-  n<-sum(args$n_sampled[1])
+  n<-sum(args$n_sampled)
   labels<-paste(rep("t",n),seq(1,n,1),rep("_",n),rep(args$samp_times[1],args$n_sampled[1]),sep="")
   
   #we could chose labels at random to coalesce but since the process is exchangeable, we don't care. At least not for now
-  tb<-n #Total branches (initial)
+  tb<-args$n_sampled[1] #Total branches (initial)
   s<-0 #time for branch lengths
   temp_labels<-labels[1:tb]
   temp_times<-rep(args$samp_times[1],args$n_sampled[1])
@@ -48,8 +48,8 @@ generate_newick<-function(args)
     }
     else
     { #I will be adding samples at 
-      s<-args$s[j]; 
-      if (sample[initial.row,1]==1)
+      s<-args2$s[j]; 
+      if (args$n_sample[initial.row]==1)
       {
         temp_labels<-c(temp_labels,labels[cumsum(args$n_sampled)[initial.row]])
         initial.row<-initial.row+1

@@ -1,0 +1,76 @@
+---
+title: "Coalescent simulation of genealogies"
+author: "Julia Palacios"
+date: "October 6, 2016"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simulation}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+Coalescent simulation of genealogies
+========================================================
+
+
+A Genealogy (tree) consist of Topology and coalescent times. 
+
+* Topology can be *isochronous* (all tips are "sampled" at time 0) or *heterochronous* (tips have different "sampling times"). Lineages merge (coalesce) at random between the existant lineages at the coalescent times. 
+* Coalescent times are exponentially distributed random variables with a rate that depends on the number of lineages and the population size trajectory.
+
+
+The main function for simulation of genealogies in phylodyn is \texttt{coalsim}. In all our simulations, time is measured in units of $N_{0}$ generations.
+
+gene = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj, lower_bound = 1/20)
+
+Examples
+==================================
+The following example generates an isochronous genealogy from a constant effective population size (Ne=1) with 10 tips.
+```{r}
+
+library("phylodyn")
+
+constant<-function(x){
+  return (rep(1,length(x)))
+}
+
+simulation1<-coalsim(0,10,constant)
+tree1<-generate_newick(simulation1)
+plot(tree1$newick)
+tree1$newick
+```
+
+In the following example we simulate a genealogy with constant effective population size with 10 tips at time 0 and 40 other tips with uniform sampling times 
+```{r}
+
+samp_times = c(0, sort(runif(40, 0, 8)))
+n_sampled = c(10, rep(1, 40))
+
+simulation2<-coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = constant)
+tree2<-generate_newick(simulation2)
+plot(tree2$newick,show.tip.label = F)
+tree2$newick
+
+```
+
+Here, we consider a more general demographic model such as bottleneck. We specify our trajectory through the function \texttt{bottleneck_traj} and simulate via the thinning method (see Palacios and Minin, 2013)
+```{r}
+
+bottleneck_traj<-function(t){
+  result=rep(0,length(t))
+  result[t<=0.5]<-1
+  result[t>0.5 & t<1]<-.1
+  result[t>=1]<-1
+  return(result)
+}
+
+simulation3<-coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = bottleneck_traj,method="thin",val_upper=11)
+tree3<-generate_newick((simulation3))
+plot(tree3$newick,show.tip.label = F)
+```
+
+Note: Other R packages such as Ape and phyclust (ms) have functions that simulate isochronous genealogies under the coalescent model for specific demographic scenarios such as exponential growth and piece-wise constant functions. 
+
+
+
+
+
