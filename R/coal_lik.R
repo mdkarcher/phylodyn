@@ -176,6 +176,14 @@ U = function(theta, init, invC, alpha, beta, grad=FALSE)
   }
 }
 
+log_f_prior_kappa = function(f, kappa, invC, alpha, beta)
+{
+  D = length(f) + 1
+  invCf = invC %*% f
+  
+  return(((D-1)/2+alpha-1)*log(kappa) - (t(f)%*%invCf/2+beta)*kappa)
+}
+
 U_kappa = function(theta, init, invC, alpha, beta, grad=FALSE)
 {
   D = length(theta)

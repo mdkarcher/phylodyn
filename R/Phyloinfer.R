@@ -378,7 +378,7 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=
 log_mvnorm_prior <- function(x, prec, mu=rep(0, length(x)))
 {
   x_mu = x - mu
-  return(-0.5 * crossprod(x_mu, prec %*% x_mu))
+  return(0.5 * spam::determinant(prec)$modulus - 0.5 * crossprod(x_mu, prec %*% x_mu))
 }
 
 # Gamma log-prior for kappa
@@ -644,10 +644,10 @@ sampling = function(data, para, alg, setting, init, verbose=TRUE, printevery=100
     rand_leap = setting$rand_leap
   }
   
-  if (alg == "ESSwS")
-  {
-    betas = para$betas
-  }
+  # if (alg == "ESSwS")
+  # {
+  #   betas = para$betas
+  # }
   
   # storage of posterior samples
   NSAMP = setting$NSAMP
@@ -669,11 +669,11 @@ sampling = function(data, para, alg, setting, init, verbose=TRUE, printevery=100
   u = init$u
   du = init$du
   
-  if (alg %in% c("ESSwS-MH", "ESSwS-ESS"))
-  {
-    betas = init$betas
-    betas_out = NULL
-  }
+  # if (alg %in% c("ESSwS-MH", "ESSwS-ESS"))
+  # {
+  #   betas = init$betas
+  #   betas_out = NULL
+  # }
   
   if (alg == "HMC")
   {
