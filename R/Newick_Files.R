@@ -1,23 +1,32 @@
-##Export Newick format for running BEAST for heterochronous data
-#takes the input generated in gen_INLA_args() function (args) and sample (needed for gen_INLA_args())
-#args already has the needed information, we add '_dates' to be recognized in BEAUTI
-#returs a phylo object
-generate_newick<-function(args,sample)
+#' Returns a phylo object from the argumentes generated with coalsim
+#' 
+#' @param args is a list containing vectors of coalescent times \code{coal_times}, sampling times \code{samp_times}, and number 
+#'   sampled per sampling time \code{n_sampled}, etc. This list is the output of coalsim
+#' @return A list with two elements \code{newikck} contains the tree in phylo format, \code{lables} a vector with tip labels 
+#' @export
+#' 
+#' @examples
+#' constant<-function(x){return (rep(1,length(x)))}
+#' simulation1<-coalsim(0,10,constant)
+#' tree1<-generate_newick(simulation1)
+#' plot(tree1$newick)
+generate_newick<-function(args)
 {
-  n<-sum(sample[,1])
-  labels<-paste(rep("t",n),seq(1,n,1),rep("_",n),rep(sample[,2],sample[,1]),sep="")
+  n<-sum(args$n_sampled)
+  labels<-paste(rep("t",n),seq(1,n,1),rep("_",n),rep(args$samp_times[1],args$n_sampled[1]),sep="")
   
   #we could chose labels at random to coalesce but since the process is exchangeable, we don't care. At least not for now
-  tb<-sample[1,1] #Total branches (initial)
+  tb<-args$n_sampled[1] #Total branches (initial)
   s<-0 #time for branch lengths
   temp_labels<-labels[1:tb]
-  temp_times<-rep(sample[1,2],sample[1,1])
+  temp_times<-rep(args$samp_times[1],args$n_sampled[1])
   initial.row<-2
-  for (j in 2:length(args$event))
+  args2<-gen_INLA_args(args$samp_times,args$n_sampled,args$coal_times)
+  for (j in 2:length(args2$event))
   {
-    if (args$event[j]==1)
+    if (args2$event[j]==1)
     {
-      s<-args$s[j]; 
+      s<-args2$s[j]; 
       ra<-sample(tb,1) #choose at random one of them, the other is the one to the right so not really random
       if (ra<tb)
       {
@@ -39,16 +48,16 @@ generate_newick<-function(args,sample)
     }
     else
     { #I will be adding samples at 
-      s<-args$s[j]; 
-      if (sample[initial.row,1]==1)
+      s<-args2$s[j]; 
+      if (args$n_sample[initial.row]==1)
       {
-        temp_labels<-c(temp_labels,labels[cumsum(sample[,1])[initial.row]])
+        temp_labels<-c(temp_labels,labels[cumsum(args$n_sampled)[initial.row]])
         initial.row<-initial.row+1
         tb<-tb+1
         temp_times<-c(temp_times,s)        
       }else{
-        end<-cumsum(sample[,1])[initial.row]
-        ini<-cumsum(sample[,1])[initial.row-1]+1
+        end<-cumsum(args$n_sampled)[initial.row]
+        ini<-cumsum(args$n_sampled)[initial.row-1]+1
         for (k in ini:end){
           temp_labels<-c(temp_labels,labels[k])
           tb<-tb+1
