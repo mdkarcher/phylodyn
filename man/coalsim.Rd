@@ -2,7 +2,7 @@
 % Please edit documentation in R/coalsieve.R
 \name{coalsim}
 \alias{coalsim}
-\title{Simulate from inhomogeneous, heterochronous coalescent.}
+\title{Simulate from inhomogeneous, heterochronous coalescent}
 \usage{
 coalsim(samp_times, n_sampled, traj, method = "tt", val_upper = 10,
   lower_bound = 1, ...)
@@ -32,7 +32,7 @@ A list containing vectors of coalescent times \code{coal_times},
   \code{n_sampled}.
 }
 \description{
-Simulate from inhomogeneous, heterochronous coalescent.
+Simulate from inhomogeneous, heterochronous coalescent
 }
 \examples{
 coalsim(0:2, 3:1, unif_traj, lower_bound=10)

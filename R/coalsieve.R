@@ -1,4 +1,4 @@
-#' Simulate from inhomogeneous, heterochronous coalescent.
+#' Simulate from inhomogeneous, heterochronous coalescent
 #' 
 #' @param samp_times numeric vector of sampling times.
 #' @param n_sampled numeric vector of samples taken per sampling time.
