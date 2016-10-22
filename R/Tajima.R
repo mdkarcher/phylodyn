@@ -43,7 +43,7 @@ sufficient_stats<-function(groups,n){
   parentlist<-0
   famsize<-0
   L<-apply(Lmat,2,max) #this vector has the nesting information, it has parents nodes
-  parents<-sort(unique(L),d=T)
+  parents <- sort(unique(L), decreasing = TRUE)
   i<-2
   for (j in parents){
     offspring<-seq(1,l)[L==j]

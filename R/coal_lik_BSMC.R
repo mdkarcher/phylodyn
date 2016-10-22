@@ -108,7 +108,7 @@ get_F_values<-function(latent,init,Fl){
 
 
 
-coal_loglik_smc = function(init, f, grad=F)
+coal_loglik_smc = function(init, f, grad = FALSE)
   #Revised: Dec 15,2014
 {
   

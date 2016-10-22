@@ -336,7 +336,7 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=
     q[D] <- q[D] + eps/2*p[D]
     
     # Make a full step for the middle dynamics
-    Cpx = complex(mod=1,arg=-rtEV*exp(q[D]/2)*eps)*complex(re=qT*exp(q[D]/2),im=pT)
+    Cpx = complex(modulus = 1, argument = -rtEV*exp(q[D]/2)*eps)*complex(real = qT*exp(q[D]/2), imaginary = pT)
     qT = Re(Cpx)*exp(-q[D]/2)
     pT = Im(Cpx)
     q[-D] = EVC%*%(qT/rtEV)
@@ -441,7 +441,8 @@ Q_matrix <- function(input, s_noise, signal)
   Q<-spam::spam(0,n2,n2)  
   if (n2>2)
   {
-    Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1], diff[1:(n2-2)] + diff[2:(n2-1)], diff[n2-1]) + (1/signal)*rep(s_noise, n2)
+    Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1], diff[1:(n2-2)] + diff[2:(n2-1)],
+                                       diff[n2-1]) + (1/signal)*rep(s_noise, n2)
   }
   else
   {
