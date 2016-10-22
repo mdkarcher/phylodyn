@@ -10,7 +10,7 @@
 ##Compare time with defining Q first and then declaring it as sparse
 
 ##The browninan motion, efficient 
-#Qmatrix<-function(input,s.noise,signal){
+#Q_matrix<-function(input,s.noise,signal){
 #	n2<-nrow(input)
 #	diff<-(1/(signal*diff(input)))
 #	Q<-spam(0,n2,n2)	
@@ -23,7 +23,7 @@
 
 
 ##The intrinsic one
-# Qmatrix<-function(input,s.noise,signal){
+# Q_matrix<-function(input,s.noise,signal){
 # 	n2<-nrow(input)
 # 	diff<-(1/(signal*diff(input)))
 # 	Q<-spam(0,n2,n2)	
@@ -32,28 +32,37 @@
 # 	Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
 # 	return(Q)}
 #   
-Qmatrix<-function(input,s.noise,signal)
-{
-  n2<-nrow(input)
-  diff1<-diff(input)
-  diff1[diff1==0]<-s.noise #correction for dividing over 0
-  diff<-(1/(signal*diff1))
-  Q<-spam(0,n2,n2)	
-  if (n2>2){
-  Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],diff[n2-1])+(1/signal)*rep(s.noise,n2)} else {Q[cbind(seq(1,n2),seq(1,n2))]<-c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)}
-    
-  
-  Q[cbind(seq(1,n2-1),seq(2,n2))]<--diff[1:(n2-1)]
-  Q[cbind(seq(2,n2),seq(1,n2-1))]<--diff[1:(n2-1)]
-  return(Q)
-}
+
+# Redundant: Use Q_matrix
+# Qmatrix<-function(input,s.noise,signal)
+# {
+#   n2<-nrow(input)
+#   diff1<-diff(input)
+#   diff1[diff1==0]<-s.noise #correction for dividing over 0
+#   diff<-(1/(signal*diff1))
+#   Q <- spam::spam(0,n2,n2)	
+#   if (n2>2)
+#   {
+#     Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1],diff[1:(n2-2)]+diff[2:(n2-1)],
+#                                        diff[n2-1])+(1/signal)*rep(s.noise,n2)
+#   } 
+#   else
+#   {
+#     Q[cbind(seq(1,n2),seq(1,n2))] <- c(diff[1],diff[n2-1])+(1/signal)*rep(s.noise,n2)
+#   }
+#   
+#   
+#   Q[cbind(seq(1,n2-1),seq(2,n2))] <- -diff[1:(n2-1)]
+#   Q[cbind(seq(2,n2),seq(1,n2-1))] <- -diff[1:(n2-1)]
+#   return(Q)
+# }
   
 
 GP.prior<-function(signal,s.input,s.noise)
 {
   ##We assume s.input is already ordered
-	Q<-Qmatrix(as.matrix(s.input),s.noise,signal)
-  L<-chol.spam(Q)
+	Q<-Q_matrix(as.matrix(s.input),s.noise,signal)
+  L<-spam::chol.spam(Q)
 	y2<-rnorm(nrow(Q),0,1)
 	g<-spam::backsolve(L,y2)
 	return(g)
@@ -73,8 +82,8 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 	ind1<-ind1+ind2+ind3
 	ind1[ind1>1]<-1
 	
-  #Q<-Qmatrix(as.matrix(X2.2$x),s.noise,signal)
-	Q<-Qmatrix(as.matrix(X2.2$x[ind1==1]),s.noise,signal)
+  #Q<-Q_matrix(as.matrix(X2.2$x),s.noise,signal)
+	Q<-Q_matrix(as.matrix(X2.2$x[ind1==1]),s.noise,signal)
 	induse<-X2.2$ix[ind1==1]
 	
   #var.f<-Q[X2.2$ix<=n1,X2.2$ix<=n1]
@@ -82,13 +91,14 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 	
 	if (n1>1)
   {
-		L.1<-chol.spam(var.f)
-		part1<-forwardsolve.spam(L.1,-Q[induse<=n1,induse>n1]%*%y[induse[induse>n1]-n1],transpose=T,upper.tri=T)
-		mean.f2<-backsolve.spam(L.1,part1)
-		y2<-rnorm(length(s.tilde),0,1)
-		g2<-mean.f2+backsolve.spam(L.1,y2)
-		one<-induse[induse<=n1]
-		return(list(mean_f=mean.f2[order(one)],g=g2[order(one)]))
+		L.1 <- spam::chol.spam(var.f)
+		part1 <- spam::forwardsolve.spam(L.1, -Q[induse<=n1, induse>n1] %*% y[induse[induse>n1] - n1],
+		                                 transpose = TRUE, upper.tri = TRUE)
+		mean.f2 <- spam::backsolve.spam(L.1, part1)
+		y2 <- rnorm(length(s.tilde), 0, 1)
+		g2 <- mean.f2 + spam::backsolve.spam(L.1, y2)
+		one <- induse[induse <= n1]
+		return(list(mean_f = mean.f2[order(one)], g = g2[order(one)]))
 	}
 	if (n1==1)
 	{
@@ -105,7 +115,7 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 #GP.posterior<-function(X,y,signal,s.tilde,s.noise){
 #	X2<-as.matrix(c(s.tilde,X))
 #	X2.2<-sort(X2,index.return=TRUE)
-#	Q<-Qmatrix(as.matrix(X2.2$x),s.noise,signal)
+#	Q<-Q_matrix(as.matrix(X2.2$x),s.noise,signal)
 #	n1<-length(s.tilde)
 #	var.f<-Q[X2.2$ix<=n1,X2.2$ix<=n1]
 #	if (n1>1){
@@ -151,7 +161,7 @@ GP.posterior2<-function(X,y,signal,s.tilde,s.noise)
 {
 	X2<-as.matrix(c(s.tilde,X))
 	X2.2<-sort(X2,index.return=TRUE)
-	Q<-Qmatrix(as.matrix(X2.2$x),s.noise,signal)
+	Q<-Q_matrix(as.matrix(X2.2$x),s.noise,signal)
 	n1<-length(s.tilde)
 	n2<-nrow(X2)
 	L2<-chol(Q[X2.2$ix>n1,X2.2$ix>n1])
@@ -281,9 +291,9 @@ slice.sampling<-function(data,signal,s.noise)
 	theta<-runif(1,0,2*pi)
 	Y<-as.matrix(data[,1])
 	X2.2<-sort(Y,index.return=TRUE)
-	Q<-Qmatrix(as.matrix(X2.2$x),s.noise,signal)
-	cholQ<-chol.spam(Q)
-	v<-backsolve.spam(cholQ,rnorm(nrow(Y),0,1))
+	Q<-Q_matrix(as.matrix(X2.2$x),s.noise,signal)
+	cholQ<-spam::chol.spam(Q)
+	v <- spam::backsolve.spam(cholQ,rnorm(nrow(Y),0,1))
 	
 	v<-v[order(X2.2$ix)]
 	v0<-data[,4]*sin(theta)+v*cos(theta)
