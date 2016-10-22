@@ -35,10 +35,10 @@ relwid = function(INLA_out, traj, hilim=Inf, lolim=0, yhilim=Inf, ylolim=0)
   return(list(tot = result, avg = result / n ))
 }
 
-relwid_emp = function(INLA_out, hilim=Inf, lolim=0, yhilim=Inf, ylolim=0)
+relwid_emp = function(INLA_out, hilim=Inf, lolim=0)
 {
   mod = INLA_out$result$summary.random$time
-  mask = mod$ID <= hilim & mod$ID >= lolim & traj(mod$ID) <= yhilim & traj(mod$ID) >= lolim
+  mask = mod$ID <= hilim & mod$ID >= lolim
   grid_pts = mod$ID[mask]
   n = length(grid_pts)
   med = exp(-mod$"0.5quant"[mask])
@@ -61,10 +61,10 @@ envelope = function(INLA_out, traj, hilim=Inf, lolim=0, yhilim=Inf, ylolim=0)
   return(list(tot = result, avg = result / n))
 }
 
-variation = function(INLA_out, hilim=Inf, lolim=0, yhilim=Inf, ylolim=0)
+variation = function(INLA_out, hilim=Inf, lolim=0)
 {
   mod = INLA_out$result$summary.random$time
-  mask = mod$ID <= hilim & mod$ID >= lolim & traj(mod$ID) <= yhilim & traj(mod$ID) >= lolim
+  mask = mod$ID <= hilim & mod$ID >= lolim
   grid_pts = mod$ID[mask]
   n = length(grid_pts)
   med = exp(-mod$"0.5quant"[mask])

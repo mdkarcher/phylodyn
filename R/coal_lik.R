@@ -231,7 +231,7 @@ precBM = function(times, delta=1e-6)
   diff1[diff1==0] <- delta
   
   diff <- 1/diff1
-  Q<-spam(0,D,D)
+  Q <- spam::spam(0,D,D)
   if (D>2)
     Q[cbind(1:D,1:D)] <- c(diff[1]+ifelse(times[1]==0,1/delta,1/times[1]),diff[1:(D-2)]+diff[2:(D-1)],diff[D-1])
   else

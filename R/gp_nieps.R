@@ -66,14 +66,14 @@ gp_nieps_iso = function(filename, alpha_prior_kappa, beta_prior_kappa, iteration
     slice <- slice.sampling(data,signal,s.noise)
     data <- slice$data
     #result2[Nsim,3] <- sum((num.3-data[,4])!=0)
-    alpha.post.kappa <- alpha.prior.kappa+nrow(slice$Q)*.5
+    alpha_post_kappa <- alpha_prior_kappa+nrow(slice$Q)*.5
     gg <- data[,4][slice$order]
-    beta.post.kappa <- beta.prior.kappa+.5*signal*t(gg)%*%slice$Q%*%gg
+    beta_post_kappa <- beta_prior_kappa+.5*signal*t(gg)%*%slice$Q%*%gg
     result1[,Nsim] <- sigmoidal(GP.posterior(as.matrix(data[,1]),data[,4],signal,as.matrix(grid.points1),s.noise)$g)*lambda
     result2[,Nsim] <- sigmoidal(GP.posterior(as.matrix(data[,1]),data[,4],signal,as.matrix(grid.points2),s.noise)$g)*lambda
     result3[,Nsim] <- sigmoidal(GP.posterior(as.matrix(data[,1]),data[,4],signal,as.matrix(grid.points3),s.noise)$g)*lambda
     
-    signal <- 1/rgamma(1,alpha.post.kappa,beta.post.kappa)
+    signal <- 1/rgamma(1,alpha_post_kappa,beta_post_kappa)
     params[Nsim,1] <- signal
     
     lambda1 <- runif(1,lambda-.005,lambda+.005)
@@ -81,7 +81,7 @@ gp_nieps_iso = function(filename, alpha_prior_kappa, beta_prior_kappa, iteration
     {
       lambda1 <- -lambda1
     }
-    rat1 <- lambda_prior(lambda1,lambda.mean,alpha.1,alpha.2,alpha.3)/lambda.prior(lambda,lambda.mean,alpha.1,alpha.2,alpha.3)
+    rat1 <- lambda_prior(lambda1, lambda_mean, alpha1, alpha2, alpha3) / lambda.prior(lambda, lambda_mean, alpha1, alpha2, alpha3)
     ac <- runif(1)<rat1*((lambda1/lambda)^(nrow(data))*exp(-(lambda1-lambda)*beta.cum))
     if (ac=="TRUE")
     {
