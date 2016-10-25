@@ -1,5 +1,13 @@
 language: r
 dist: trusty
-r_packages: knitr
+r_packages:
+  - knitr
+  - rmarkdown
+  - devtools
+  - testthat
+  - Matrix
+  - sp
+  - ape
+  - spam
 install:
   - Rscript -e 'install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable")'
