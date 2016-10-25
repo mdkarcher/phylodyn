@@ -1,4 +1,5 @@
 language: r
 dist: trusty
+r_packages: knitr
 install:
   - Rscript -e 'install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable")'
