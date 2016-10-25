@@ -1,4 +1,5 @@
 language: r
+sudo: required
 dist: trusty
 install:
   - Rscript -e 'install.packages(c("Matrix", "devtools", "knitr", "testthat", "rmarkdown", "sp", "ape", "spam"), repos = "http://cran.rstudio.com")'
