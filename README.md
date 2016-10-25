@@ -5,11 +5,13 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
 ## Installation
 
-1. Install (if necessary) package dependencies and helpers `ape`, `INLA`, `spam` and `devtools` using `install.packages`.
+1. Install (if necessary) package dependencies and helpers `ape`, `spam` and `devtools` using `install.packages`.
 
-2. Load `devtools` using `library(devtools)`.
+2. Install `INLA` using `install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable")`
 
-3. Install `phylodyn` using
+3. Load `devtools` using `library(devtools)`.
+
+4. Install `phylodyn` using
 
     a. `install_github("mdkarcher/phylodyn")`, or
 
