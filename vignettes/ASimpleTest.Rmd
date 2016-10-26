@@ -9,7 +9,7 @@ vignette: >
   \usepackage[utf8]{inputenc}
 ---
 
-This vignette shows a simple and typical use of `phylodyn` and its main functions BNPR and BNPR_PS.
+This vignette shows a simple and typical use of `phylodyn` and its MCMC tools. If we increase the number of MCMC samples, we reproduce part of the split HMC results from Lan, et al. 2014.
 
 We start by loading the `phylodyn` package.
 
@@ -18,46 +18,58 @@ set.seed(8675309)
 library(phylodyn)
 ```
 
-We need to set the true effective population size trajectory function. For this example, we choose a seasonal growth/collapse trajectory (already implemented in `phylodyn`).
+We need to set the true effective population size trajectory function, and also its reciprocal. For this example, we choose exponential growth (already implemented in `phylodyn`).
 
 ```{r}
-traj = logistic_traj
+traj = exp_traj
 ```
 
-We set the end of the sampling interval and the number of samples we should expect.
+For simplicity's sake, we will use isochronous sampling (taking all samples simultaneously at t=0). We sample 100 individuals at the present time.
 
 ```{r}
-samp_end = 48
-nsamps   = 500
-```
-
-We calculate the proportionality constant necessary to produce the correct expected number of samples. We then produce a set of samples by drawing from an inhomogeneous Poisson process with intensity proportional to the effective population size trajectory.
-
-```{r}
-Cprop      = nsamps/integrate(traj_beta, 0, samp_end, traj=traj, beta=1)$value
-samp_times = pref_sample(traj, c=Cprop, lim=c(0,samp_end), beta=1)
+samp_times = 0
+n_sampled  = 100
 ```
 
 We simulate a genealogy based on our sample using the coalescent.
 
 ```{r}
-gene = coalsim(samp_times = samp_times, n_sampled = rep(1, length(samp_times)),
-               traj = traj, lower_bound = 10)
+gene = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj, lower_bound = 1/20)
 ```
 
-We use BNPR and BNPR_PS to calculate approximate marginals (without and with a sampling model).
+We first use BNPR to calculate approximate marginals.
 
 ```{r}
-res_BNPR    = BNPR(data = gene, lengthout = 100)
-res_BNPR_PS = BNPR_PS(data = gene, lengthout = 100)
+res_BNPR = BNPR(data = gene, lengthout = 100)
 ```
 
-We plot the results.
+We set the number of samples and burn-in parameters. For expediency in this vignette we set them to be small. To produce more meaningful results, increase both parameters.
 
-```{r, fig.width=8.5, fig.height=5}
-par(mfrow=c(1,2))
-plot_BNPR(res_BNPR, traj = traj, main="BNPR", ylim = c(1, 700))
-plot_BNPR(res_BNPR_PS, traj = traj, main="BNPR-PS", ylim = c(1, 700))
+```{r}
+nsamp = 500
+nburnin = 100
+```
+
+We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
+
+```{r results='hide'}
+res_MCMC = mcmc_sampling(data = gene, alg = 'splitHMC', nsamp = nsamp,
+                         nburnin = nburnin)
+```
+
+We plot and compare the results from BNPR and splitHMC.
+
+```{r fig.width=5, fig.height=5}
+# Plot the results of BNPR
+plot_BNPR(BNPR_out = res_BNPR, traj = exp_traj, col = "blue", traj_col = "black")
+title("Exponential growth")
+  
+# plot the results of splitHMC
+lines(res_MCMC$med_fun, pch="", col='red', lwd=1)
+lines(res_MCMC$low_fun, pch="", col='red', lwd=1, lty=1)
+lines(res_MCMC$up_fun,  pch="", col='red', lwd=1, lty=1)
+legend('topleft',c('Truth','BNPR',"splitHMC"),
+       col=c('black','blue','red'),lwd=c(1,2.5,2.5),bty='n', lty=c(2,1,1))
 ```
 
 ## References
@@ -66,6 +78,6 @@ plot_BNPR(res_BNPR_PS, traj = traj, main="BNPR-PS", ylim = c(1, 700))
 Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
 In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
 
-2. M. S. Gill, P. Lemey, N. R. Faria, A. Rambaut, B. Shapiro, and M. A. Suchard.
-Improving Bayesian population dynamics inference: a coalescent-based model for multiple loci.
-*Molecular biology and evolution*, 30(3):713–724, 2013.
+2. Lan, S., Palacios, J. A., Karcher, M., Minin, V. N., & Shahbaba, B. (2014).
+An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
+*arXiv preprint arXiv*:1412.0158.
