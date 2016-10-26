@@ -68,12 +68,12 @@ res_MCMC = mcmc_sampling(data = gene, alg = 'splitHMC', nsamp = nsamp,
 ```
 
 ```{r results='hide'}
-res_MCMC = mcmc_sampling(data = gene, alg = 'MALA', nsamp = nsamp,
+res_MCMC = mcmc_sampling(data = gene, alg = 'aMALA', nsamp = nsamp,
                          nburnin = nburnin)
 ```
 
 ```{r results='hide'}
-res_MCMC = mcmc_sampling(data = gene, alg = 'aMALA', nsamp = nsamp,
+res_MCMC = mcmc_sampling(data = gene, alg = 'MALA', nsamp = nsamp,
                          nburnin = nburnin)
 ```
 
