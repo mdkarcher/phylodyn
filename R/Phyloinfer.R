@@ -180,7 +180,7 @@ aMALA = function (q_cur, u_cur, U, Mf, c, eps=1)
   q[D]=q[D]*t
   
   # prepare pre-conditional matrix and gradient
-  Q=spam::spam(Mf(q))
+  Q=Mf(q)
   cholQ=spam::chol.spam(Q)
   g=U(q, grad = TRUE)$dlogpos
   

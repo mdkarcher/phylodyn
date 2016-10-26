@@ -53,27 +53,7 @@ nburnin = 100
 We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
 
 ```{r results='hide'}
-res_MCMC = mcmc_sampling(data = gene, alg = 'ESS', nsamp = nsamp,
-                         nburnin = nburnin)
-```
-
-```{r results='hide'}
-res_MCMC = mcmc_sampling(data = gene, alg = 'HMC', nsamp = nsamp,
-                         nburnin = nburnin)
-```
-
-```{r results='hide'}
-res_MCMC = mcmc_sampling(data = gene, alg = 'splitHMC', nsamp = nsamp,
-                         nburnin = nburnin)
-```
-
-```{r results='hide'}
 res_MCMC = mcmc_sampling(data = gene, alg = 'aMALA', nsamp = nsamp,
-                         nburnin = nburnin)
-```
-
-```{r results='hide'}
-res_MCMC = mcmc_sampling(data = gene, alg = 'MALA', nsamp = nsamp,
                          nburnin = nburnin)
 ```
 
