@@ -35,6 +35,7 @@ We simulate a genealogy based on our sample using the coalescent.
 
 ```{r}
 gene = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj, lower_bound = 1/20)
+coal_times = gene$coal_times
 ```
 
 We first use BNPR to calculate approximate marginals.
@@ -48,6 +49,35 @@ We set the number of samples and burn-in parameters. For expediency in this vign
 ```{r}
 nsamp = 500
 nburnin = 100
+```
+
+```{r}
+grid_bds = range(c(coal_times,samp_times))
+grid = seq(grid_bds[1], grid_bds[2], length.out = 100)
+intl = grid[2]-grid[1]
+midpts = grid[-1]-intl/2
+invC <- Q_matrix(as.matrix(midpts),0,1)
+invC[1,1] <- invC[1,1]+.0001
+lik_init = coal_lik_init(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)
+
+```
+
+```{r}
+theta = rep(1, 100)
+prec_alpha = 1e-2
+prec_beta = 1e-2
+
+u  = U_kappa(theta,lik_init,invC,prec_alpha,prec_beta)$logpos
+```
+
+```{r}
+Ufun = function(theta, grad=FALSE) U_kappa(theta = theta, init = lik_init, invC = invC,
+                                               alpha = prec_alpha, beta = prec_beta, grad = grad)
+Mf = function(theta) Met(theta, lik_init, invC)
+```
+
+```{r}
+res = aMALA(q_cur = theta, u_cur = u, U = Ufun, Mf = Mf, c = 1.2, eps = 0.1)
 ```
 
 We invoke the `mcmc_sampling` function with `splitHMC` to run MCMC on the data.
