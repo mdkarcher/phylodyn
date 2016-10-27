@@ -181,12 +181,12 @@ aMALA = function (q_cur, u_cur, U, Mf, c, eps=1)
   
   # prepare pre-conditional matrix and gradient
   Q=Mf(q)
-  cholQ=spam::chol.spam(Q)
+  cholQ=spam::chol(Q)
   g=U(q, grad = TRUE)$dlogpos
   
   # sample momentum
   z=rnorm(D-1)
-  p=spam::backsolve.spam(cholQ,z)
+  p=spam::backsolve(cholQ,z)
   
   # log proposal density
   logprp = -t(z)%*%z/2+sum(log(spam::diag(cholQ)))
