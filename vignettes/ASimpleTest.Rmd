@@ -77,6 +77,10 @@ Mf = function(theta) Met(theta, lik_init, invC)
 ```
 
 ```{r}
+foo = Mf(theta)
+```
+
+```{r}
 res = aMALA(q_cur = theta, u_cur = u, U = Ufun, Mf = Mf, c = 1.2, eps = 0.1)
 ```
 
