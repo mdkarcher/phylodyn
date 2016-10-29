@@ -23,13 +23,13 @@ pref_sample = function(f, lim=c(0,1), c=1, beta=1, upper=NULL, grid.len = 1000)
     upper = max(eval)
   }
   
-  nfull = rpois(1, c * upper * diff(lim))
-  pfull = sort(runif(nfull, lim[1], lim[2]))
+  nfull = stats::rpois(1, c * upper * diff(lim))
+  pfull = sort(stats::runif(nfull, lim[1], lim[2]))
   
   pthin = NULL
   for (p in pfull)
   {
-    if (runif(1) < f(p)^beta / upper)
+    if (stats::runif(1) < f(p)^beta / upper)
       pthin = c(pthin, p)
   }
   #nthin = length(pthin)

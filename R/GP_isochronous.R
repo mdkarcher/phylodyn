@@ -63,7 +63,7 @@ GP.prior<-function(signal,s.input,s.noise)
   ##We assume s.input is already ordered
 	Q<-Q_matrix(as.matrix(s.input),s.noise,signal)
   L<-spam::chol.spam(Q)
-	y2<-rnorm(nrow(Q),0,1)
+	y2<-stats::rnorm(nrow(Q),0,1)
 	g<-spam::backsolve(L,y2)
 	return(g)
 }
@@ -95,7 +95,7 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 		part1 <- spam::forwardsolve.spam(L.1, -Q[induse<=n1, induse>n1] %*% y[induse[induse>n1] - n1],
 		                                 transpose = TRUE, upper.tri = TRUE)
 		mean.f2 <- spam::backsolve.spam(L.1, part1)
-		y2 <- rnorm(length(s.tilde), 0, 1)
+		y2 <- stats::rnorm(length(s.tilde), 0, 1)
 		g2 <- mean.f2 + spam::backsolve.spam(L.1, y2)
 		one <- induse[induse <= n1]
 		return(list(mean_f = mean.f2[order(one)], g = g2[order(one)]))
@@ -104,7 +104,7 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 	{
 		part1<--Q[induse<=n1,induse>n1]%*%y[induse[induse>n1]-n1]
 		mean.f2<-part1/var.f
-		y2<-rnorm(length(s.tilde),0,1)
+		y2<-stats::rnorm(length(s.tilde),0,1)
 		g2<-mean.f2+y2/sqrt(var.f)
 		one<-induse[induse<=n1]
 		return(list(mean_f=mean.f2[order(one)],g=g2[order(one)]))
@@ -122,7 +122,7 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 #		L.1<-chol.spam(var.f)
 #		part1<-forwardsolve.spam(L.1,-Q[X2.2$ix<=n1,X2.2$ix>n1]%*%y[X2.2$ix[X2.2$ix>n1]-n1],transpose=T,upper.tri=T)
 #		mean.f2<-backsolve.spam(L.1,part1)
-#		y2<-rnorm(length(s.tilde),0,1)
+#		y2<-stats::rnorm(length(s.tilde),0,1)
 #		g2<-mean.f2+backsolve.spam(L.1,y2)
 #		one<-X2.2$ix[X2.2$ix<=n1]
 #		return(list(mean_f=mean.f2[order(one)],g=g2[order(one)]))
@@ -131,7 +131,7 @@ GP.posterior<-function(X,y,signal,s.tilde,s.noise)
 #	{
 #		part1<--Q[X2.2$ix<=n1,X2.2$ix>n1]%*%y[X2.2$ix[X2.2$ix>n1]-n1]
 #		mean.f2<-part1/var.f
-#		y2<-rnorm(length(s.tilde),0,1)
+#		y2<-stats::rnorm(length(s.tilde),0,1)
 #		g2<-mean.f2+y2/sqrt(var.f)
 #		one<-X2.2$ix[X2.2$ix<=n1]
 #		return(list(mean_f=mean.f2[order(one)],g=g2[order(one)]))
@@ -185,11 +185,11 @@ number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
   ind<-2*info[,3]-1
   loglik<-(-lambda)*sum(t*coal.factor)+sum(log(sigmoidal(info[,4]*ind)))+nrow(info)*log(lambda)+sum(m*log(coal.factor))
   
-	add<-rbinom(n-1,1,.5)
-	new<-runif(n-1,min=s[1:n-1],max=s[2:n])
+	add<-stats::rbinom(n-1,1,.5)
+	new<-stats::runif(n-1,min=s[1:n-1],max=s[2:n])
   g.new<-rep(0,l-1)
 	g.new[add==1]<-GP.posterior(as.matrix(info[,1]),info[,4],signal,as.matrix(new[add==1]),s.noise)$g
-	accept<-runif(n-1)<add*lambda*t*sigmoidal(-g.new)*coal.factor/(m+1)
+	accept<-stats::runif(n-1)<add*lambda*t*sigmoidal(-g.new)*coal.factor/(m+1)
 	info<-rbind(info,cbind(new[accept],seq(n,2)[accept],rep(0,sum(accept)),g.new[accept]))
   m<-m+accept
   #	info<-rbind(info,to.add)
@@ -200,7 +200,7 @@ number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
   part1<-add==0 & m>0
 	if (sum(part1)>0)
   {
-    where<-ceiling(runif(n-1)*m)[part1]
+    where<-ceiling(stats::runif(n-1)*m)[part1]
 		co<-seq(n,2)[part1]
 		
 		if (m[part1][1]==1)
@@ -229,7 +229,7 @@ number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
 				}
 			}
 		}
-		to.delete<-runif(length(co))<m[part1]/(lambda*t[part1]*sigmoidal(-info[find,4])*coal.factor[part1])
+		to.delete<-stats::runif(length(co))<m[part1]/(lambda*t[part1]*sigmoidal(-info[find,4])*coal.factor[part1])
 		if (sum(to.delete)>0)
     {
 			info<-info[-(find[to.delete]),]
@@ -246,9 +246,9 @@ location.thinned.uniform<-function(s,T,lambda,signal,N,info,s.noise)
 	n<-sum(info[,3])
 	m<-nrow(info)-sum(info[,3])
 	coal<-info[,2][info[,3]==0]
-	new<-runif(m,min=s[N-coal+1],max=s[N-coal+2])
+	new<-stats::runif(m,min=s[N-coal+1],max=s[N-coal+2])
 	g.new<-GP.posterior(as.matrix(info[,1]),info[,4],signal,as.matrix(new),s.noise)$g
-	change<-runif(length(coal))<sigmoidal(-g.new)/sigmoidal(-info[,4][info[,3]==0])
+	change<-stats::runif(length(coal))<sigmoidal(-g.new)/sigmoidal(-info[,4][info[,3]==0])
 	
 	info[,c(1,4)][info[,3]==0][change==TRUE]<-cbind(new[change==TRUE],g.new[change==TRUE])
 	
@@ -266,18 +266,18 @@ location.thinned.uniform2<-function(s,T,lambda,signal,N,info,s.noise,t,m)
   m2<-m
   m2[m>0]<-1 #only where there are latent points
   n<-sum(info[,3])
-  where<-seq(1:length(t))[rmultinom(1,1,t*m2)==1] #sample interval proportional to time length
+  where<-seq(1:length(t))[stats::rmultinom(1,1,t*m2)==1] #sample interval proportional to time length
   who<-info[,1][info[,3]==0 & info[,1]<s[(where+1)] & info[,1]>=s[where]]
   ma<-length(who)
   #m<-nrow(info)-n
 	#who<-info[,1][info[,3]==0]
-	new<-runif(ma,min=s[where],max=s[where+1])
+	new<-stats::runif(ma,min=s[where],max=s[where+1])
 #  for (j in 1:ma){
 #   k<-sum(s<who[j])
-#		new[j]<-runif(1,min=s[k],max=s[k+1])
+#		new[j]<-stats::runif(1,min=s[k],max=s[k+1])
 #	}
 	g.new<-GP.posterior(as.matrix(info[,1]),info[,4],signal,as.matrix(new),s.noise)$g
-	change<-runif(ma)<sigmoidal(-g.new)/sigmoidal(-info[,4][info[,3]==0 & info[,1]<s[(where+1)] & info[,1]>=s[where]])
+	change<-stats::runif(ma)<sigmoidal(-g.new)/sigmoidal(-info[,4][info[,3]==0 & info[,1]<s[(where+1)] & info[,1]>=s[where]])
 	info[,1][info[,3]==0 & info[,1]<s[(where+1)] & info[,1]>=s[where]][change==TRUE]<-new[change==TRUE]
 	info[,4][info[,3]==0 & info[,1]<s[(where+1)] & info[,1]>=s[where]][change==TRUE]<-g.new[change==TRUE]
 	return(info)
@@ -288,26 +288,26 @@ location.thinned.uniform2<-function(s,T,lambda,signal,N,info,s.noise,t,m)
 
 slice.sampling<-function(data,signal,s.noise)
 {
-	theta<-runif(1,0,2*pi)
+	theta<-stats::runif(1,0,2*pi)
 	Y<-as.matrix(data[,1])
 	X2.2<-sort(Y,index.return=TRUE)
 	Q<-Q_matrix(as.matrix(X2.2$x),s.noise,signal)
 	cholQ<-spam::chol.spam(Q)
-	v <- spam::backsolve.spam(cholQ,rnorm(nrow(Y),0,1))
+	v <- spam::backsolve.spam(cholQ,stats::rnorm(nrow(Y),0,1))
 	
 	v<-v[order(X2.2$ix)]
 	v0<-data[,4]*sin(theta)+v*cos(theta)
 	v1<-data[,4]*cos(theta)-v*sin(theta)
 	theta.min<-0
 	theta.max<-2*pi
-	u<-runif(1)
+	u<-stats::runif(1)
 	indicator<-1-2*data[,3]
 	loglik<-sum(log(1+exp(indicator*data[,4])))*-1
 	logh<-log(u)+loglik
 	keep<-1
 	while (keep==1)
   {
-		theta.prime<-runif(1,theta.min,theta.max)
+		theta.prime<-stats::runif(1,theta.min,theta.max)
 		proposal<-v0*sin(theta.prime)+v1*cos(theta.prime)
 		loglik2<--sum(log(1+exp(indicator*proposal)))
 		if (loglik2>logh)

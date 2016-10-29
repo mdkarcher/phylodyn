@@ -623,10 +623,10 @@ plot_res <- function(results) {
   temp.popsize2 = rep(results[,4], each = 2)
   xx.alpha = c(temp.time, rev(temp.time))
   yy.alpha = c(temp.popsize1, rev(temp.popsize2))
-  polygon(xx.alpha,yy.alpha,col=adjustcolor("pink",alpha.f=0.5),border=NA)
+  graphics::polygon(xx.alpha,yy.alpha,col=grDevices::adjustcolor("pink",alpha.f=0.5),border=NA)
   #points(results[,1],results[,3],col="#3182bd",type="l",lwd=2.5)
-  points(results[,1],results[,3],col="red",type="l",lwd=1.75)
+  graphics::points(results[,1],results[,3],col="red",type="l",lwd=1.75)
   
-  points(results[,1],results[,2],col="red",type="l",lwd=0.5)
-  points(results[,1],results[,4],col="red",type="l",lwd=0.5)
+  graphics::points(results[,1],results[,2],col="red",type="l",lwd=0.5)
+  graphics::points(results[,1],results[,4],col="red",type="l",lwd=0.5)
 }

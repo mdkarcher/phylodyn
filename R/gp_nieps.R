@@ -7,7 +7,7 @@ lambda_prior = function(x,lambda_mean,alpha1,alpha2,alpha3)
 
 gp_nieps_iso = function(filename, alpha_prior_kappa, beta_prior_kappa, iterations, lambda_mean)
 {
-  data1 <- read.delim(filename, header=FALSE, sep="\t")
+  data1 <- utils::read.delim(filename, header=FALSE, sep="\t")
   data <- cbind(cumsum(data1[,1]),data1[,2])
   s <- c(0,data[,1])
   T <- max(s)
@@ -73,16 +73,16 @@ gp_nieps_iso = function(filename, alpha_prior_kappa, beta_prior_kappa, iteration
     result2[,Nsim] <- sigmoidal(GP.posterior(as.matrix(data[,1]),data[,4],signal,as.matrix(grid.points2),s.noise)$g)*lambda
     result3[,Nsim] <- sigmoidal(GP.posterior(as.matrix(data[,1]),data[,4],signal,as.matrix(grid.points3),s.noise)$g)*lambda
     
-    signal <- 1/rgamma(1,alpha_post_kappa,beta_post_kappa)
+    signal <- 1/stats::rgamma(1,alpha_post_kappa,beta_post_kappa)
     params[Nsim,1] <- signal
     
-    lambda1 <- runif(1,lambda-.005,lambda+.005)
+    lambda1 <- stats::runif(1,lambda-.005,lambda+.005)
     if (lambda1<0)
     {
       lambda1 <- -lambda1
     }
     rat1 <- lambda_prior(lambda1, lambda_mean, alpha1, alpha2, alpha3) / lambda.prior(lambda, lambda_mean, alpha1, alpha2, alpha3)
-    ac <- runif(1)<rat1*((lambda1/lambda)^(nrow(data))*exp(-(lambda1-lambda)*beta.cum))
+    ac <- stats::runif(1)<rat1*((lambda1/lambda)^(nrow(data))*exp(-(lambda1-lambda)*beta.cum))
     if (ac=="TRUE")
     {
       lambda <- lambda1

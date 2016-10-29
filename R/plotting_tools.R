@@ -8,7 +8,7 @@ shade_band = function(x, ylo, yhi, xlim=NULL, col="gray")
   ylo = ylo[mask]
   yhi = yhi[mask]
   
-  polygon(c(x, rev(x)), c(yhi, rev(ylo)), col=col, border=NA)
+  graphics::polygon(c(x, rev(x)), c(yhi, rev(ylo)), col=col, border=NA)
 }
 
 #' @export
@@ -62,17 +62,17 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
     
     if (is.null(axlabs))
     {
-      plot(1,1,type="n",log=log,
-           xlab=xlab, ylab=ylab, main=main,
-           xlim=xlim, ylim=ylim, ...)
+      graphics::plot(1,1,type="n",log=log,
+                     xlab=xlab, ylab=ylab, main=main,
+                     xlim=xlim, ylim=ylim, ...)
     }
     else
     {
-      plot(1,1,type="n",log=log,
-           xlab="", ylab=ylab, main=main,
-           xlim=xlim, ylim=ylim, xaxt = "n", ...)
-      axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
-      mtext(text = xlab, side = 1, line = xmarline)
+      graphics::plot(1,1,type="n",log=log,
+                     xlab="", ylab=ylab, main=main,
+                     xlim=xlim, ylim=ylim, xaxt = "n", ...)
+      graphics::axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
+      graphics::mtext(text = xlab, side = 1, line = xmarline)
     }
   }
   
@@ -83,7 +83,7 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
   
   if (!is.null(traj))
   {
-    lines(t, traj(t), lwd=traj_lwd, lty=traj_lty, col=traj_col)
+    graphics::lines(t, traj(t), lwd=traj_lwd, lty=traj_lty, col=traj_col)
   }
   
   if (newplot)
@@ -97,8 +97,8 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
       coals = coals[coals <= max(xlim) & coals >= min(xlim)]
       
       breaks = seq(min(xlim), max(xlim), length.out=nbreaks)
-      h_samp = hist(samps, breaks=breaks, plot=FALSE)
-      h_coal = hist(coals, breaks=breaks, plot=FALSE)
+      h_samp = graphics::hist(samps, breaks=breaks, plot=FALSE)
+      h_coal = graphics::hist(coals, breaks=breaks, plot=FALSE)
       
       hist2heat(h_samp, y=ymin/yextra^0.5, wd=heatmap_width)
       hist2heat(h_coal, y=ymin/yextra, wd=heatmap_width)
@@ -125,15 +125,15 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
           lab_adj = 1
         }
         
-        text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
+        graphics::text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
              adj = c(lab_adj, 0), cex = 0.7)
-        text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
+        graphics::text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
              adj = c(lab_adj, 1), cex = 0.7)
       }
     }
   }
   
-  lines(t, y, lwd=lwd, col=col, lty=lty)
+  graphics::lines(t, y, lwd=lwd, col=col, lty=lty)
 }
 
 #' @export
@@ -205,22 +205,22 @@ plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
   
   if (is.null(axlabs))
   {
-    plot(1,1,type="n",
-         xlab=xlab,ylab=ylab,main=main,
-         xlim=xlim,ylim=ylim)
+    graphics::plot(1,1,type="n",
+                   xlab=xlab,ylab=ylab,main=main,
+                   xlim=xlim,ylim=ylim)
   }
   else
   {
-    plot(1,1,type="n", xaxt="n",
-         xlab="",ylab=ylab,main=main,
-         xlim=xlim,ylim=ylim, ...)
-    axis(1, at=axlabs$x, labels = axlabs$labs, las=2, cex.lab=0.6)
-    mtext(text = xlab, side = 1, line = xmarline)
+    graphics::plot(1,1,type="n", xaxt="n",
+                   xlab="",ylab=ylab,main=main,
+                   xlim=xlim,ylim=ylim, ...)
+    graphics::axis(1, at=axlabs$x, labels = axlabs$labs, las=2, cex.lab=0.6)
+    graphics::mtext(text = xlab, side = 1, line = xmarline)
   }
   
   for (i in 1:length(mres))
   {
-    lines(x[mask], mres[[i]], lwd=lwds[i], col=cols[i], lty = ltys[i])
+    graphics::lines(x[mask], mres[[i]], lwd=lwds[i], col=cols[i], lty = ltys[i])
   }
   
   if (heatmaps)
@@ -232,8 +232,8 @@ plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
     coals = coals[coals <= max(xlim) & coals >= min(xlim)]
     
     breaks = seq(min(xlim), max(xlim), length.out=nbreaks)
-    h_samp = hist(samps, breaks=breaks, plot=FALSE)
-    h_coal = hist(coals, breaks=breaks, plot=FALSE)
+    h_samp = graphics::hist(samps, breaks=breaks, plot=FALSE)
+    h_coal = graphics::hist(coals, breaks=breaks, plot=FALSE)
     
     hist2heat(h_samp, y=ymin-yextra*0.5, wd=heatmap_width)
     hist2heat(h_coal, y=ymin-yextra, wd=heatmap_width)
@@ -260,15 +260,15 @@ plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
         lab_adj = 1
       }
       
-      text(x = lab_x, y = ymin-(yextra*0.20), labels = "Sampling events",
+      graphics::text(x = lab_x, y = ymin-(yextra*0.20), labels = "Sampling events",
            adj = c(lab_adj, 0), cex = 0.7)
-      text(x = lab_x, y = ymin-(yextra*1.25), labels = "Coalescent events",
+      graphics::text(x = lab_x, y = ymin-(yextra*1.25), labels = "Coalescent events",
            adj = c(lab_adj, 1), cex = 0.7)
     }
   }
   
   if (!is.null(legends))
-    legend(legend_place, legends, lty=ltys, lwd = lwds, bty = bty, col=cols, cex=legend_cex)
+    graphics::legend(legend_place, legends, lty=ltys, lwd = lwds, bty = bty, col=cols, cex=legend_cex)
 }
 
 #' @export
@@ -327,17 +327,17 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
   
   if (is.null(axlabs))
   {
-    plot(1, 1, type="n", log = log,
-         xlab = xlab, ylab = ylab, main = main,
-         xlim = c(period, 0), ylim = ylim, ...)
+    graphics::plot(1, 1, type="n", log = log,
+                   xlab = xlab, ylab = ylab, main = main,
+                   xlim = c(period, 0), ylim = ylim, ...)
   }
   else
   {
-    plot(1, 1, type="n", xaxt = "n", log = log,
-         xlab = "", ylab = ylab, main = main,
-         xlim = c(period, 0), ylim = ylim, ...)
-    axis(1, at=axlabs$x, labels = axlabs$labs, las=2, cex.lab=1.0)
-    mtext(text = xlab, side = 1, line = xmarline)
+    graphics::plot(1, 1, type="n", xaxt = "n", log = log,
+                   xlab = "", ylab = ylab, main = main,
+                   xlim = c(period, 0), ylim = ylim, ...)
+    graphics::axis(1, at=axlabs$x, labels = axlabs$labs, las=2, cex.lab=1.0)
+    graphics::mtext(text = xlab, side = 1, line = xmarline)
   }
   
   if (is.null(years))
@@ -353,7 +353,7 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
     #period_mask <- (t >= current_t) & (t <= current_t + period)
     ts = seq(from = current_t, to = current_t + period, length.out = 101)
     
-    lines(x = ts - current_t, y = fun(ts),
+    graphics::lines(x = ts - current_t, y = fun(ts),
           lty = lty, lwd = lwd, col = col_years)
     
     if (fun_num > 0)
@@ -364,7 +364,7 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
     current_t <- current_t + period
   }
   fun_mean <- fun_sum / fun_num
-  lines(x = seq(0, 1, length.out = 101), y = fun_mean,
+  graphics::lines(x = seq(0, 1, length.out = 101), y = fun_mean,
         lty = lty, lwd = lwd, col = col_mean)
   
   if (heatmaps)
@@ -376,8 +376,8 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
     coals = coals[coals <= years & coals >= 0]
     
     breaks = seq(0, period, length.out=nbreaks)
-    h_samp = hist(samps %% period, breaks=breaks, plot=FALSE)
-    h_coal = hist(coals %% period, breaks=breaks, plot=FALSE)
+    h_samp = graphics::hist(samps %% period, breaks=breaks, plot=FALSE)
+    h_coal = graphics::hist(coals %% period, breaks=breaks, plot=FALSE)
     
     if (log_y)
     {
@@ -414,16 +414,16 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
       
       if (log_y)
       {
-        text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
+        graphics::text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
              adj = c(lab_adj, 0), cex = 0.7)
-        text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
+        graphics::text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
              adj = c(lab_adj, 1), cex = 0.7)
       }
       else
       {
-        text(x = lab_x, y = ymin - yextra * 0.20, labels = "Sampling events",
+        graphics::text(x = lab_x, y = ymin - yextra * 0.20, labels = "Sampling events",
              adj = c(lab_adj, 0), cex = 0.7)
-        text(x = lab_x, y = ymin - yextra * 1.25, labels = "Coalescent events",
+        graphics::text(x = lab_x, y = ymin - yextra * 1.25, labels = "Coalescent events",
              adj = c(lab_adj, 1), cex = 0.7)
       }
     }
@@ -431,9 +431,9 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
   
   if (!is.null(legend))
   {
-    legend("topright", legend = legend, lty=1, lwd = 2, bty = "n", col=col_mean)
+    graphics::legend("topright", legend = legend, lty=1, lwd = 2, bty = "n", col=col_mean)
     
-    #text(x=max(xlim), y=max(ylim), label=legend1, adj=c(0,1), cex=1.5)
+    #graphics::text(x=max(xlim), y=max(ylim), label=legend1, adj=c(0,1), cex=1.5)
   }
 }
 
@@ -487,17 +487,17 @@ plot_MCMC = function(MCMC_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
     
     if (is.null(axlabs))
     {
-      plot(1,1,type="n",log=log,
-           xlab=xlab, ylab=ylab, main=main,
-           xlim=xlim, ylim=ylim, ...)
+      graphics::plot(1,1,type="n",log=log,
+                     xlab=xlab, ylab=ylab, main=main,
+                     xlim=xlim, ylim=ylim, ...)
     }
     else
     {
-      plot(1,1,type="n",log=log,
-           xlab="", ylab=ylab, main=main,
-           xlim=xlim, ylim=ylim, xaxt = "n", ...)
-      axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
-      mtext(text = xlab, side = 1, line = xmarline)
+      graphics::plot(1,1,type="n",log=log,
+                     xlab="", ylab=ylab, main=main,
+                     xlim=xlim, ylim=ylim, xaxt = "n", ...)
+      graphics::axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
+      graphics::mtext(text = xlab, side = 1, line = xmarline)
     }
   }
   
@@ -508,7 +508,7 @@ plot_MCMC = function(MCMC_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
   
   if (!is.null(traj))
   {
-    lines(t, traj(t), lwd=traj_lwd, lty=traj_lty, col=traj_col)
+    graphics::lines(t, traj(t), lwd=traj_lwd, lty=traj_lty, col=traj_col)
   }
   
   if (newplot)
@@ -522,8 +522,8 @@ plot_MCMC = function(MCMC_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
       coals = coals[coals <= max(xlim) & coals >= min(xlim)]
       
       breaks = seq(min(xlim), max(xlim), length.out=nbreaks)
-      h_samp = hist(samps, breaks=breaks, plot=FALSE)
-      h_coal = hist(coals, breaks=breaks, plot=FALSE)
+      h_samp = graphics::hist(samps, breaks=breaks, plot=FALSE)
+      h_coal = graphics::hist(coals, breaks=breaks, plot=FALSE)
       
       hist2heat(h_samp, y=ymin/yextra^0.5, wd=heatmap_width)
       hist2heat(h_coal, y=ymin/yextra, wd=heatmap_width)
@@ -550,15 +550,15 @@ plot_MCMC = function(MCMC_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
           lab_adj = 1
         }
         
-        text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
+        graphics::text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
              adj = c(lab_adj, 0), cex = 0.7)
-        text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
+        graphics::text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
              adj = c(lab_adj, 1), cex = 0.7)
       }
     }
   }
   
-  lines(t, y, lwd=lwd, col=col, lty=lty)
+  graphics::lines(t, y, lwd=lwd, col=col, lty=lty)
 }
 
 plot_BNPR_old = function(BNPR_out, traj=NULL, xlim=NULL, ...)
@@ -570,14 +570,14 @@ plot_BNPR_old = function(BNPR_out, traj=NULL, xlim=NULL, ...)
   {
     xlim=c(max(grid),0)
   }
-  plot(grid,exp(-mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
-       xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
-       xlim=xlim,ylim=c(min(exp(-mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)])),
-                        max(exp(-mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
-  lines(grid,exp(-mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
-  lines(grid,exp(-mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
+  graphics::plot(grid,exp(-mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
+                 xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
+                 xlim=xlim,ylim=c(min(exp(-mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)])),
+                                  max(exp(-mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
+  graphics::lines(grid,exp(-mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
+  graphics::lines(grid,exp(-mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
   if (!is.null(traj))
-    lines(grid, traj(grid))
+    graphics::lines(grid, traj(grid))
 }
 
 
@@ -596,14 +596,14 @@ plot_INLA_inv = function(BNPR_out, traj=NULL, xlim=NULL, ...)
   {
     xlim=c(max(grid),0)
   }
-  plot(grid,exp(mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
-       xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
-       xlim=xlim,ylim=c(min(exp(mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)])),
-                        max(exp(mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
-  lines(grid,exp(mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
-  lines(grid,exp(mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
+  graphics::plot(grid,exp(mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
+                 xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
+                 xlim=xlim,ylim=c(min(exp(mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)])),
+                                  max(exp(mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
+  graphics::lines(grid,exp(mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
+  graphics::lines(grid,exp(mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
   if (!is.null(traj))
-    lines(grid, traj(grid))
+    graphics::lines(grid, traj(grid))
 }
 
 plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)
@@ -615,12 +615,12 @@ plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)
   {
     xlim=c(max(grid),0)
   }
-  plot(grid,exp(-mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
-       xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
-       xlim=xlim,ylim=c(min(exp(-mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)])),
-                        max(exp(-mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
-  lines(grid,exp(-mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
-  lines(grid,exp(-mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
+  graphics::plot(grid,exp(-mod$"0.5quant"),type="l",lwd=2.5,col="blue",log="y",
+                 xlab="Time (past to present)",ylab="Scaled Effective Pop. Size",
+                 xlim=xlim,ylim=c(min(exp(-mod$"0.975quant"[grid > min(xlim) & grid < max(xlim)])),
+                                  max(exp(-mod$"0.025quant"[grid > min(xlim) & grid < max(xlim)]))), ...)
+  graphics::lines(grid,exp(-mod$"0.975quant"),lwd=2.5,col="blue",lty=2)
+  graphics::lines(grid,exp(-mod$"0.025quant"),lwd=2.5,col="blue",lty=2)
   if (!is.null(traj))
-    lines(grid, traj(grid))
+    graphics::lines(grid, traj(grid))
 }

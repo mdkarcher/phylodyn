@@ -32,7 +32,7 @@ coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
   
   mask = l > 0
   t = t[mask]
-  l = head(l[mask], -1)
+  l = utils::head(l[mask], -1)
   
   gridrep = rep(0, ng)
   for (i in 1:ng)
@@ -46,10 +46,10 @@ coal_lik_init = function(samp_times, n_sampled, coal_times, grid)
   
   bins = cut(x = samp_times, breaks = t,
                 include.lowest = TRUE)
-  tab <- aggregate(n_sampled ~ bins, FUN = sum, labels = FALSE)
+  tab <- stats::aggregate(n_sampled ~ bins, FUN = sum, labels = FALSE)
   count <- rep(0, length(D))
   count[as.numeric(tab$bins)] <- tab$n_sampled
-  count[head(t, -1) >= max(samp_times)] <- NA
+  count[utils::head(t, -1) >= max(samp_times)] <- NA
   
   rep_idx = cumsum(gridrep)
   rep_idx = cbind(rep_idx-gridrep+1,rep_idx)
@@ -94,7 +94,7 @@ samp_loglik = function(init, fs, betas)
     stop(paste("Incompatible number of betas and columns for fs"))
   
   beta0 = betas[1]
-  betas = tail(betas, -1)
+  betas = utils::tail(betas, -1)
   
   #f = rep(f, init$gridrep)
   fs = as.matrix(fs[rep(1:init$ng, init$gridrep),])

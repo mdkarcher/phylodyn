@@ -11,7 +11,7 @@ gen_INLA_args <- function(samp_times, n_sampled, coal_times)
   sorting <- sort(c(samp_times, coal_times), index.return=TRUE)
   
   lineage_change <- c(n_sampled, rep(-1, m))[sorting$ix]
-  lineages <- head(cumsum(lineage_change), -1) # remove entry for the post-final-coalescent-event open interval
+  lineages <- utils::head(cumsum(lineage_change), -1) # remove entry for the post-final-coalescent-event open interval
   coal_factor <- lineages*(lineages-1)/2
   
   event <- c(rep(0, l), rep(1, m))[sorting$ix]
@@ -161,7 +161,7 @@ coal_stats <- function(grid, samp_times, coal_times, n_sampled = NULL,
   
   event_out <- c(rep(0, length(grid_trimmed)), event)[ordering]
   
-  Cfun <- stepfun(x = s, y = c(0, coal_factor, 0), right = TRUE)
+  Cfun <- stats::stepfun(x = s, y = c(0, coal_factor, 0), right = TRUE)
   Cvec <- Cfun(sgrid[-1])
   E <- diff(sgrid)*Cvec
   
@@ -173,8 +173,8 @@ coal_stats <- function(grid, samp_times, coal_times, n_sampled = NULL,
 
 condense_stats <- function(time, event, E, log_zero = -100)
 {
-  result <- aggregate(event ~ time, FUN = sum)
-  result$E <- aggregate(E ~ time, FUN = sum)$E
+  result <- stats::aggregate(event ~ time, FUN = sum)
+  result$E <- stats::aggregate(E ~ time, FUN = sum)$E
   
   E_log = log(result$E)
   E_log[result$E == 0] = log_zero
@@ -212,7 +212,7 @@ infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100
   if (derivative)
   {
     Imat <- diag(lengthout)
-    A <- head(Imat, -1) - tail(Imat, -1)
+    A <- utils::head(Imat, -1) - utils::tail(Imat, -1)
     field <- grid[-1] - diff(grid)/2
     A <- diag(1/diff(field)) %*% A
     A[A == 0] <- NA
@@ -244,16 +244,16 @@ samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
     count <- as.vector(table(bins))
   else
   {
-    tab <- aggregate(n_sampled ~ bins, FUN = sum, labels = FALSE)
+    tab <- stats::aggregate(n_sampled ~ bins, FUN = sum, labels = FALSE)
     count <- rep(0, lengthout)
     count[as.numeric(tab$bins)] <- tab$n_sampled
   }
   
-  count[head(grid, -1) >= max(samp_times)] <- NA
+  count[utils::head(grid, -1) >= max(samp_times)] <- NA
   result <- data.frame(time = field, count = count, E = E, E_log = log(E))
   
   if (trim_end)
-    result <- result[complete.cases(result),]
+    result <- result[stats::complete.cases(result),]
   
   return(result)
 }
@@ -367,7 +367,7 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
   if (derivative)
   {
     Imat <- diag(lengthout)
-    A <- head(Imat, -1) - tail(Imat, -1)
+    A <- utils::head(Imat, -1) - utils::tail(Imat, -1)
     field <- grid[-1] - diff(grid)/2
     A <- diag(1/diff(field)) %*% A
     A[A == 0] <- NA
@@ -413,7 +413,7 @@ infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout
   formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE) + offset(data$E_log)
   
   Imat <- diag(lengthout)
-  A <- head(Imat, -1) - tail(Imat, -1)
+  A <- utils::head(Imat, -1) - utils::tail(Imat, -1)
   A[A == 0] <- NA
   
   #lcmat <- rbind(c(1, -1, rep(NA, lengthout - 2)), c(NA, 1, -1, rep(NA, lengthout - 3)))

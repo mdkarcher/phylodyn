@@ -11,5 +11,5 @@ hist2heat = function(hist, y, wd)
   upper  = max(counts)
   n = length(counts)
   cols = float2gray(counts / upper)
-  segments(x0 = breaks[1:n], y0=y, x1 = breaks[2:(n+1)], y1=y, lwd=wd, col=cols, lend=1)
+  graphics::segments(x0 = breaks[1:n], y0=y, x1 = breaks[2:(n+1)], y1=y, lwd=wd, col=cols, lend=1)
 }

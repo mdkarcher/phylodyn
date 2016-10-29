@@ -41,7 +41,7 @@ coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lowe
 coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
 {
   traj_inv <- function(t) 1/traj(t, ...)
-  hazard <- function(t, lins, start, target) .5*lins*(lins-1)*integrate(traj_inv, start, start+t)$value - target
+  hazard <- function(t, lins, start, target) .5*lins*(lins-1)*stats::integrate(traj_inv, start, start+t)$value - target
   
   coal_times = NULL
   lineages = NULL
@@ -59,9 +59,9 @@ coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
       time <- samp_times[curr]
     }
     
-    #time = time + rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
-    target <- rexp(1)
-    y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
+    #time = time + stats::rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
+    target <- stats::rexp(1)
+    y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
                  lower=0, upper=val_upper, extendInt = "upX")$root
     
     while(curr < length(samp_times) && time + y >= samp_times[curr+1])
@@ -72,7 +72,7 @@ coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
       active_lineages <- active_lineages + n_sampled[curr]
       time <- samp_times[curr]
       
-      y <- uniroot(hazard, lins=active_lineages, start=time, target=target,
+      y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
                    lower=0, upper=val_upper, extendInt = "upX")$root
     }
     
@@ -105,7 +105,7 @@ coalsim_thin <- function(samp_times, n_sampled, traj, lower_bound, ...)
       time = samp_times[curr]
     }
     
-    time = time + rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
+    time = time + stats::rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
     
     if (curr < length(samp_times) && time >= samp_times[curr + 1])
     {
@@ -113,7 +113,7 @@ coalsim_thin <- function(samp_times, n_sampled, traj, lower_bound, ...)
       active_lineages = active_lineages + n_sampled[curr]
       time = samp_times[curr]
     }
-    else if (runif(1) <= lower_bound/traj(time, ...))
+    else if (stats::runif(1) <= lower_bound/traj(time, ...))
     {
       coal_times = c(coal_times, time)
       lineages = c(lineages, active_lineages)
@@ -173,8 +173,8 @@ coalgen_thinning_hetero <- function(sample,traj_inv,upper,...)
       s <- sample[i+1,2]
       i <- i+1
     }
-    E <- rexp(1,upper*b*(b-1)*.5)
-    if (runif(1) <= traj_inv(E+s,...)/upper)
+    E <- stats::rexp(1,upper*b*(b-1)*.5)
+    if (stats::runif(1) <= traj_inv(E+s,...)/upper)
     {
       if ( (s+E)>sample[i+1,2])
       {
@@ -199,8 +199,8 @@ coalgen_thinning_hetero <- function(sample,traj_inv,upper,...)
   
   while (b>1)
   { 
-    E <- rexp(1,upper*b*(b-1)*.5)
-    if (runif(1)<=traj_inv(E+s,...)/upper)
+    E <- stats::rexp(1,upper*b*(b-1)*.5)
+    if (stats::runif(1)<=traj_inv(E+s,...)/upper)
     {
       s <- s+E
       out[m-n+1] <- s
@@ -228,8 +228,8 @@ coalgen_thinning_iso <- function(sample,traj_inv,upper=25,...)
   j <- n
   while (j>1)
   {
-    time <- time+rexp(1,upper*j*(j-1)*.5)
-    if (runif(1)<=1/(traj_inv(time,...)*upper))
+    time <- time+stats::rexp(1,upper*j*(j-1)*.5)
+    if (stats::runif(1)<=1/(traj_inv(time,...)*upper))
     {
       out[n-j+1] <- time
       j <- j-1
@@ -265,19 +265,19 @@ coalgen_transformation_hetero <- function(sample, trajectory,val_upper=10)
       s <- sample[i+1,2]
       i <- i+1
     }
-    x <- rexp(1)
-    f <- function(bran,u,x,s) .5*bran*(bran-1)*integrate(trajectory, s, s+u)$value - x    
-    y <- uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
+    x <- stats::rexp(1)
+    f <- function(bran,u,x,s) .5*bran*(bran-1)*stats::integrate(trajectory, s, s+u)$value - x    
+    y <- stats::uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
     while ( (s+y)>sample[i+1,2])
     {
-      #     f <- function(bran,u,x,s) .5*bran*(bran-1)*integrate(trajectory, s, s+u)$value - x    
-      #     y <- uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
-      x <- x-.5*b*(b-1)*integrate(trajectory,s,sample[i+1,2])$value  
+      #     f <- function(bran,u,x,s) .5*bran*(bran-1)*stats::integrate(trajectory, s, s+u)$value - x    
+      #     y <- stats::uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
+      x <- x-.5*b*(b-1)*stats::integrate(trajectory,s,sample[i+1,2])$value  
       b <- b+sample[i+1,1]
       s <- sample[i+1,2]
       i <- i+1
-      f <- function(bran,u,x,s) .5*bran*(bran-1)*integrate(trajectory, s, s+u)$value - x    
-      y <- uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
+      f <- function(bran,u,x,s) .5*bran*(bran-1)*stats::integrate(trajectory, s, s+u)$value - x    
+      y <- stats::uniroot(f,bran=b,x=x,s=s,lower=0,upper=val_upper)$root
       if (i==nsample)
       {
         sample[nsample+1,2] <- 10*(s+y)

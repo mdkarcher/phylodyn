@@ -13,14 +13,14 @@
 ESS = function(q_cur, l_cur, loglik, cholC, ...)
 {  
   # choose ellipse
-  nu = crossprod(cholC, rnorm(length(q_cur)))
+  nu = crossprod(cholC, stats::rnorm(length(q_cur)))
   
   # log-likelihood threshold
-  u = runif(1)
+  u = stats::runif(1)
   logy <- l_cur + log(u)
   
   # draw a initial proposal, also defining a bracket
-  t = 2*pi*runif(1)
+  t = 2*pi*stats::runif(1)
   t_min <- t-2*pi
   t_max <- t
   
@@ -39,7 +39,7 @@ ESS = function(q_cur, l_cur, loglik, cholC, ...)
       t_max <- t
     }
     
-    t <- runif(1, t_min, t_max)
+    t <- stats::runif(1, t_min, t_max)
     q <- q_cur*cos(t) + nu*sin(t)
     
     l <- loglik(q, ...)
@@ -62,14 +62,14 @@ ESS_wrapper = function(lik_init, loglik, l_cur, f, kappa, cholC, invC, alpha, be
 ESS_old = function(q_cur, l_cur, loglik, cholC)
 {  
   # choose ellipse
-  nu = t(cholC) %*% rnorm(length(q_cur))
+  nu = t(cholC) %*% stats::rnorm(length(q_cur))
   
   # log-likelihood threshold
-  u = runif(1)
+  u = stats::runif(1)
   logy <- l_cur + log(u)
   
   # draw a initial proposal, also defining a bracket
-  t = 2*pi*runif(1)
+  t = 2*pi*stats::runif(1)
   t_min <- t-2*pi
   t_max <- t
   
@@ -91,7 +91,7 @@ ESS_old = function(q_cur, l_cur, loglik, cholC)
       t_max <- t
     }
     
-    t = runif(1, t_min, t_max)
+    t = stats::runif(1, t_min, t_max)
   }
 }
 
@@ -117,7 +117,7 @@ MALA = function (q_cur, u_cur, du_cur, U, eps=.2)
   du = du_cur
   
   # sample momentum
-  p = rnorm(D)
+  p = stats::rnorm(D)
   
   # calculate current energy
   E_cur = u + sum(p^2)/2
@@ -141,7 +141,7 @@ MALA = function (q_cur, u_cur, du_cur, U, eps=.2)
   # the position at the end of the trajectory or the initial position
   logAP = -E_prp + E_cur
   
-  if( is.finite(logAP) && (log(runif(1)) < min(0, logAP)) ) 
+  if( is.finite(logAP) && (log(stats::runif(1)) < min(0, logAP)) ) 
     return (list(q = q, u = u, du = du, Ind = 1, pos_summ = pos_summ))
   else 
     return (list(q = q_cur, u = u_cur, du = du_cur, Ind = 0, pos_summ = U(q_cur)))
@@ -173,8 +173,8 @@ aMALA = function (q_cur, u_cur, U, Mf, c, eps=1)
   # sample kappa
   repeat
   {
-    t=runif(1,1/c,c)
-    if(runif(1)<(t+1/t)/(c+1/c))
+    t=stats::runif(1,1/c,c)
+    if(stats::runif(1)<(t+1/t)/(c+1/c))
       break
   }
   q[D]=q[D]*t
@@ -185,7 +185,7 @@ aMALA = function (q_cur, u_cur, U, Mf, c, eps=1)
   g=U(q, grad = TRUE)$dlogpos
   
   # sample momentum
-  z=rnorm(D-1)
+  z=stats::rnorm(D-1)
   p=spam::backsolve(cholQ,z)
   
   # log proposal density
@@ -216,7 +216,7 @@ aMALA = function (q_cur, u_cur, U, Mf, c, eps=1)
   # Accept or reject the state jointly
   logAP = -u + u_cur - logprp + logprp_rev
   
-  if ( is.finite(logAP) && (log(runif(1))<min(0,logAP)) )
+  if ( is.finite(logAP) && (log(stats::runif(1))<min(0,logAP)) )
     return (list(q = q, u = u, Ind = 1, pos_summ = pos_summ))
   else
     return (list(q = q_cur, u = u_cur, Ind = 0, pos_summ = U(q_cur)))
@@ -246,7 +246,7 @@ HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5, rand_leap=TRUE)
   du = du_cur
   
   # sample momentum
-  p = rnorm(D)
+  p = stats::rnorm(D)
   
   # calculate current energy
   E_cur = u + sum(p^2)/2
@@ -255,7 +255,7 @@ HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5, rand_leap=TRUE)
   p = p - eps/2 * du
   
   if (rand_leap)
-    randL = ceiling(runif(1)*L)
+    randL = ceiling(stats::runif(1)*L)
   else
     randL = ceiling(L)
   
@@ -283,7 +283,7 @@ HMC = function (q_cur, u_cur, du_cur, U, eps=.2, L=5, rand_leap=TRUE)
   # the position at the end of the trajectory or the initial position
   logAP = -E_prp + E_cur
   
-  if(is.finite(logAP) && (log(runif(1))<min(0,logAP)))
+  if(is.finite(logAP) && (log(stats::runif(1))<min(0,logAP)))
     return (list(q = q, u = u, du = du, Ind = 1, pos_summ = pos_summ))
   else
     return (list(q = q_cur, u = u_cur, du = du_cur, Ind = 0, pos_summ = U(q_cur)))
@@ -314,14 +314,14 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=
   du = du_cur
   
   # sample momentum
-  p = rnorm(D)
+  p = stats::rnorm(D)
   
   # calculate current energy
   E_cur = u + sum(p^2)/2
   
   
   if (rand_leap)
-    randL = ceiling(runif(1)*L)
+    randL = ceiling(stats::runif(1)*L)
   else
     randL = ceiling(L)
   
@@ -366,7 +366,7 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=
   # the position at the end of the trajectory or the initial position
   logAP = -E_prp + E_cur
   
-  if( is.finite(logAP) && (log(runif(1))<min(0,logAP)) )
+  if( is.finite(logAP) && (log(stats::runif(1))<min(0,logAP)) )
     return (list(q = q, u = u, du = du, Ind = 1, pos_summ = pos_summ))
   else
     return (list(q = q_cur, u = u_cur, du = du_cur, Ind = 0, pos_summ = U(q_cur)))
@@ -384,13 +384,13 @@ log_mvnorm_prior <- function(x, prec, mu=rep(0, length(x)))
 # Gamma log-prior for kappa
 log_kappa_prior <- function(kappa, alpha, beta)
 {
-  return(dgamma(x = kappa, shape = alpha, rate = beta, log = TRUE))
+  return(stats:dgamma(x = kappa, shape = alpha, rate = beta, log = TRUE))
 }
 
 # Gamma log-prior for tau
 log_tau_prior <- function(tau, alpha, beta)
 {
-  return(dgamma(x = exp(tau), shape = alpha+1, rate = beta, log = TRUE))
+  return(stats:dgamma(x = exp(tau), shape = alpha+1, rate = beta, log = TRUE))
 }
 
 # Normal log-prior for betas
@@ -502,25 +502,25 @@ update_burnin_subsample = function(res, burnin = 0, subsample = 1)
 
 calculate_estimates = function(logfmat, params, grid)
 {
-  logfmed = apply(logfmat, MARGIN = 2, median)
-  logflow = apply(logfmat, MARGIN = 2, function(x) quantile(x, .025))
-  logfhi  = apply(logfmat, MARGIN = 2, function(x) quantile(x, .975))
+  logfmed = apply(logfmat, MARGIN = 2, FUN = stats::median)
+  logflow = apply(logfmat, MARGIN = 2, FUN = function(x) stats::quantile(x, .025))
+  logfhi  = apply(logfmat, MARGIN = 2, FUN = function(x) stats::quantile(x, .975))
   
-  logfmed_fun = stepfun(grid, c(0, logfmed, 0))
-  logflow_fun = stepfun(grid, c(0, logflow, 0))
-  logfhi_fun  = stepfun(grid, c(0, logfhi,  0))
+  logfmed_fun = stats::stepfun(grid, c(0, logfmed, 0))
+  logflow_fun = stats::stepfun(grid, c(0, logflow, 0))
+  logfhi_fun  = stats::stepfun(grid, c(0, logfhi,  0))
   
-  fmed = apply(exp(logfmat), MARGIN = 2, median)
-  flow = apply(exp(logfmat), MARGIN = 2, function(x) quantile(x, .025))
-  fhi  = apply(exp(logfmat), MARGIN = 2, function(x) quantile(x, .975))
+  fmed = apply(exp(logfmat), MARGIN = 2, FUN = stats::median)
+  flow = apply(exp(logfmat), MARGIN = 2, FUN = function(x) stats::quantile(x, .025))
+  fhi  = apply(exp(logfmat), MARGIN = 2, FUN = function(x) stats::quantile(x, .975))
   
-  fmed_fun = stepfun(grid, c(0, fmed, 0))
-  flow_fun = stepfun(grid, c(0, flow, 0))
-  fhi_fun  = stepfun(grid, c(0, fhi,  0))
+  fmed_fun = stats::stepfun(grid, c(0, fmed, 0))
+  flow_fun = stats::stepfun(grid, c(0, flow, 0))
+  fhi_fun  = stats::stepfun(grid, c(0, fhi,  0))
   
-  pmed = apply(params, MARGIN = 2, median)
-  plow = apply(params, MARGIN = 2, function(x) quantile(x, .025))
-  phi  = apply(params, MARGIN = 2, function(x) quantile(x, .975))
+  pmed = apply(params, MARGIN = 2, FUN = stats::median)
+  plow = apply(params, MARGIN = 2, FUN = function(x) stats::quantile(x, .025))
+  phi  = apply(params, MARGIN = 2, FUN = function(x) stats::quantile(x, .975))
   
   return(list(logfmed = logfmed, logflow = logflow, logfhi = logfhi,
               logfmed_fun = logfmed_fun, logflow_fun = logflow_fun,
@@ -538,7 +538,7 @@ MH_betas = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
                     covar_vals = covar_vals, proposal_sds = c(0.1, 0.1))
 {
   # Metropolis step for betas
-  new_betas = rnorm(n = length(curr_betas), mean = curr_betas, sd = proposal_sds)
+  new_betas = stats::rnorm(n = length(curr_betas), mean = curr_betas, sd = proposal_sds)
   
   new_pos_summ = compute_pos_summ(samp_alg = "MH", loglikf = loglikf, f = f,
                                   kappa = kappa, invC = invC, lik_init = lik_init,
@@ -547,7 +547,7 @@ MH_betas = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
   #new_ll = coal_samp_loglik(init = lik_init, f = f, beta0 = new_beta0, beta1 = new_beta1)
   
   if (new_pos_summ$logpos > curr_pos_summ$logpos ||
-      log(runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
+      log(stats::runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
   {
     result = list(betas = new_betas, pos_summ = new_pos_summ, ind = 1)
   }
@@ -570,7 +570,7 @@ MH_betas_rscan = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa
   new_betas = curr_betas
   for (idx in rscan)
   {
-    new_betas[idx] = rnorm(n = 1, mean = curr_betas[idx], sd = proposal_sds[idx])
+    new_betas[idx] = stats::rnorm(n = 1, mean = curr_betas[idx], sd = proposal_sds[idx])
     
     new_pos_summ = compute_pos_summ(samp_alg = "MH", loglikf = loglikf, f = f,
                                     kappa = kappa, invC = invC, lik_init = lik_init,
@@ -578,7 +578,7 @@ MH_betas_rscan = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa
                                     betas_prec = betas_prec, covar_vals = covar_vals)
     
     if (new_pos_summ$logpos > curr_pos_summ$logpos ||
-        log(runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
+        log(stats::runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
     {
       curr_betas = new_betas
       curr_pos_summ = new_pos_summ
@@ -599,17 +599,17 @@ MH_betas_rscan = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa
 whiten_kappa = function(kappa, f, lik_init, cholC, invtcholC, loglikf, u, alpha, beta, prop_sd = 1)
 {
   nu = (invtcholC * sqrt(kappa)) %*% f
-  new_kappa = rlnorm(n = 1, meanlog = log(kappa), sdlog = prop_sd)
+  new_kappa = stats::rlnorm(n = 1, meanlog = log(kappa), sdlog = prop_sd)
   new_f = (t(cholC) / sqrt(new_kappa)) %*% nu
   
   new_u = coal_loglik(init = lik_init, f = new_f) # plus other terms
   udiff = new_u - u
   priordiff = log_kappa_prior(kappa = new_kappa, alpha = alpha, beta = beta) -
     log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-  propdiff = dlnorm(x = log(kappa), meanlog = log(new_kappa), sdlog = prop_sd) - 
-    dlnorm(x = log(new_kappa), meanlog = log(kappa), sdlog = prop_sd)
+  propdiff = stats::dlnorm(x = log(kappa), meanlog = log(new_kappa), sdlog = prop_sd) - 
+    stats::dlnorm(x = log(new_kappa), meanlog = log(kappa), sdlog = prop_sd)
   
-  if (log(runif(n = 1)) < udiff + priordiff + propdiff)
+  if (log(stats::runif(n = 1)) < udiff + priordiff + propdiff)
   {
     result = list(kappa = new_kappa, f = new_f)
   }
@@ -927,7 +927,7 @@ sampling_ESS = function(data, para, setting, init,
     
     if (kappa_alg == "gibbs")
     {
-      kappa <- rgamma(1, alpha + (Ngrid-1)/2, beta + crossprod(f, invC %*% f)/2)
+      kappa <- stats::rgamma(1, alpha + (Ngrid-1)/2, beta + crossprod(f, invC %*% f)/2)
     }
     else if (kappa_alg == "whiten")
     {
@@ -1204,9 +1204,9 @@ smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
     }
   }
   ini<-1
-  med=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,median);
-  low=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,function(x)quantile(x,.025))
-  up=apply(SAMP[[1]][ini:(Iter-nburnin-1),],2,function(x)quantile(x,.975))
+  med=apply(SAMP[[1]][ini:(Iter-nburnin-1),], MARGIN = 2, FUN = stats::median);
+  low=apply(SAMP[[1]][ini:(Iter-nburnin-1),], MARGIN = 2, FUN = function(x)stats::quantile(x,.025))
+  up=apply(SAMP[[1]][ini:(Iter-nburnin-1),], MARGIN = 2, FUN = function(x)stats::quantile(x,.975))
   
   results<-cbind(grid/scaling,c(low[1]-log(scaling),low-log(scaling)),c(med[1]-log(scaling),med-log(scaling)),c(up[1],up)-log(scaling))
   return(results)
