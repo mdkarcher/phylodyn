@@ -384,13 +384,13 @@ log_mvnorm_prior <- function(x, prec, mu=rep(0, length(x)))
 # Gamma log-prior for kappa
 log_kappa_prior <- function(kappa, alpha, beta)
 {
-  return(stats:dgamma(x = kappa, shape = alpha, rate = beta, log = TRUE))
+  return(stats::dgamma(x = kappa, shape = alpha, rate = beta, log = TRUE))
 }
 
 # Gamma log-prior for tau
 log_tau_prior <- function(tau, alpha, beta)
 {
-  return(stats:dgamma(x = exp(tau), shape = alpha+1, rate = beta, log = TRUE))
+  return(stats::dgamma(x = exp(tau), shape = alpha+1, rate = beta, log = TRUE))
 }
 
 # Normal log-prior for betas
