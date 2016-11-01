@@ -35,7 +35,7 @@ We start by loading the library and reading our data
 ```{r}
 library("phylodyn")
 getwd()
-MyTree<-ape::read.tree("../data/Bottle_20c.txt")
+MyTree<-ape::read.tree("./data/Bottle_20c.txt")
 ```
 Our method assumes that genealogies are a realization of the Sequentially Markov Coalescent model [SMC'](http://bmcgenet.biomedcentral.com/articles/10.1186/1471-2156-7-16)
 
