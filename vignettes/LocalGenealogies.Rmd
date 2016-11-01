@@ -13,7 +13,7 @@ Bayesian Nonparametric Inference of Population Size Changes from Sequential Gene
 ==========================================================================
 
 
-This R code implements the method described in "Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies" by Palacios JA, Wakeley J, and Ramachandran S (doi: http://dx.doi.org/10.1101/019216). The method is applied to a test dataset (data/Bottle_20c.txt).
+This R code implements the method described in "Bayesian Nonparametric Inference of Population Size Changes from Sequential Genealogies" by Palacios JA, Wakeley J, and Ramachandran S (doi: http://dx.doi.org/10.1101/019216). The method is applied to a test dataset (data(Bottle_20c.txt)).
 
 
 **Newick files preparation (optional)**
@@ -34,8 +34,7 @@ awk '$1~"NEWICK_TREE"' outMacs.tree | awk -F\] '{print $2}' >Bottle_20.txt
 We start by loading the library and reading our data
 ```{r}
 library("phylodyn")
-getwd()
-MyTree<-ape::read.tree("./data/Bottle_20c.txt")
+data("Bottle_20c")
 ```
 Our method assumes that genealogies are a realization of the Sequentially Markov Coalescent model [SMC'](http://bmcgenet.biomedcentral.com/articles/10.1186/1471-2156-7-16)
 
@@ -47,13 +46,13 @@ Our method assumes that genealogies are a realization of the Sequentially Markov
 For this example, we will run our algorithm on the first 50 local genealogies (sim=50) and scale time by 10 (scaling=10). Our algorithm searches the new and deleted coalescent times by comparing the coalescent times of consecutive genealogies and we define a tolerance (tol=.00001) to set whether two coalescent times are different ($t_{a} \neq t_{b}$ if $|t_{a}-t_{b}|>tol$). In our experiments, a tolerance level of .00001 works well when the time to the most recent common ancestor is of the order of 2-10. 
 
 ```{r}
-n <- length(MyTree[[1]]$tip.label)
-sim<-length(MyTree) 
+n <- length(Bottle_20c[[1]]$tip.label)
+sim<-length(Bottle_20c) 
 sim
 sim<-50 #For this example, the first 50 genealogies
 scaling<-10
 tol<-.00001 #tolerance factor to detect difference between branch lengths
-D<-read_times(MyTree,n,sim,scaling)
+D<-read_times(Bottle_20c,n,sim,scaling)
 ```
 
 Matrix D is a matrix with sim=50 rows and n-1=19 columns with coalescent times. To see the summary of the time to the most recent common ancestor time, run the command:
@@ -74,7 +73,7 @@ grid<-c(grid,max(D)+.0002)
 We then adjust all our sufficient statistics for our chosen discretization  
 
 ```{r}
-info<-find_info2(MyTree,D,sim,n,tol,scaling)
+info<-find_info2(Bottle_20c,D,sim,n,tol,scaling)
 ```
 
 **MCMC Sampling**
