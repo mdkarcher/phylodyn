@@ -290,7 +290,7 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
   t <- BNPR_out$x - offset
   y <- BNPR_out$effpop * yscale
   
-  fun = approxfun(x = t, y = y, method = "linear")
+  fun = stats::approxfun(x = t, y = y, method = "linear")
   #yhi <- BNPR_out$effpop975[mask] * yscale
   #ylo <- BNPR_out$effpop025[mask] * yscale
   
