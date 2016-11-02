@@ -1,5 +1,5 @@
-#' @export
-inla.models <- function(...)
-{
-  return(INLA::inla.models(...))
-}
+# #' @export
+# inla.models <- function(...)
+# {
+#   return(INLA::inla.models(...))
+# }
