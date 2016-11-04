@@ -2,12 +2,25 @@ Package: phylodyn
 Type: Package
 Title: Statistical tools for phylodynamics
 Version: 1.0
-Depends: R (>= 2.13.0)
-Imports: stats, utils, graphics, grDevices, ape, INLA, spam
+Depends:
+    R (>= 2.13.0)
+Imports:
+    stats,
+    utils,
+    graphics,
+    grDevices,
+    ape,
+    INLA,
+    spam
 Date: 2013-12-12
 Author: Michael Karcher, Julia Palacios, Shiwei Lan, Vladimir Minin
 Maintainer: Michael Karcher <mkarcher@uw.edu>
-Description: Statistical tools for reconstructing population size from genetic sequence data.
+Description: Statistical tools for reconstructing population size from genetic
+    sequence data.
 License: GPL-3
-Suggests: knitr, testthat, rmarkdown
+Suggests:
+    knitr,
+    testthat,
+    rmarkdown
 VignetteBuilder: knitr
+RoxygenNote: 5.0.1
