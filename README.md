@@ -32,6 +32,7 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 6. **LongPhyloinfer**: A longer example comparing BNPR with multiple MCMC samplers, including split HMC as in SimplePhyloinfer, illustrating methodology in [4].
 
 7. **Phylodyn_from_local_genealogies**: A short example of MCMC-based inference of effective population size trajectories from a sequence of local genealogies. Genealogies are assumed to be a realization of the Sequentially Markov Coalescent (SMC') model. The methodology is developed in [6]
+7. **LocalGenealogies**: A short example of MCMC-based inference of effective population size trajectories from a sequence of local genealogies. Genealogies are assumed to be a realization of the Sequentially Markov Coalescent (SMC') model. The methodology is developed in [6]
 
 ## Datasets
 
