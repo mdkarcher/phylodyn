@@ -5,7 +5,7 @@
 #' 
 #' A. Rambaut, O. G. Pybus, M. I. Nelson, C. Viboud, J. K. Taubenberger, E. C. 
 #' Holmes The genomic and epidemiological dynamics of human influenza A virus. 
-#' Nature, 453(7195): 615–619, 2008.
+#' Nature, 453(7195): 615-619, 2008.
 "NY_flu"
 
 #' Regional Influenza Genealogy
