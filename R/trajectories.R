@@ -63,7 +63,21 @@ exp_traj_inv = function(t, scale=1000)
   return(1/(scale * exp(-t)))
 }
 
+#' Boom and bust trajectory
+#' 
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#'   
+#' @param bust numeric time when bust begins.
+#' @param scale numeric maximum that the trajectory attains when the bust
+#'   begins.
+#'   
+#' @return A vector containing the trajectory value corresponding to every 
+#'   element in \code{t}.
 #' @export
+#' 
+#' @examples
+#' boombust_traj(0:10)
 boombust_traj = function(t, bust=1, scale=1000)
 {
   #bust = 1
@@ -78,7 +92,17 @@ boombust_traj_inv = function(t, bust=1, scale=1000)
   return(1/boombust_traj(t, bust, scale))
 }
 
+#' Cyclical trajectory
+#' 
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#'
+#' @return A vector containing the trajectory value corresponding to every 
+#'   element in \code{t}.
 #' @export
+#' 
+#' @examples
+#' cyclic_traj(0:20)
 cyclic_traj = function(t)
 {
   result = rep(0, length(t))
@@ -92,7 +116,17 @@ cyclic_traj_inv = function(t)
   return(1/cyclic_traj(t))
 }
 
+#' Steep cyclical trajectory
+#' 
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#'
+#' @return A vector containing the trajectory value corresponding to every 
+#'   element in \code{t}.
 #' @export
+#' 
+#' @examples
+#' steep_cyc_traj(0:20)
 steep_cyc_traj = function(t)
 {
   result = rep(0, length(t))
@@ -106,7 +140,17 @@ steep_cyc_traj_inv = function(t)
   return(1/steep_cyc_traj(t))
 }
 
+#' Sloped trajectory
+#' 
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#'
+#' @return A vector containing the trajectory value corresponding to every 
+#'   element in \code{t}.
 #' @export
+#' 
+#' @examples
+#' sloped_traj(0:20)
 sloped_traj = function(t)
 {
   result = rep(0, length(t))
@@ -120,7 +164,19 @@ sloped_traj_inv = function(t)
   return(1/sloped_traj(t))
 }
 
+#' Mesa trajectory
+#' 
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#' @param a numeric radius of the mesa.
+#' @param b numeric exponential slope of the mesa "walls".
+#'
+#' @return A vector containing the trajectory value corresponding to every 
+#'   element in \code{t}.
 #' @export
+#' 
+#' @examples
+#' mesa_traj(0:20)
 mesa_traj = function(t, a=2, b=3)
 {
   result = rep(0, length(t))
@@ -164,7 +220,17 @@ logistic_traj_inv = function(t, offset=0, a=2)
   return(1/logistic_traj(t, offset, a))
 }
 
+#' Bottleneck trajectory
+#' 
+#' @param t numeric vector of times at which to evaluate the trajectory 
+#'   function.
+#'
+#' @return A vector containing the trajectory value corresponding to every 
+#'   element in \code{t}.
 #' @export
+#' 
+#' @examples
+#' bottleneck_traj(seq(0,2,by=0.1))
 bottleneck_traj <- function(t)
 {
   result = rep(0,length(t))
