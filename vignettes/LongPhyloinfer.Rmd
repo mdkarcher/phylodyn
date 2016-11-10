@@ -78,7 +78,7 @@ for (i in 1:4)
 
 We plot and compare the results from BNPR versus the MCMC samplers.
 
-```{r fig.width=12, fig.height=10}
+```{r fig.width=12, fig.height=10, dpi=60}
 par(mfrow=c(4,5))
 traj_title = c("Logistic", "Exponential", "Boombust", "Bottleneck")
 color = c("green", "red", "pink", "purple", "cyan")
