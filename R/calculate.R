@@ -183,7 +183,6 @@ condense_stats <- function(time, event, E, log_zero = -100)
   return(result)
 }
 
-#' @export
 infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100,
                        prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE,
                        derivative = FALSE)
@@ -258,7 +257,6 @@ samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
   return(result)
 }
 
-#' @export
 infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100,
                        prec_alpha = 0.01, prec_beta = 0.01)
 {
@@ -292,7 +290,6 @@ joint_stats <- function(coal_data, samp_data)
   return(list(Y = Y, beta0 = beta0, time = time, time2 = time2, w = w, E_log = E_log))
 }
 
-#' @export
 infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
                             lengthout=100, prec_alpha=0.01, prec_beta=0.01,
                             beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
