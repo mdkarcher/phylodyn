@@ -1159,6 +1159,19 @@ mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
 }
 
 # SMC' sampler. This is the main function for inference from local genealogies
+
+#' @param data a list containing sufficient statistics
+#' @param nsamp integer specifying number of MCMC samples
+#' @param nburnin integer specifying the number of burnin samples
+#' @param grid a vector with the grid points
+#' @param alpha hyperparameter of precision of BM prior
+#' @param beta hyperparameter of precision of BM prior
+#' @param stepsz numeric tuning parameter for Split Hamiltonian Monte Carlo
+#' @param Nleap integer tuning parameter for Split Hamiltonian Monte Carlo
+#' @param rand_leap tuning parameter for Split Hamiltonian Monte Carlo
+#' @param sacaling numeric re-scaling parameter
+#' 
+#' @return A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th tree
 #' @export
 smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
                          stepsz=.1, Nleap=15, rand_leap=TRUE,scaling=10)
