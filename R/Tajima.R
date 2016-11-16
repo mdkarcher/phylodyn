@@ -1,6 +1,77 @@
 ##Code for Tajima-based inference from a single locus
 
+sufficient_stats2<-function(data){
+  ##This is a modified version that does not group nodes with the same size
+  #data is a matrix of m rows (snps) and 1 column of concateted 0s and 1s. The number of characters in each row is n, the number of individuals
+  sorted<-sort(data[,1],index.return=T)
+  n<-nchar(data[1,])
+  groups<-group_data(sorted,n)
+  ##Dan Gusfield Algorithm 1.1 and 1.2 
+  l<-length(groups$mut.groups)
+  O<-matrix(0,nrow=n,ncol=l)
+  frequency<-rep(1,n)
+  haplotypes<-paste0(rep(0,l),collapse="")
+  Index<-matrix(0,nrow=n,ncol=l)
+  Lmat<-matrix(0,nrow=n,ncol=l)
+  for (j in 1:l){
+    O[,j]<-as.numeric(strsplit(groups$mut.groups[l-j+1],NULL)[[1]])
+  }
+  Index<- O%*%diag(seq(1,l))
+  #(3)For each cell
+  for (j in 1:n){
+    haplotypes<-c(haplotypes,paste0(O[j,],collapse=""))
+    for (i in 2:l){
+      if (O[j,i]==1){Lmat[j,i]<-max(Index[j,1:(i-1)])}
+    }
+  }
+  #correct for multiple haplotypes
+  sort.hap<-sort(haplotypes[-1],index.return=T)
+  base<-sort.hap$x[1]
+  base.ind<-sort.hap$ix[1]
+  remove<-0
+  for (j in 2:n){
+    if (base==sort.hap$x[j]){
+      remove<-c(remove,sort.hap$ix[j])
+      frequency[base.ind]<-frequency[base.ind]+1
+      frequency[sort.hap$ix[j]]<-0
+      
+    }else{
+      base<-sort.hap$x[j]
+      base.ind<-sort.hap$ix[j]
+    }
+  }
+  leaves<-apply(Index,1,max)
+  card<-rev(groups$cardinality)
+  carriers<-rev(groups$carriers) #I don't use this
+  mylist<-list(list(x=0,y=0))
+  orderlist<-0
+  parentlist<-0
+  famsize<-0
+  L<-apply(Lmat,2,max) #this vector has the nesting information, it has parents nodes
+  parents <- sort(unique(L), decreasing = TRUE)
+  i<-2
+  for (j in parents){
+    offspring<-seq(1,l)[L==j]
+    offspringsize<-0
+    for (no in offspring){
+      # offspringsize<-c(offspringsize,sum(leaves==no))
+      mylist[[i]]<-list(x=1,y=card[no])
+      famsize<-c(famsize,sum(leaves==no))
+      parentlist<-c(parentlist,j)
+      orderlist<-c(orderlist,no)
+      leaves[leaves==no]<-j
+      i<-i+1
+    }
+  }
+  mylist[[1]]<-NULL
+  return(list(mylist=mylist,nodes=cbind(orderlist[-1],parentlist[-1],famsize[-1])))
+}
+
 sufficient_stats<-function(groups,n){
+  #data is a matrix of m rows (snps) and 1 column of concateted 0s and 1s. The number of characters in each row is n, the number of individuals
+  sorted<-sort(data[,1],index.return=T)
+  n<-nchar(data[1,])
+  groups<-group_data(sorted,n)
   ##Dan Gusfield Algorithm 1.1 and 1.2 
   l<-length(groups$mut.groups)
   O<-matrix(0,nrow=n,ncol=l)
