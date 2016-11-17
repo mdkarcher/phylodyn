@@ -11,6 +11,35 @@ shade_band = function(x, ylo, yhi, xlim=NULL, col="gray")
   graphics::polygon(c(x, rev(x)), c(yhi, rev(ylo)), col=col, border=NA)
 }
 
+#' Plot a BNPR output
+#' 
+#' @param BNPR_out output of BNPR or BNPR_PS.
+#' @param traj function summarizing the true effective population size 
+#'   trajectory.
+#' @param xlim
+#' @param ylim
+#' @param nbreaks
+#' @param lty
+#' @param lwd
+#' @param col
+#' @param main
+#' @param log
+#' @param ylab
+#' @param xlab
+#' @param xmarline
+#' @param axlabs
+#' @param traj_lty, traj_lwd, traj_col line type, line width, and line color for
+#'   the true trajectory.
+#' @param newplot boolean whether to create a new plot or superimpose over a 
+#'   previously open plot.
+#' @param credible_region
+#' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
+#' @param heatmap_labels boolean whether to display labels on heatmaps.
+#' @param heatmap_labels_side string which side of plot to display heatmaps.
+#' @param heatmap_width numeric how wide heatmaps should be.
+#' @param yscale
+#' @param ...
+#'   
 #' @export
 plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
                      lty=1, lwd=2, col="black", main="", log="y",
@@ -136,6 +165,33 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
   graphics::lines(t, y, lwd=lwd, col=col, lty=lty)
 }
 
+#' Plot Mean Relative Widths
+#' 
+#' @param BNPR_outs one or more outputs of BNPR or BNPR_PS.
+#' @param traj function summarizing the true effective population size 
+#'   trajectory.
+#' @param xlim 
+#' @param nbreaks 
+#' @param ltys 
+#' @param lwds 
+#' @param cols 
+#' @param xlab 
+#' @param xmarline 
+#' @param axlabs 
+#' @param ylim 
+#' @param ymin_zero 
+#' @param ylab 
+#' @param main 
+#' @param heatmaps 
+#' @param heatmap_labels 
+#' @param heatmap_labels_side 
+#' @param heatmap_width 
+#' @param legends 
+#' @param legend_place 
+#' @param legend_cex 
+#' @param bty 
+#' @param ... 
+#'
 #' @export
 plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
                     cols="black", xlab="Time", xmarline = 3, axlabs=NULL,
@@ -271,6 +327,33 @@ plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
     graphics::legend(legend_place, legends, lty=ltys, lwd = lwds, bty = bty, col=cols, cex=legend_cex)
 }
 
+#' Plot Seasonality
+#' 
+#' @param BNPR_out output of BNPR or BNPR_PS.
+#' @param zero_date 
+#' @param start 
+#' @param years 
+#' @param period 
+#' @param ylim 
+#' @param nbreaks 
+#' @param lty 
+#' @param lwd 
+#' @param col_years 
+#' @param col_mean 
+#' @param main 
+#' @param axlabs 
+#' @param xlab 
+#' @param xmarline 
+#' @param ylab 
+#' @param log_y 
+#' @param heatmaps 
+#' @param heatmap_labels 
+#' @param heatmap_labels_side 
+#' @param heatmap_width 
+#' @param legend 
+#' @param yscale 
+#' @param ... 
+#'
 #' @export
 plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL, 
                             period = 1.0, ylim = NULL, nbreaks = 40,

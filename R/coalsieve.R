@@ -37,7 +37,6 @@ coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lowe
   return(result)
 }
 
-#' @export
 coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
 {
   traj_inv <- function(t) 1/traj(t, ...)

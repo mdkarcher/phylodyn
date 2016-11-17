@@ -31,6 +31,13 @@ exp_coal_loglik <- function(betas, init)
   return(loglik)
 }
 
+#' Maximum likelihood exponential model
+#' 
+#' @param samp_times vector of sampling times.
+#' @param n_sampled vector of number sampled at \code{samp_times}.
+#' @param coal_times vector of coalescent times.
+#' @param betas starting values for optimization.
+#'
 #' @export
 ml_exp_coal <- function(samp_times, n_sampled, coal_times, betas = c(0, 0))
 {

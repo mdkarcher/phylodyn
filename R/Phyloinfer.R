@@ -994,20 +994,59 @@ sampling_ESS = function(data, para, setting, init,
               samp_alg = samp_alg, kappa_alg = kappa_alg))
 }
 
-# wrapper that encapsulates sampler above with good defaults
+#' MCMC Sampling
+#' 
+#' @param data \code{phylo} object or list containing vectors of coalescent 
+#'   times \code{coal_times}, sampling times \code{samp_times}, and number 
+#'   sampled per sampling time \code{n_sampled}.
+#' @param alg string selecting which MCMC sampler to use. Options are "HMC", 
+#'   "splitHMC", "MALA", "aMALA", and "ESS".
+#' @param nsamp integer number of MCMC steps to compute.
+#' @param nburnin integer number of MCMC steps to discard as burn-in.
+#' @param nsubsamp integer after burn-in, how often to record a step to the 
+#'   output.
+#' @param ngrid integer number of grid point in the latent field.
+#' @param nugget string selecting which "nugget" adjustment to apply to the
+#'   precision matrix to make it full-rank. Options are '1,1' for an adjustment
+#'   to the first element, 'diag' for an adjustment to the entire main diagonal,
+#'   or 'none' which may result in a non-full-rank precision matrix.
+#' @param prec_alpha numeric
+#' @param prec_beta numeric
+#' @param TrjL
+#' @param Nleap
+#' @param szkappa
+#' @param rand_leap
+#' @param f_init
+#' @param kappa
+#' @param covariates
+#' @param betas
+#' @param samp_alg
+#' @param kappa_alg
+#' @param beta_vars
+#' @param printevery
+#'   
 #' @export
-mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
+mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
                          nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,
                          TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL,
-                         f_init = rep(1, Ngrid-1), kappa = 1,
+                         f_init = rep(1, ngrid-1), kappa = 1,
                          covariates=NULL, betas=rep(0, 2+length(covariates)),
                          samp_alg = "none", kappa_alg = "gibbs",
                          beta_vars = rep(100, length(betas)), printevery=100)
 {
-  # add ability to parse genealogy objects as well as lists
-  samp_times = data$samp_times
-  n_sampled  = data$n_sampled
-  coal_times = data$coal_times
+  if (class(dataset) == "phylo")
+  {
+    phy <- summarize_phylo(dataset)
+  }
+  else if (all(c("coal_times", "samp_times", "n_sampled") %in% names(dataset)))
+  {
+    phy <- with(dataset, list(samp_times = samp_times, coal_times = coal_times,
+                           n_sampled = n_sampled))
+  }
+  
+  samp_times = phy$samp_times
+  n_sampled  = phy$n_sampled
+  coal_times = phy$coal_times
   
   # Jump tuning parameters--should probably have an option to change in the arguments
   if (is.null(TrjL))
@@ -1025,7 +1064,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
   grid_bds = range(c(coal_times,samp_times))
   #Ngrid = 100
   
-  grid = seq(grid_bds[1],grid_bds[2],length.out=Ngrid)
+  grid = seq(grid_bds[1],grid_bds[2],length.out=ngrid)
   intl = grid[2]-grid[1]
   midpts = grid[-1]-intl/2
   
@@ -1098,7 +1137,7 @@ mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
   }
   
   # MCMC sampling preparation
-  data = list(lik_init = lik_init, covar_vals = covar_vals)
+  dataset = list(lik_init = lik_init, covar_vals = covar_vals)
   para = list(alpha = prec_alpha, beta = prec_beta, invC = invC, rtEV = rtEV,
               EVC = EVC, cholC = cholC, betas = betas, beta_vars = beta_vars)
   setting = list(stepsz = stepsz, Nleap = Nleap,
@@ -1110,31 +1149,31 @@ mcmc_sampling = function(data, alg, nsamp, nburnin=0, nsubsamp=1, Ngrid=100,
   # Run MCMC sampler
   if (alg == "ESS")
   {
-    res_MCMC = sampling_ESS(data = data, para = para, setting = setting,
+    res_MCMC = sampling_ESS(data = dataset, para = para, setting = setting,
                             init = init, samp_alg = samp_alg, kappa_alg = kappa_alg,
                             printevery = printevery)
   }
   else
   {
-    res_MCMC = sampling(data = data, para = para, alg = alg, setting = setting,
+    res_MCMC = sampling(data = dataset, para = para, alg = alg, setting = setting,
                         init = init, printevery = printevery)
   }
   
   res_MCMC$alg = alg
   res_MCMC$samp_alg = samp_alg
   res_MCMC$kappa_alg = kappa_alg
-  res_MCMC$Ngrid = Ngrid
+  res_MCMC$Ngrid = ngrid
   
   #cleaned_res = burnin_subsample(res = res_MCMC, burnin = 0)
   
-  logfmat = res_MCMC$samp[,1:(Ngrid-1)]
+  logfmat = res_MCMC$samp[,1:(ngrid-1)]
   if (alg == "ESS" && samp_alg %in% c("MH", "ESS"))
   {
-    params = res_MCMC$samp[,Ngrid:(Ngrid+2)]
+    params = res_MCMC$samp[,ngrid:(ngrid+2)]
   }
   else
   {
-    params = matrix(res_MCMC$samp[,Ngrid])
+    params = matrix(res_MCMC$samp[,ngrid])
   }
   estimates = calculate_estimates(logfmat = logfmat, params = params, grid = grid)
   
