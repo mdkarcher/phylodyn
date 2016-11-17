@@ -253,11 +253,20 @@ U_split_smc = function(theta, init, invC, alpha, beta, grad=F)
 #}
 
 
-
+#'Extracts coalescent times from a Multi-Phylo object
+#' @param MyTree \code{multiPhylo} object containing coalescent trees
+#' @param sim integer specifying number of trees to read
+#' @param factor numeric value to scale all the times
+#' 
+#' @return A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th tree
 #' @export
-read_times<-function(MyTree,n,sim,factor){
+#' 
+#' @examples 
+#' read_times(ape::rmtree(3,5),3,1)
+read_times<-function(MyTree,sim,factor){
   ##This function reads a multi-phylo object of local genealogies and returns a matrix with coalescent times
   
+  n<-MyTree[[1]]$Nnode+1
   if (n>2){
     D<-matrix(nrow=sim,ncol=n-1)
     D[1,]<-cumsum(ape::coalescent.intervals(MyTree[[1]])$interval.length)*factor
@@ -285,11 +294,20 @@ read_times<-function(MyTree,n,sim,factor){
 }
 
 
+#Extracts all sufficient statistics for inferring Ne from sequential local genealogies
+#' @param MyTree \code{multiPhylo} object containing coalescent trees
+#' @param D a matrix of coalescent times
+#' @param sim integer specifying number of trees to read
+#' @param tol tolerance for detecting difference between two numeric values
+#' @param cor (internal)
+#' 
+#' @return A list of sufficient statistics
 #' @export
-find_info2<-function(MyTree,D,sim,n,tol,cor=1){
+#' 
+find_info2<-function(MyTree,D,sim,tol,cor=1){
   
-  
-  suff<-find_sufficient(D,sim,n,tol*cor)
+  n<-MyTree[[1]]$Nnode+1
+  suff<-find_sufficient(D,sim,tol*cor)
   sum(suff$latent)/sim ## % of invisible transitions
   latent<-suff$latent
   t_del<-suff$t_del
@@ -362,7 +380,8 @@ find_info2<-function(MyTree,D,sim,n,tol,cor=1){
 
 #This function needs to be improved
 
-find_sufficient <- function(D, sim, n, tol) {
+find_sufficient <- function(D, sim, tol) {
+  n<-ncol(D)+1
   ##This function returns three vectors of statistics needed for likelihood calculations
   if (n>2){
     t_del<-rep(0,sim)
