@@ -294,7 +294,8 @@ read_times<-function(MyTree,sim,factor){
 }
 
 
-#Extracts all sufficient statistics for inferring Ne from sequential local genealogies
+#' Extracts all sufficient statistics for inferring Ne from sequential local genealogies
+#' 
 #' @param MyTree \code{multiPhylo} object containing coalescent trees
 #' @param D a matrix of coalescent times
 #' @param sim integer specifying number of trees to read

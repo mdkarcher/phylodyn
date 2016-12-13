@@ -1197,8 +1197,8 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   return(res_MCMC)
 }
 
-# SMC' sampler. This is the main function for inference from local genealogies
-
+#' SMC' sampler--inference from local genealogies
+#' 
 #' @param data a list containing sufficient statistics
 #' @param nsamp integer specifying number of MCMC samples
 #' @param nburnin integer specifying the number of burnin samples
