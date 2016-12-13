@@ -46,7 +46,7 @@ branching_sampling_times <- function(phy)
   return(branching_sampling_times)
 }
 
-heterochronous_gp_stat <- function(phy, tol=.1)
+heterochronous_gp_stat <- function(phy, tol=0.0)
 {
   #Update Aug 2015 by Julia. Adhoc for simulation with a tolerance parameters
   b.s.times = branching_sampling_times(phy)
