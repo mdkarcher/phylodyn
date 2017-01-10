@@ -635,6 +635,10 @@ get.data<-function(grid,sim,D,n,coal_lik_init,info_times,Fl,latent,t_new,t_del){
   
 }
 
+#' Plot SMCP Results
+#' 
+#' @param results the output of smcp_sampling().
+#'
 #' @export
 plot_res <- function(results) {
   temp.time = c(0,rep(results[,1], each = 2))
