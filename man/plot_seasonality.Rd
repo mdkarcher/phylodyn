@@ -58,7 +58,7 @@ plot_seasonality(BNPR_out, zero_date, start = 0, years = NULL, period = 1,
 
 \item{yscale}{}
 
-\item{...}{}
+\item{...}{additional arguments to be passed onto plot().}
 }
 \description{
 Plot Seasonality

@@ -4,13 +4,12 @@
 \alias{plot_mrw}
 \title{Plot Mean Relative Widths}
 \usage{
-plot_mrw(BNPR_outs, traj = NULL, xlim = NULL, nbreaks = 40, ltys = 1,
-  lwds = 2, cols = "black", xlab = "Time", xmarline = 3,
-  axlabs = NULL, ylim = NULL, ymin_zero = FALSE,
-  ylab = "Mean Relative Width", main = "", heatmaps = TRUE,
-  heatmap_labels = FALSE, heatmap_labels_side = "right",
-  heatmap_width = 7, legends = NULL, legend_place = "topleft",
-  legend_cex = 1, bty = "n", ...)
+plot_mrw(BNPR_outs, traj = NULL, xlim = NULL, ylim = NULL, nbreaks = 40,
+  ltys = 1, lwds = 2, cols = "black", xlab = "Time", xmarline = 3,
+  axlabs = NULL, ymin_zero = FALSE, ylab = "Mean Relative Width",
+  main = "", heatmaps = TRUE, heatmap_labels = FALSE,
+  heatmap_labels_side = "right", heatmap_width = 7, legends = NULL,
+  legend_place = "topleft", legend_cex = 1, bty = "n", ...)
 }
 \arguments{
 \item{BNPR_outs}{one or more outputs of BNPR or BNPR_PS.}
@@ -18,25 +17,26 @@ plot_mrw(BNPR_outs, traj = NULL, xlim = NULL, nbreaks = 40, ltys = 1,
 \item{traj}{function summarizing the true effective population size 
 trajectory.}
 
-\item{xlim}{}
+\item{xlim}{numeric x-axis interval.}
 
-\item{nbreaks}{}
+\item{ylim}{numeric y-axis interval.}
 
-\item{ltys}{}
+\item{nbreaks}{integer number of bins for sampling heatmap.}
 
-\item{lwds}{}
+\item{ltys}{line types for estimated trajectories.}
 
-\item{cols}{}
+\item{lwds}{line widths for estimated trajectories.}
 
-\item{xlab}{}
+\item{cols}{colors for estimated trajectories.}
 
-\item{xmarline}{}
+\item{xlab}{character x-axis label.}
 
-\item{axlabs}{}
+\item{xmarline}{numeric if not using default x-axis labels, how far to put
+the labels from the axis.}
 
-\item{ylim}{}
+\item{axlabs}{character vector x-axis labels.}
 
-\item{ymin_zero}{}
+\item{ymin_zero}{logical}
 
 \item{ylab}{}
 
@@ -58,7 +58,7 @@ trajectory.}
 
 \item{bty}{}
 
-\item{...}{}
+\item{...}{additional arguments to be passed onto plot().}
 }
 \description{
 Plot Mean Relative Widths

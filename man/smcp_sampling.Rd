@@ -26,7 +26,7 @@ smcp_sampling(data, nsamp, nburnin, grid, alpha = 0.001, beta = 0.001,
 
 \item{rand_leap}{tuning parameter for Split Hamiltonian Monte Carlo}
 
-\item{sacaling}{numeric re-scaling parameter}
+\item{scaling}{numeric re-scaling parameter}
 }
 \value{
 A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th tree

@@ -16,18 +16,19 @@ shade_band = function(x, ylo, yhi, xlim=NULL, col="gray")
 #' @param BNPR_out output of BNPR or BNPR_PS.
 #' @param traj function summarizing the true effective population size 
 #'   trajectory.
-#' @param xlim
-#' @param ylim
-#' @param nbreaks
-#' @param lty
-#' @param lwd
-#' @param col
-#' @param main
-#' @param log
-#' @param ylab
-#' @param xlab
-#' @param xmarline
-#' @param axlabs
+#' @param xlim numeric x-axis interval.
+#' @param ylim numeric y-axis interval.
+#' @param nbreaks integer number of bins for sampling heatmap.
+#' @param lty line type for estimated trajectory.
+#' @param lwd line width for estimated trajectory.
+#' @param col color for estimated trajectory.
+#' @param main character main plot title.
+#' @param log character which axes to plot log-scale. Defaults to "y".
+#' @param ylab character y-axis label.
+#' @param xlab character x-axis label.
+#' @param xmarline numeric if not using default x-axis labels, how far to put
+#'   the labels from the axis.
+#' @param axlabs character vector x-axis labels.
 #' @param traj_lty, traj_lwd, traj_col line type, line width, and line color for
 #'   the true trajectory.
 #' @param newplot boolean whether to create a new plot or superimpose over a 
@@ -38,7 +39,7 @@ shade_band = function(x, ylo, yhi, xlim=NULL, col="gray")
 #' @param heatmap_labels_side string which side of plot to display heatmaps.
 #' @param heatmap_width numeric how wide heatmaps should be.
 #' @param yscale
-#' @param ...
+#' @param ... additional arguments to be passed onto plot().
 #'   
 #' @export
 plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
@@ -170,16 +171,17 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
 #' @param BNPR_outs one or more outputs of BNPR or BNPR_PS.
 #' @param traj function summarizing the true effective population size 
 #'   trajectory.
-#' @param xlim 
-#' @param nbreaks 
-#' @param ltys 
-#' @param lwds 
-#' @param cols 
-#' @param xlab 
-#' @param xmarline 
-#' @param axlabs 
-#' @param ylim 
-#' @param ymin_zero 
+#' @param xlim numeric x-axis interval.
+#' @param ylim numeric y-axis interval.
+#' @param nbreaks integer number of bins for sampling heatmap.
+#' @param ltys line types for estimated trajectories.
+#' @param lwds line widths for estimated trajectories.
+#' @param cols colors for estimated trajectories.
+#' @param xlab character x-axis label.
+#' @param xmarline numeric if not using default x-axis labels, how far to put
+#'   the labels from the axis.
+#' @param axlabs character vector x-axis labels.
+#' @param ymin_zero logical 
 #' @param ylab 
 #' @param main 
 #' @param heatmaps 
@@ -190,12 +192,12 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
 #' @param legend_place 
 #' @param legend_cex 
 #' @param bty 
-#' @param ... 
+#' @param ... additional arguments to be passed onto plot().
 #'
 #' @export
-plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
-                    cols="black", xlab="Time", xmarline = 3, axlabs=NULL,
-                    ylim=NULL, ymin_zero=FALSE, ylab="Mean Relative Width",
+plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
+                    ltys=1, lwds=2, cols="black", xlab="Time", xmarline = 3,
+                    axlabs=NULL, ymin_zero=FALSE, ylab="Mean Relative Width",
                     main="", heatmaps=TRUE, heatmap_labels=FALSE,
                     heatmap_labels_side="right", heatmap_width = 7, 
                     legends=NULL, legend_place="topleft",
@@ -352,7 +354,7 @@ plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, nbreaks=40, ltys=1, lwds=2,
 #' @param heatmap_width 
 #' @param legend 
 #' @param yscale 
-#' @param ... 
+#' @param ... additional arguments to be passed onto plot().
 #'
 #' @export
 plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL, 

@@ -996,7 +996,7 @@ sampling_ESS = function(data, para, setting, init,
 
 #' MCMC Sampling
 #' 
-#' @param data \code{phylo} object or list containing vectors of coalescent 
+#' @param dataset \code{phylo} object or list containing vectors of coalescent 
 #'   times \code{coal_times}, sampling times \code{samp_times}, and number 
 #'   sampled per sampling time \code{n_sampled}.
 #' @param alg string selecting which MCMC sampler to use. Options are "HMC", 
@@ -1006,24 +1006,28 @@ sampling_ESS = function(data, para, setting, init,
 #' @param nsubsamp integer after burn-in, how often to record a step to the 
 #'   output.
 #' @param ngrid integer number of grid point in the latent field.
-#' @param nugget string selecting which "nugget" adjustment to apply to the
-#'   precision matrix to make it full-rank. Options are '1,1' for an adjustment
+#' @param nugget string selecting which "nugget" adjustment to apply to the 
+#'   precision matrix to make it full-rank. Options are '1,1' for an adjustment 
 #'   to the first element, 'diag' for an adjustment to the entire main diagonal,
 #'   or 'none' which may result in a non-full-rank precision matrix.
-#' @param prec_alpha numeric
-#' @param prec_beta numeric
-#' @param TrjL
-#' @param Nleap
-#' @param szkappa
-#' @param rand_leap
-#' @param f_init
-#' @param kappa
-#' @param covariates
-#' @param betas
-#' @param samp_alg
-#' @param kappa_alg
-#' @param beta_vars
-#' @param printevery
+#' @param prec_alpha,prec_beta numeric shape and rate parameters for the prior
+#'   on precision.
+#' @param TrjL numeric tuning parameter.
+#' @param Nleap integer tuning parameter.
+#' @param szkappa numeric tuning parameter.
+#' @param rand_leap logical tuning parameter.
+#' @param f_init numeric vector starting log effective population size values.
+#' @param kappa numeric starting kappa.
+#' @param covariates list of functions representing covariate trajectories that 
+#'   (may) influence sampling frequency.
+#' @param betas numeric vector of starting values for the beta hyperparameters.
+#' @param samp_alg selects sampling algorithm for effective population size 
+#'   latent points. One of "HMC", "splitHMC", "MALA", "aMALA", and "ESS".
+#' @param kappa_alg selects sampling algorithm for kappa. One of "gibbs" 
+#'   (default) or "whiten".
+#' @param beta_vars numeric vector prior variances of the beta hyperparameters.
+#' @param printevery integer how many MCMC steps between writing output to the 
+#'   console.
 #'   
 #' @export
 mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
@@ -1208,7 +1212,7 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
 #' @param stepsz numeric tuning parameter for Split Hamiltonian Monte Carlo
 #' @param Nleap integer tuning parameter for Split Hamiltonian Monte Carlo
 #' @param rand_leap tuning parameter for Split Hamiltonian Monte Carlo
-#' @param sacaling numeric re-scaling parameter
+#' @param scaling numeric re-scaling parameter
 #' 
 #' @return A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th tree
 #' @export

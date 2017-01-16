@@ -12,6 +12,10 @@ mcmc_sampling(dataset, alg, nsamp, nburnin = 0, nsubsamp = 1, ngrid = 100,
   beta_vars = rep(100, length(betas)), printevery = 100)
 }
 \arguments{
+\item{dataset}{\code{phylo} object or list containing vectors of coalescent 
+times \code{coal_times}, sampling times \code{samp_times}, and number 
+sampled per sampling time \code{n_sampled}.}
+
 \item{alg}{string selecting which MCMC sampler to use. Options are "HMC", 
 "splitHMC", "MALA", "aMALA", and "ESS".}
 
@@ -24,20 +28,41 @@ output.}
 
 \item{ngrid}{integer number of grid point in the latent field.}
 
-\item{nugget}{string selecting which "nugget" adjustment to apply to the
-precision matrix to make it full-rank. Options are '1,1' for an adjustment
+\item{nugget}{string selecting which "nugget" adjustment to apply to the 
+precision matrix to make it full-rank. Options are '1,1' for an adjustment 
 to the first element, 'diag' for an adjustment to the entire main diagonal,
 or 'none' which may result in a non-full-rank precision matrix.}
 
-\item{prec_alpha}{numeric}
+\item{prec_alpha, prec_beta}{numeric shape and rate parameters for the prior
+on precision.}
 
-\item{prec_beta}{numeric}
+\item{TrjL}{numeric tuning parameter.}
 
-\item{printevery}{}
+\item{Nleap}{integer tuning parameter.}
 
-\item{data}{\code{phylo} object or list containing vectors of coalescent 
-times \code{coal_times}, sampling times \code{samp_times}, and number 
-sampled per sampling time \code{n_sampled}.}
+\item{szkappa}{numeric tuning parameter.}
+
+\item{rand_leap}{logical tuning parameter.}
+
+\item{f_init}{numeric vector starting log effective population size values.}
+
+\item{kappa}{numeric starting kappa.}
+
+\item{covariates}{list of functions representing covariate trajectories that 
+(may) influence sampling frequency.}
+
+\item{betas}{numeric vector of starting values for the beta hyperparameters.}
+
+\item{samp_alg}{selects sampling algorithm for effective population size 
+latent points. One of "HMC", "splitHMC", "MALA", "aMALA", and "ESS".}
+
+\item{kappa_alg}{selects sampling algorithm for kappa. One of "gibbs" 
+(default) or "whiten".}
+
+\item{beta_vars}{numeric vector prior variances of the beta hyperparameters.}
+
+\item{printevery}{integer how many MCMC steps between writing output to the 
+console.}
 }
 \description{
 MCMC Sampling

@@ -18,6 +18,31 @@ plot_BNPR(BNPR_out, traj = NULL, xlim = NULL, ylim = NULL, nbreaks = 40,
 \item{traj}{function summarizing the true effective population size 
 trajectory.}
 
+\item{xlim}{numeric x-axis interval.}
+
+\item{ylim}{numeric y-axis interval.}
+
+\item{nbreaks}{integer number of bins for sampling heatmap.}
+
+\item{lty}{line type for estimated trajectory.}
+
+\item{lwd}{line width for estimated trajectory.}
+
+\item{col}{color for estimated trajectory.}
+
+\item{main}{character main plot title.}
+
+\item{log}{character which axes to plot log-scale. Defaults to "y".}
+
+\item{ylab}{character y-axis label.}
+
+\item{xlab}{character x-axis label.}
+
+\item{xmarline}{numeric if not using default x-axis labels, how far to put
+the labels from the axis.}
+
+\item{axlabs}{character vector x-axis labels.}
+
 \item{traj_lty, }{traj_lwd, traj_col line type, line width, and line color for
 the true trajectory.}
 
@@ -32,7 +57,7 @@ previously open plot.}
 
 \item{heatmap_width}{numeric how wide heatmaps should be.}
 
-\item{...}{}
+\item{...}{additional arguments to be passed onto plot().}
 }
 \description{
 Plot a BNPR output
