@@ -38,25 +38,25 @@ the labels from the axis.}
 
 \item{ymin_zero}{logical}
 
-\item{ylab}{}
+\item{ylab}{character y-axis label.}
 
-\item{main}{}
+\item{main}{character main plot title.}
 
-\item{heatmaps}{}
+\item{heatmaps}{boolean whether to display sampling and coalescent heatmaps.}
 
-\item{heatmap_labels}{}
+\item{heatmap_labels}{boolean whether to display labels on heatmaps.}
 
-\item{heatmap_labels_side}{}
+\item{heatmap_labels_side}{string which side of plot to display heatmaps.}
 
-\item{heatmap_width}{}
+\item{heatmap_width}{numeric how wide heatmaps should be.}
 
-\item{legends}{}
+\item{legends}{character legend texts.}
 
-\item{legend_place}{}
+\item{legend_place}{character location of legend pane. See legend().}
 
-\item{legend_cex}{}
+\item{legend_cex}{numeric expansion factor for legend pane.}
 
-\item{bty}{}
+\item{bty}{integer box type. See legend().}
 
 \item{...}{additional arguments to be passed onto plot().}
 }

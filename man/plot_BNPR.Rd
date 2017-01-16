@@ -38,16 +38,18 @@ trajectory.}
 
 \item{xlab}{character x-axis label.}
 
-\item{xmarline}{numeric if not using default x-axis labels, how far to put
+\item{xmarline}{numeric if not using default x-axis labels, how far to put 
 the labels from the axis.}
 
 \item{axlabs}{character vector x-axis labels.}
 
-\item{traj_lty, }{traj_lwd, traj_col line type, line width, and line color for
+\item{traj_lty, traj_lwd, traj_col}{line type, line width, and line color for 
 the true trajectory.}
 
 \item{newplot}{boolean whether to create a new plot or superimpose over a 
 previously open plot.}
+
+\item{credible_region}{logical whether to display pointwise credible region.}
 
 \item{heatmaps}{boolean whether to display sampling and coalescent heatmaps.}
 
@@ -56,6 +58,9 @@ previously open plot.}
 \item{heatmap_labels_side}{string which side of plot to display heatmaps.}
 
 \item{heatmap_width}{numeric how wide heatmaps should be.}
+
+\item{yscale}{numeric scaling applied to all effective population
+calculations.}
 
 \item{...}{additional arguments to be passed onto plot().}
 }

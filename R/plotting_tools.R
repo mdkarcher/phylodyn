@@ -26,19 +26,20 @@ shade_band = function(x, ylo, yhi, xlim=NULL, col="gray")
 #' @param log character which axes to plot log-scale. Defaults to "y".
 #' @param ylab character y-axis label.
 #' @param xlab character x-axis label.
-#' @param xmarline numeric if not using default x-axis labels, how far to put
+#' @param xmarline numeric if not using default x-axis labels, how far to put 
 #'   the labels from the axis.
 #' @param axlabs character vector x-axis labels.
-#' @param traj_lty, traj_lwd, traj_col line type, line width, and line color for
+#' @param traj_lty,traj_lwd,traj_col line type, line width, and line color for 
 #'   the true trajectory.
 #' @param newplot boolean whether to create a new plot or superimpose over a 
 #'   previously open plot.
-#' @param credible_region
+#' @param credible_region logical whether to display pointwise credible region.
 #' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
 #' @param heatmap_labels boolean whether to display labels on heatmaps.
 #' @param heatmap_labels_side string which side of plot to display heatmaps.
 #' @param heatmap_width numeric how wide heatmaps should be.
-#' @param yscale
+#' @param yscale numeric scaling applied to all effective population
+#'   calculations.
 #' @param ... additional arguments to be passed onto plot().
 #'   
 #' @export
@@ -182,16 +183,16 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
 #'   the labels from the axis.
 #' @param axlabs character vector x-axis labels.
 #' @param ymin_zero logical 
-#' @param ylab 
-#' @param main 
-#' @param heatmaps 
-#' @param heatmap_labels 
-#' @param heatmap_labels_side 
-#' @param heatmap_width 
-#' @param legends 
-#' @param legend_place 
-#' @param legend_cex 
-#' @param bty 
+#' @param ylab character y-axis label.
+#' @param main character main plot title.
+#' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
+#' @param heatmap_labels boolean whether to display labels on heatmaps.
+#' @param heatmap_labels_side string which side of plot to display heatmaps.
+#' @param heatmap_width numeric how wide heatmaps should be.
+#' @param legends character legend texts.
+#' @param legend_place character location of legend pane. See legend().
+#' @param legend_cex numeric expansion factor for legend pane.
+#' @param bty integer box type. See legend().
 #' @param ... additional arguments to be passed onto plot().
 #'
 #' @export
@@ -332,28 +333,30 @@ plot_mrw = function(BNPR_outs, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
 #' Plot Seasonality
 #' 
 #' @param BNPR_out output of BNPR or BNPR_PS.
-#' @param zero_date 
-#' @param start 
-#' @param years 
-#' @param period 
-#' @param ylim 
-#' @param nbreaks 
-#' @param lty 
-#' @param lwd 
-#' @param col_years 
-#' @param col_mean 
-#' @param main 
-#' @param axlabs 
-#' @param xlab 
-#' @param xmarline 
-#' @param ylab 
-#' @param log_y 
-#' @param heatmaps 
-#' @param heatmap_labels 
-#' @param heatmap_labels_side 
-#' @param heatmap_width 
-#' @param legend 
-#' @param yscale 
+#' @param zero_date numeric which time to present as 0 on graph.
+#' @param start numeric when to start displaying data.
+#' @param years numeric how many years to count back in time.
+#' @param period numeric how long of a period is a "year".
+#' @param ylim numeric y-axis interval.
+#' @param nbreaks integer number of bins for sampling heatmap.
+#' @param lty numeric line type for the estimated trajectory paths.
+#' @param lwd numeric line width for the estimated trajectory paths.
+#' @param col_years color of year paths.
+#' @param col_mean color of mean path.
+#' @param main character main plot title.
+#' @param axlabs character vector x-axis labels.
+#' @param xlab character x-axis label.
+#' @param xmarline numeric if not using default x-axis labels, how far to put
+#'   the labels from the axis.
+#' @param ylab character y-axis label.
+#' @param log_y logical whether to log-scale the y-axis.
+#' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
+#' @param heatmap_labels boolean whether to display labels on heatmaps.
+#' @param heatmap_labels_side string which side of plot to display heatmaps.
+#' @param heatmap_width numeric how wide heatmaps should be.
+#' @param legend character legend text. The defauly, NULL, disables.
+#' @param yscale numeric scaling applied to all effective population
+#'   calculations.
 #' @param ... additional arguments to be passed onto plot().
 #'
 #' @export

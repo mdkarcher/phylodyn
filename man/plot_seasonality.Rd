@@ -14,49 +14,51 @@ plot_seasonality(BNPR_out, zero_date, start = 0, years = NULL, period = 1,
 \arguments{
 \item{BNPR_out}{output of BNPR or BNPR_PS.}
 
-\item{zero_date}{}
+\item{zero_date}{numeric which time to present as 0 on graph.}
 
-\item{start}{}
+\item{start}{numeric when to start displaying data.}
 
-\item{years}{}
+\item{years}{numeric how many years to count back in time.}
 
-\item{period}{}
+\item{period}{numeric how long of a period is a "year".}
 
-\item{ylim}{}
+\item{ylim}{numeric y-axis interval.}
 
-\item{nbreaks}{}
+\item{nbreaks}{integer number of bins for sampling heatmap.}
 
-\item{lty}{}
+\item{lty}{numeric line type for the estimated trajectory paths.}
 
-\item{lwd}{}
+\item{lwd}{numeric line width for the estimated trajectory paths.}
 
-\item{col_years}{}
+\item{col_years}{color of year paths.}
 
-\item{col_mean}{}
+\item{col_mean}{color of mean path.}
 
-\item{main}{}
+\item{main}{character main plot title.}
 
-\item{axlabs}{}
+\item{axlabs}{character vector x-axis labels.}
 
-\item{xlab}{}
+\item{xlab}{character x-axis label.}
 
-\item{xmarline}{}
+\item{xmarline}{numeric if not using default x-axis labels, how far to put
+the labels from the axis.}
 
-\item{ylab}{}
+\item{ylab}{character y-axis label.}
 
-\item{log_y}{}
+\item{log_y}{logical whether to log-scale the y-axis.}
 
-\item{heatmaps}{}
+\item{heatmaps}{boolean whether to display sampling and coalescent heatmaps.}
 
-\item{heatmap_labels}{}
+\item{heatmap_labels}{boolean whether to display labels on heatmaps.}
 
-\item{heatmap_labels_side}{}
+\item{heatmap_labels_side}{string which side of plot to display heatmaps.}
 
-\item{heatmap_width}{}
+\item{heatmap_width}{numeric how wide heatmaps should be.}
 
-\item{legend}{}
+\item{legend}{character legend text. The defauly, NULL, disables.}
 
-\item{yscale}{}
+\item{yscale}{numeric scaling applied to all effective population
+calculations.}
 
 \item{...}{additional arguments to be passed onto plot().}
 }
