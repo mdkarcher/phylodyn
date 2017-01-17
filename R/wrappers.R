@@ -8,5 +8,10 @@
 #' @export
 inla.models <- function(...)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   return(INLA::inla.models(...))
 }

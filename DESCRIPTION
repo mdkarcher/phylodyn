@@ -10,7 +10,6 @@ Imports:
     graphics,
     grDevices,
     ape,
-    INLA,
     spam
 Date: 2013-12-12
 Author: Michael Karcher, Julia Palacios, Shiwei Lan, Vladimir Minin
@@ -19,6 +18,7 @@ Description: Statistical tools for reconstructing population size from genetic
     sequence data.
 License: GPL-3
 Suggests:
+    INLA,
     knitr,
     testthat,
     rmarkdown

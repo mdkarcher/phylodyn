@@ -187,6 +187,11 @@ infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100
                        prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE,
                        derivative = FALSE)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   if (min(coal_times) < min(samp_times))
     stop("First coalescent time occurs before first sampling time")
   
@@ -260,6 +265,11 @@ samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
 infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100,
                        prec_alpha = 0.01, prec_beta = 0.01)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   grid <- seq(min(samp_times),max(samp_times),length.out=lengthout+1)
   
   samp_data <- samp_stats(grid = grid, samp_times = samp_times,
@@ -296,6 +306,11 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
                             simplify = FALSE, events_only = FALSE,
                             derivative = FALSE)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   if (min(coal_times) < min(samp_times))
     stop("First coalescent time occurs before first sampling time")
   
@@ -387,6 +402,11 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
 infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100,
                              prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   if (min(coal_times) < min(samp_times))
     stop("First coalescent time occurs before first sampling time")
   
@@ -427,6 +447,11 @@ infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout
 infer_samp_exper <- function(samp_times, fns, n_sampled = NULL, lengthout = 100,
                              prec_alpha = 0.01, prec_beta = 0.01)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   grid <- seq(min(samp_times),max(samp_times),length.out=lengthout+1)
   
   samp_data <- samp_stats(grid = grid, samp_times = samp_times,
@@ -454,6 +479,11 @@ infer_coal_samp_exper <- function(samp_times, coal_times, n_sampled=NULL, fns = 
                                   beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
                                   simplify = FALSE, events_only = FALSE)
 {
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
   if (min(coal_times) < min(samp_times))
     stop("First coalescent time occurs before first sampling time")
   
