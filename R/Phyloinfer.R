@@ -1213,11 +1213,12 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
 #' @param Nleap integer tuning parameter for Split Hamiltonian Monte Carlo
 #' @param rand_leap tuning parameter for Split Hamiltonian Monte Carlo
 #' @param scaling numeric re-scaling parameter
+#' @param tol tolerance to detect difference
 #' 
 #' @return A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th tree
 #' @export
 smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
-                         stepsz=.1, Nleap=15, rand_leap=TRUE,scaling=10)
+                         stepsz=.1, Nleap=15, rand_leap=TRUE,scaling=10,tol=1e-5)
 {
   Ngrid<-length(grid)-1
   
@@ -1232,7 +1233,7 @@ smcp_sampling = function(data,  nsamp, nburnin, grid, alpha = 1e-3, beta = 1e-3,
   #Initial Values
   f_init = rep(0.5,Ngrid)
   theta <- c(log(f_init),-1.6)+.0001
-  alldata <- get.data(grid,data$sim,data$D,data$n,coal_lik_init,data$info_times,data$Fl,data$latent,data$t_new,data$t_del)
+  alldata <- get_data(grid,data$sim,data$D,data$n,data$info_times,data$Fl,data$latent,data$t_new,data$t_del,tol)
   
   U<-function(theta,grad=F)U_split_smc(theta,alldata$lik_init,alldata$invC,alpha,beta,grad)
   current.u<-U(theta,F)$logpos
