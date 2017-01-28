@@ -327,9 +327,9 @@ find_info2<-function(MyTree,D,sim,tol,cor=1){
   where_del<-suff$where_hap_del
   
   
-  Fl<-list(create.F(MyTree[[1]],n))
+  Fl<-list(create.F(MyTree[[1]]))
   for (j in 2:sim){
-    Fl<-c(Fl,list(create.F(MyTree[[j]],n)))
+    Fl<-c(Fl,list(create.F(MyTree[[j]])))
   }
   
   #Uses F-matrices and coalescent times
