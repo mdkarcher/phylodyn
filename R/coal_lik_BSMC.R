@@ -30,10 +30,17 @@ find.children.length <- function(tree, tdel, cor = 1) {
 
 
 
-
-
-
-create.F<-function(tree,n){
+#' Generates a matrix with ranked tree shape information
+#' 
+#' @param tree a phylo object
+#'   
+#' @return An F matrix containing ranked tree shape information
+#' @export
+#' 
+#' @examples
+#' create.F(rcoal(4))
+create.F<-function(tree){
+  n_samples<-length(tree)
   #n is the number of individual samples 
   edges<-tree$edge
   x<-tree$Nnode+1
@@ -57,17 +64,17 @@ create.F<-function(tree,n){
   }
   edges<-newedges[,3:4]
   #tree.edge is edges correcting the labels
-  F<-matrix(0,nrow=n-1,ncol=n-1)
-  diag(F)<-n:2
-  F[cbind(2:(n-1),1:(n-2))]<-diag(F)[-(n-1)]-2
+  F<-matrix(0,nrow=n_samples-1,ncol=n_samples-1)
+  diag(F)<-n_samples:2
+  F[cbind(2:(n_samples-1),1:(n_samples-2))]<-diag(F)[-(n_samples-1)]-2
   x<-nrow(edges)
   y<-max(edges)
   
   
-  for (cini in 1:(n-2)){
+  for (cini in 1:(n_samples-2)){
     ini<-cini+1
-    for (j in y:(n+2) ){
-      F[ini,cini]<-F[(ini-1),cini]-sum(edges[edges[,1]==j,2]<=n)
+    for (j in y:(n_samples+2) ){
+      F[ini,cini]<-F[(ini-1),cini]-sum(edges[edges[,1]==j,2]<=n_samples)
       ini<-ini+1
     }
     #remove those two rows
@@ -79,40 +86,42 @@ create.F<-function(tree,n){
   return(F)
 }
 
-get_F_values<-function(latent,init,Fl){
-  ntrees<-nrow(init$C)
-  latentloc<-seq(1:(ntrees-1))[latent[-ntrees]==1]
-  m.1<-sum(init$B[latentloc[1],])
-  j<-latentloc[1]
-  Fl.out<-matrix(0,nrow=m.1-1,ncol=m.1)
-  for (i in 1:(m.1-1)){
-    myF.in<-C2[(j-1),i]
-    myF.out<-n-C2[(j-1),((i+1):m.1)]+1
-    Fl.out[i,]<-c(rep(0,i),init$Fl[[j]][,(n-myF.in+1)][myF.out]/init$C2[(j-1),(i+1):m.1])
-  }
-  myF.list<-list(Fl.out[,-1])
-  
-  for (j in latentloc[2:length(latentloc)]){
-    m.1<-sum(init$B[j,])
-    Fl.out<-matrix(0,nrow=m.1-1,ncol=m.1)
-    for (i in 1:(m.1-1)){
-      myF.in<-C2[(j-1),i]
-      myF.out<-n-C2[(j-1),((i+1):m.1)]+1
-      Fl.out[i,]<-c(rep(0,i),init$Fl[[j]][,(n-myF.in+1)][myF.out]/init$C2[(j-1),(i+1):m.1])
-    }
-    myF.list<-c(myF.list,list(Fl.out[,-1]))
-  }
-  return(myF.list)
-}
+#I don't think this function is used anywhere
+# get_F_values<-function(latent,init,Fl){
+#   ntrees<-nrow(init$C)
+#   latentloc<-seq(1:(ntrees-1))[latent[-ntrees]==1]
+#   m.1<-sum(init$B[latentloc[1],])
+#   j<-latentloc[1]
+#   Fl.out<-matrix(0,nrow=m.1-1,ncol=m.1)
+#   for (i in 1:(m.1-1)){
+#     myF.in<-C2[(j-1),i]
+#     myF.out<-n-C2[(j-1),((i+1):m.1)]+1
+#     Fl.out[i,]<-c(rep(0,i),init$Fl[[j]][,(n-myF.in+1)][myF.out]/init$C2[(j-1),(i+1):m.1])
+#   }
+#   myF.list<-list(Fl.out[,-1])
+#   
+#   for (j in latentloc[2:length(latentloc)]){
+#     m.1<-sum(init$B[j,])
+#     Fl.out<-matrix(0,nrow=m.1-1,ncol=m.1)
+#     for (i in 1:(m.1-1)){
+#       myF.in<-C2[(j-1),i]
+#       myF.out<-n-C2[(j-1),((i+1):m.1)]+1
+#       Fl.out[i,]<-c(rep(0,i),init$Fl[[j]][,(n-myF.in+1)][myF.out]/init$C2[(j-1),(i+1):m.1])
+#     }
+#     myF.list<-c(myF.list,list(Fl.out[,-1]))
+#   }
+#   return(myF.list)
+# }
 
 
 
 
 coal_loglik_smc = function(init, f, grad = FALSE)
-  #Revised: Dec 15,2014
+  #Revised: Jan 27,2017
+  #TODO: Think about changing the ocurrances at the exact time and instead at the defined interval
 {
   
-  
+nsize<-nrow(init$Fl[[1]])+1  
   if (init$ng != length(f))
     stop(paste("Incorrect length for f; should be", init$ng))
   
@@ -131,6 +140,7 @@ coal_loglik_smc = function(init, f, grad = FALSE)
   
   loglik<-sum(lls[!is.nan(lls)])
   for (j in 2:(ntrees)){
+      
     f.ext<-rep(f,init$Nrep[j,])
     rep_idx = cumsum(init$Nrep[j,])
     rep_idx = cbind(rep_idx-init$Nrep[j,]+1,rep_idx)
@@ -154,8 +164,8 @@ coal_loglik_smc = function(init, f, grad = FALSE)
       lik1<-sum(ExpZ[j,])
       for (i in 1:(m.1-1)){
         myF.in<-init$C[j,i]
-        myF.out<-n-init$C[j,((i+1):m.1)]+1
-        myF<-init$Fl[[j]][,(n-myF.in+1)][myF.out]
+        myF.out<-nsize-init$C[j,((i+1):m.1)]+1
+        myF<-init$Fl[[j]][,(nsize-myF.in+1)][myF.out]
         if (i==(m.1-1)){
           lik1<-lik1+Q[i]*(sum((1-q[(i+1):m.1])*myF))
           ExpZ[j,(i+1):m.1]<-ExpZ[j,(i+1):m.1]+Q[i]*(1-q[(i+1):m.1])*myF
@@ -535,7 +545,7 @@ find_sufficient <- function(D, sim, tol) {
 #}
 
 
-get.data<-function(grid,sim,D,n,coal_lik_init,info_times,Fl,latent,t_new,t_del){
+get_data<-function(grid,sim,D,n,info_times,Fl,latent,t_new,t_del,tol){
   
   grid.extended.list<-list(sort(unique(c(grid,as.vector(D[1,])))) )
   check<-rep(0,nrow(D))
