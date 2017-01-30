@@ -19,7 +19,7 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
 ## Vignettes
 
-1. **SimpleBNPR**: A short example showing how to use BNPR and BNPR-PS on simulated data, illustraring methodology in [2] and [5].
+1. [SimpleBNPR](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/SimpleBNPR.Rmd): A short example showing how to use BNPR and BNPR-PS on simulated data, illustraring methodology in [2] and [5].
 
 2. **NewYorkInfluenza**: A case study analyzing influenza data from New York, reproducing analysis in [5] on data from [1].
 
