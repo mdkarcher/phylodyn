@@ -178,15 +178,16 @@ sigmoidal<-function(x){(1+exp(-x))^-1}
 
 number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
 {
-	#m<-rep(0,n-1)
-	#for (k in n:2){
-	#	m[n-k+1]<-sum(info[,2]==k)-1
-	#}
+	# m<-rep(0,n-1)
+	# for (k in n:2){
+	# 	m[n-k+1]<-sum(info[,2]==k)-1
+	# }
   ind<-2*info[,3]-1
   loglik<-(-lambda)*sum(t*coal.factor)+sum(log(sigmoidal(info[,4]*ind)))+nrow(info)*log(lambda)+sum(m*log(coal.factor))
-  
+
 	add<-stats::rbinom(n-1,1,.5)
 	new<-stats::runif(n-1,min=s[1:n-1],max=s[2:n])
+	l<-length(s) #Just updated in January 2017. Needs to be checked
   g.new<-rep(0,l-1)
 	g.new[add==1]<-GP.posterior(as.matrix(info[,1]),info[,4],signal,as.matrix(new[add==1]),s.noise)$g
 	accept<-stats::runif(n-1)<add*lambda*t*sigmoidal(-g.new)*coal.factor/(m+1)
@@ -202,7 +203,7 @@ number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
   {
     where<-ceiling(stats::runif(n-1)*m)[part1]
 		co<-seq(n,2)[part1]
-		
+
 		if (m[part1][1]==1)
     {
 #			who<-info[info[,2]==co[1] & info[,3]==0,]

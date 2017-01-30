@@ -38,12 +38,13 @@ find.children.length <- function(tree, tdel, cor = 1) {
 #' @export
 #' 
 #' @examples
-#' create.F(rcoal(4))
-create.F<-function(tree){
-  n_samples<-length(tree)
+#' create_F(ape::rcoal(4))
+create_F<-function(tree){
+  
   #n is the number of individual samples 
   edges<-tree$edge
   x<-tree$Nnode+1
+  n_samples<-x
   values1<-max(ape::node.depth.edgelength(tree))-ape::node.depth.edgelength(tree)
   values1<-values1[(x+1):length(values1)]
   values<-sort(values1,decreasing=T)
@@ -327,9 +328,9 @@ find_info2<-function(MyTree,D,sim,tol,cor=1){
   where_del<-suff$where_hap_del
   
   
-  Fl<-list(create.F(MyTree[[1]]))
+  Fl<-list(create_F(MyTree[[1]]))
   for (j in 2:sim){
-    Fl<-c(Fl,list(create.F(MyTree[[j]])))
+    Fl<-c(Fl,list(create_F(MyTree[[j]])))
   }
   
   #Uses F-matrices and coalescent times

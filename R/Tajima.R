@@ -1,4 +1,24 @@
 ##Code for Tajima-based inference from a single locus
+group_sufficient<-function(sufficient){
+  mylist<-list(list(x=0,y=0))
+  isleaf<-rep(0,nrow(sufficient$nodes))
+  i<-1
+  for (j in sufficient$nodes[,1]){
+    isleaf[i]<-sum(sum(sufficient$leaves_o==j)>0)
+    i<-i+1
+  }
+  parents<-unique(sufficient$nodes[,2])
+  for (j in parents){
+    sizes<-unique(sufficient$nodes[sufficient$nodes[,2]==j,3])
+    for (i in sizes){
+      who<-seq(1:nrow(sufficient$nodes))[sufficient$nodes[,2]==2 & sufficient$nodes[,3]==i]
+      if (length(who)==sum(isleaf[who])) {
+        #remove
+      }
+    }
+    
+  }
+}
 
 sufficient_stats2<-function(data){
   ##This is a modified version that does not group nodes with the same size
@@ -41,12 +61,14 @@ sufficient_stats2<-function(data){
     }
   }
   leaves<-apply(Index,1,max)
+  leaves_o<-leaves
   card<-rev(groups$cardinality)
   carriers<-rev(groups$carriers) #I don't use this
-  mylist<-list(list(x=0,y=0))
+ # mylist<-list(list(x=0,y=0))
   orderlist<-0
   parentlist<-0
   famsize<-0
+  muts<-0
   L<-apply(Lmat,2,max) #this vector has the nesting information, it has parents nodes
   parents <- sort(unique(L), decreasing = TRUE)
   i<-2
@@ -55,7 +77,8 @@ sufficient_stats2<-function(data){
     offspringsize<-0
     for (no in offspring){
       # offspringsize<-c(offspringsize,sum(leaves==no))
-      mylist[[i]]<-list(x=1,y=card[no])
+      #mylist[[i]]<-list(x=1,y=card[no])
+      muts<-c(muts,card[no])
       famsize<-c(famsize,sum(leaves==no))
       parentlist<-c(parentlist,j)
       orderlist<-c(orderlist,no)
@@ -64,10 +87,10 @@ sufficient_stats2<-function(data){
     }
   }
   mylist[[1]]<-NULL
-  return(list(mylist=mylist,nodes=cbind(orderlist[-1],parentlist[-1],famsize[-1])))
+  return(list(leaves_o=leaves_o,nodes=cbind(orderlist[-1],parentlist[-1],famsize[-1],muts[-1])))
 }
 
-sufficient_stats<-function(groups,n){
+sufficient_stats<-function(data,groups,n){
   #data is a matrix of m rows (snps) and 1 column of concateted 0s and 1s. The number of characters in each row is n, the number of individuals
   sorted<-sort(data[,1],index.return=T)
   n<-nchar(data[1,])
@@ -107,6 +130,7 @@ sufficient_stats<-function(groups,n){
     }
   }
   leaves<-apply(Index,1,max)
+  leaf<-leaves
   card<-rev(groups$cardinality)
   carriers<-rev(groups$carriers) #I don't use this
   mylist<-list(list(x=0,y=0))
@@ -119,24 +143,40 @@ sufficient_stats<-function(groups,n){
   for (j in parents){
     offspring<-seq(1,l)[L==j]
     offspringsize<-0
+    leafindicator<-0
     for (no in offspring){
       offspringsize<-c(offspringsize,sum(leaves==no))
+      leafindicator<-c(leafindicator,sum(leaf==no))
     }
     offspringsize<-offspringsize[-1]
+    leafindicator<-leafindicator[-1]
     #offspringsize<-frequency[offspring]
     offspringsizelist<-unique(offspringsize)
     for (k in offspringsizelist){
-      mylist[[i]]<-list(x=sum(offspringsize==k),y=card[offspring[offspringsize==k]]) 
-      famsize<-c(famsize,k)
-      parentlist<-c(parentlist,j)
-      orderlist<-c(orderlist,min(offspring[offspringsize==k]))
-      for (le in offspring[offspringsize==k]){
-        leaves[leaves==le]<-j
+      dups<-sum(leafindicator[offspringsize==k]>=1)
+      if (dups>0){
+        mylist[[i]]<-list(x=sum(offspringsize==k),y=card[offspring[offspringsize==k & leafindicator[offspringsize==k]>=1]]) 
+        famsize<-c(famsize,k)
+        parentlist<-c(parentlist,j)
+        orderlist<-c(orderlist,min(offspring[offspringsize==k & leafindicator[offspringsize==k]>=1]))
+        for (le in offspring[offspringsize==k & leafindicator[offspringsize==k]==1]){
+          leaves[leaves==le]<-j
+        }
+        i<-i+1
       }
-      i<-i+1
-    }
-    
-  }
+      left<-sum(leafindicator[offspringsize==k]==0)
+      if (left>0){
+        for (s in offspring[offspringsize==k & leafindicator[offspringsize==k]==0]){
+          mylist[[i]]<-list(x=1,y=card[s])
+          famsize<-c(famsize,k)
+          parentlist<-c(parentlist,j)
+          orderlist=c(orderlist,s)
+          leaves[leaves==s]<-j
+          i<-i+1
+        }}
+          
+        }
+      }
   mylist[[1]]<-NULL
   return(list(mylist=mylist,nodes=cbind(orderlist[-1],parentlist[-1],famsize[-1])))
 }
