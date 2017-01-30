@@ -5,7 +5,8 @@
 \title{SMC' sampler--inference from local genealogies}
 \usage{
 smcp_sampling(data, nsamp, nburnin, grid, alpha = 0.001, beta = 0.001,
-  stepsz = 0.1, Nleap = 15, rand_leap = TRUE, scaling = 10)
+  stepsz = 0.1, Nleap = 15, rand_leap = TRUE, scaling = 10,
+  tol = 1e-05)
 }
 \arguments{
 \item{data}{a list containing sufficient statistics}
@@ -27,6 +28,8 @@ smcp_sampling(data, nsamp, nburnin, grid, alpha = 0.001, beta = 0.001,
 \item{rand_leap}{tuning parameter for Split Hamiltonian Monte Carlo}
 
 \item{scaling}{numeric re-scaling parameter}
+
+\item{tol}{tolerance to detect difference}
 }
 \value{
 A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th tree
