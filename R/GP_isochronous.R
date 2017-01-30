@@ -175,71 +175,71 @@ GP.posterior2<-function(X,y,signal,s.tilde,s.noise)
 
 sigmoidal<-function(x){(1+exp(-x))^-1}
 
-# 
-# number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
-# {
-#TODO: no visible binding for global variable l
-# 	#m<-rep(0,n-1)
-# 	#for (k in n:2){
-# 	#	m[n-k+1]<-sum(info[,2]==k)-1
-# 	#}
-#   ind<-2*info[,3]-1
-#   loglik<-(-lambda)*sum(t*coal.factor)+sum(log(sigmoidal(info[,4]*ind)))+nrow(info)*log(lambda)+sum(m*log(coal.factor))
-#   
-# 	add<-stats::rbinom(n-1,1,.5)
-# 	new<-stats::runif(n-1,min=s[1:n-1],max=s[2:n])
-#   g.new<-rep(0,l-1)
-# 	g.new[add==1]<-GP.posterior(as.matrix(info[,1]),info[,4],signal,as.matrix(new[add==1]),s.noise)$g
-# 	accept<-stats::runif(n-1)<add*lambda*t*sigmoidal(-g.new)*coal.factor/(m+1)
-# 	info<-rbind(info,cbind(new[accept],seq(n,2)[accept],rep(0,sum(accept)),g.new[accept]))
-#   m<-m+accept
-#   #	info<-rbind(info,to.add)
-#   #	m<-rep(0,n-1)
-#   #	for (k in n:2){
-#   #		m[n-k+1]<-sum(info[,2]==k)-1
-#   #	}
-#   part1<-add==0 & m>0
-# 	if (sum(part1)>0)
-#   {
-#     where<-ceiling(stats::runif(n-1)*m)[part1]
-# 		co<-seq(n,2)[part1]
-# 		
-# 		if (m[part1][1]==1)
-#     {
-# #			who<-info[info[,2]==co[1] & info[,3]==0,]
-# 			find<-seq(1,nrow(info))[info[,2]==co[1] & info[,3]==0]
-# 		}
-#     else
-#     {
-# #			who<-info[info[,2]==co[1] & info[,3]==0,][where[1],]
-# 			find<-seq(1,nrow(info))[info[,2]==co[1] & info[,3]==0][where[1]]
-# 		}
-# 		if (length(co)>=2)
-#     {
-# 			for (j in 2:length(co))
-#       {
-# 				if (m[part1][j]==1)
-#         {
-# #					who<-rbind(who,info[info[,2]==co[j] & info[,3]==0,])
-# 					find<-rbind(find,seq(1:nrow(info))[info[,2]==co[j] & info[,3]==0])
-# 				}
-#         else
-#         {
-# #					who<-rbind(who,info[info[,2]==co[j] & info[,3]==0,][where[j],])
-# 					find<-rbind(find,seq(1:nrow(info))[info[,2]==co[j] & info[,3]==0][where[j]])
-# 				}
-# 			}
-# 		}
-# 		to.delete<-stats::runif(length(co))<m[part1]/(lambda*t[part1]*sigmoidal(-info[find,4])*coal.factor[part1])
-# 		if (sum(to.delete)>0)
-#     {
-# 			info<-info[-(find[to.delete]),]
-#       m[part1][to.delete]<-m[part1][to.delete]-1
-# 		}
-# 	}
-# 	return(list(info=info,loglik=loglik,m=m))
-# }
-# 
+
+number.thinned<-function(s,T,lambda,signal,info,s.noise,n,t,coal.factor,m)
+{
+	# m<-rep(0,n-1)
+	# for (k in n:2){
+	# 	m[n-k+1]<-sum(info[,2]==k)-1
+	# }
+  ind<-2*info[,3]-1
+  loglik<-(-lambda)*sum(t*coal.factor)+sum(log(sigmoidal(info[,4]*ind)))+nrow(info)*log(lambda)+sum(m*log(coal.factor))
+
+	add<-stats::rbinom(n-1,1,.5)
+	new<-stats::runif(n-1,min=s[1:n-1],max=s[2:n])
+	l<-length(s) #Just updated in January 2017. Needs to be checked
+  g.new<-rep(0,l-1)
+	g.new[add==1]<-GP.posterior(as.matrix(info[,1]),info[,4],signal,as.matrix(new[add==1]),s.noise)$g
+	accept<-stats::runif(n-1)<add*lambda*t*sigmoidal(-g.new)*coal.factor/(m+1)
+	info<-rbind(info,cbind(new[accept],seq(n,2)[accept],rep(0,sum(accept)),g.new[accept]))
+  m<-m+accept
+  #	info<-rbind(info,to.add)
+  #	m<-rep(0,n-1)
+  #	for (k in n:2){
+  #		m[n-k+1]<-sum(info[,2]==k)-1
+  #	}
+  part1<-add==0 & m>0
+	if (sum(part1)>0)
+  {
+    where<-ceiling(stats::runif(n-1)*m)[part1]
+		co<-seq(n,2)[part1]
+
+		if (m[part1][1]==1)
+    {
+#			who<-info[info[,2]==co[1] & info[,3]==0,]
+			find<-seq(1,nrow(info))[info[,2]==co[1] & info[,3]==0]
+		}
+    else
+    {
+#			who<-info[info[,2]==co[1] & info[,3]==0,][where[1],]
+			find<-seq(1,nrow(info))[info[,2]==co[1] & info[,3]==0][where[1]]
+		}
+		if (length(co)>=2)
+    {
+			for (j in 2:length(co))
+      {
+				if (m[part1][j]==1)
+        {
+#					who<-rbind(who,info[info[,2]==co[j] & info[,3]==0,])
+					find<-rbind(find,seq(1:nrow(info))[info[,2]==co[j] & info[,3]==0])
+				}
+        else
+        {
+#					who<-rbind(who,info[info[,2]==co[j] & info[,3]==0,][where[j],])
+					find<-rbind(find,seq(1:nrow(info))[info[,2]==co[j] & info[,3]==0][where[j]])
+				}
+			}
+		}
+		to.delete<-stats::runif(length(co))<m[part1]/(lambda*t[part1]*sigmoidal(-info[find,4])*coal.factor[part1])
+		if (sum(to.delete)>0)
+    {
+			info<-info[-(find[to.delete]),]
+      m[part1][to.delete]<-m[part1][to.delete]-1
+		}
+	}
+	return(list(info=info,loglik=loglik,m=m))
+}
+
 
 
 location.thinned.uniform<-function(s,T,lambda,signal,N,info,s.noise)
