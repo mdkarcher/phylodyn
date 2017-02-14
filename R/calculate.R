@@ -199,10 +199,10 @@ BNPR_multiple <- function(data, lengthout = 100, prec_alpha=0.01,
   summarylist$effpop975_1  <- exp(-result$summary.random$i$`0.025quant`)
   summarylist$effpop025_1  <- exp(-result$summary.random$i$`0.975quant`)
   
-  summarylist$effpop_2    <- exp(-result$summary.random$j$`0.5quant`)
-  summarylist$effpopmean_2 <- exp(-result$summary.random$j$mean)
-  summarylist$effpop975_2  <- exp(-result$summary.random$j$`0.025quant`)
-  summarylist$effpop025_2  <- exp(-result$summary.random$j$`0.975quant`)
+  summarylist$effpop_2    <- exp(-result$summary.random$j$`0.5quant`-result$summary.random$k$`0.5quant`)
+  summarylist$effpopmean_2 <- exp(-result$summary.random$j$mean-result$summary.random$k$mean)
+  summarylist$effpop975_2  <- exp(-result$summary.random$j$`0.025quant`-result$summary.random$k$`0.025quant`)
+  summarylist$effpop025_2  <- exp(-result$summary.random$j$`0.975quant`-result$summary.random$k$`0.975quant`)
   summarylist$hypers<-result$summary.hyperpar
   summarylist$grid<-grid
   
