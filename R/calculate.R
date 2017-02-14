@@ -124,6 +124,94 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
   return(result)
 }
 
+#' Bayesian nonparametric phylodynamic reconstruction from multiple correlated trees
+#' 
+#' @param data \code{multiPhylo} multiPhylo object  
+#' @param lengthout numeric specifying number of grid points.
+#' @param prec_alpha,prec_beta numerics specifying gamma prior for precision 
+#'   \eqn{\tau}.
+#' @param zero_dates, a vector with actual dates of the most recent sample per phylogeny 
+#' @return Phylodynamic reconstruction of effective population size at grid 
+#'   points. \code{data} contains the information passed to INLA, \code{grid} contains the grid end points, 
+#'   \code{x} contains the grid point centers, \code{effpop} contains a vector 
+#'   of the posterior median effective population size estimates, 
+#'   \code{effpop025} and \code{effpop975} contain the 2.5th and 97.5th 
+#'   posterior percentiles, \code{summary} contains a data.frame of the 
+#'   estimates, and \code{derivative} (if \code{derivative = TRUE}) contains a
+#'   data.frame summarizing the log-derivative.
+#' @export
+#' 
+#' @examples
+#' data("NY_flu")
+#' res = BNPR(NY_flu)
+#' plot_BNPR(res)
+BNPR_multiple <- function(data, lengthout = 100, prec_alpha=0.01,
+                 prec_beta=0.01, zero_dates=NA)
+{
+  if (class(data) != "multiPhylo")
+  {
+    result<-0
+  }
+  else{
+    if ((is.na(zero_dates))[1]) {zero_dates<-rep(0,length(data))}
+    maxdate<-max(unlist(zero_dates))
+    maxcoaltimes<-0
+    summarylist<-vector("list",length(data))
+    for (j in 1:length(data)){
+      summarylist[[j]]<-summarize_phylo(data[[j]])
+      summarylist[[j]]$samp_times<-summarylist[[j]]$samp_times+maxdate-zero_dates[[j]]
+      summarylist[[j]]$coal_times<-summarylist[[j]]$coal_times+maxdate-zero_dates[[j]]
+      maxcoaltimes<-max(maxcoaltimes,summarylist[[j]]$coal_times)
+    }
+    grid <- seq(0, maxcoaltimes, length.out = lengthout+1)
+    coal_data<-vector("list",length(data))
+    indicators<-matrix(NA,nrow=lengthout*length(data),ncol=length(data))
+    for (j in 1:length(data)){
+    coal_data[[j]] <- coal_stats(grid = grid,summarylist[[j]]$samp_times, summarylist[[j]]$n_sampled,
+                            coal_times = summarylist[[j]]$coal_times)
+    coal_data[[j]] <- with(coal_data[[j]], condense_stats(time = time, event = event, E=E))
+    
+    if (j==1){y<-coal_data[[j]]$event;
+              E_log<-coal_data[[j]]$E_log
+              indicators[1:lengthout,1]<-coal_data[[j]]$time}else{
+                y<-c(y,coal_data[[j]]$event)
+                E_log<-c(E_log,coal_data[[j]]$E_log)
+                indicators[(lengthout*(j-1)+1):(lengthout*j),j]<-coal_data[[j]]$time
+                }
+    }
+   i<-indicators[,1]
+   j<-indicators[,2]
+   k<-indicators[,2]
+   hyper.rw1 = list(prec = list(param = c(prec_alpha,prec_beta)))
+   formula = y ~ f(i,model="rw1",hyper = hyper.rw1,constr = FALSE)+ f(j,copy="i",
+                                                                      hyper = list(beta=list(fixed=FALSE)))+f(k, model="iid") -1
+   
+   datause<-data.frame(y=y,i=i,j=j,k=k,E_log=E_log)
+    
+   result = inla(formula, family="Poisson",data = datause,offset=datause$E_log,control.predictor = list(compute=TRUE))
+    
+  #result$samp_times <- phy$samp_times
+  #result$n_sampled  <- phy$n_sampled
+  #result$coal_times <- phy$coal_times
+  
+  summarylist$effpop_1     <- exp(-result$summary.random$i$`0.5quant`)
+  summarylist$effpopmean_1 <- exp(-result$summary.random$i$mean)
+  summarylist$effpop975_1  <- exp(-result$summary.random$i$`0.025quant`)
+  summarylist$effpop025_1  <- exp(-result$summary.random$i$`0.975quant`)
+  
+  summarylist$effpop_2    <- exp(-result$summary.random$j$`0.5quant`)
+  summarylist$effpopmean_2 <- exp(-result$summary.random$j$mean)
+  summarylist$effpop975_2  <- exp(-result$summary.random$j$`0.025quant`)
+  summarylist$effpop025_2  <- exp(-result$summary.random$j$`0.975quant`)
+  summarylist$hypers<-result$summary.hyperpar
+  summarylist$grid<-grid
+  
+  result<-summarylist
+  
+  }
+  return(result)
+}
+
 #' @describeIn BNPR Uses preferential sampling model.
 #' @export
 BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
