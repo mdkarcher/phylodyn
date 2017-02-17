@@ -431,7 +431,7 @@ compute_pos_summ = function(samp_alg, loglikf, f, kappa, invC, alpha, beta, lik_
 }
 
 # Intrinsic precision matrix
-Q_matrix <- function(input, s_noise, signal)
+Q_matrix <- function(input, s_noise = 0, signal = 1)
 {
   n2 <- nrow(input)
   diff1 <- diff(input)
