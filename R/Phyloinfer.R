@@ -433,7 +433,7 @@ compute_pos_summ = function(samp_alg, loglikf, f, kappa, invC, alpha, beta, lik_
 # Intrinsic precision matrix
 Q_matrix <- function(input, s_noise = 0, signal = 1)
 {
-  n2 <- nrow(input)
+  n2 <- length(input)
   diff1 <- diff(input)
   diff1[diff1==0] <- s_noise #correction for dividing over 0
   diff <- (1/(signal*diff1))
@@ -1085,7 +1085,7 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   lik_init = coal_lik_init(samp_times=samp_times, n_sampled=n_sampled, coal_times=coal_times, grid=grid)
   
   # calculate intrinsic precision matrix
-  invC <- Q_matrix(as.matrix(midpts),0,1)
+  invC <- Q_matrix(midpts,0,1)
   
   # fudge to be able to compute the cholC
   if (nugget == "1,1")

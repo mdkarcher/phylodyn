@@ -67,7 +67,7 @@ title("Exponential growth")
 # plot the results of splitHMC
 lines(res_MCMC$med_fun, pch="", col='red', lwd=1)
 lines(res_MCMC$low_fun, pch="", col='red', lwd=1, lty=1)
-lines(res_MCMC$up_fun,  pch="", col='red', lwd=1, lty=1)
+lines(res_MCMC$hi_fun,  pch="", col='red', lwd=1, lty=1)
 legend('topleft',c('Truth','BNPR',"splitHMC"),
        col=c('black','blue','red'),lwd=c(1,2.5,2.5),bty='n', lty=c(2,1,1))
 ```
