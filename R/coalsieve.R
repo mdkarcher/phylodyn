@@ -37,10 +37,48 @@ coalsim <- function(samp_times, n_sampled, traj, method="tt", val_upper=10, lowe
   return(result)
 }
 
+hazard_uniroot_stepfun <- function(traj_inv_stepfun, lineages, start, target)
+{
+  knots = knots(traj_inv_stepfun)
+  lin_factor = 0.5 * lineages * (lineages - 1)
+  t = start
+  
+  while (target > 0 && sum(knots > t) > 0)
+  {
+    next_knot = min(knots[knots > t])
+    if ((next_knot - t) * lin_factor * traj_inv_stepfun(mean(c(t, next_knot))) > target)
+    {
+      result = t + target / (lin_factor * traj_inv_stepfun(mean(c(t, next_knot))))
+      target = 0
+    }
+    else
+    {
+      target = target - (next_knot - t) * lin_factor * traj_inv_stepfun(mean(c(t, next_knot)))
+      t = next_knot
+    }
+  }
+  if (sum(knots > t) < 1)
+    result = t + target / (lin_factor * traj_inv_stepfun(t + 1))
+  
+  return(result - start)
+}
+
 coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
 {
-  traj_inv <- function(t) 1/traj(t, ...)
-  hazard <- function(t, lins, start, target) .5*lins*(lins-1)*stats::integrate(traj_inv, start, start+t)$value - target
+  if (stats::is.stepfun(traj))
+  {
+    knots = knots(traj)
+    midpts = c(min(knots) - 1, knots[-1] - diff(knots)/2, max(knots) + 1)
+    traj_inv <- stats::stepfun(x = knots, y = 1/traj(midpts))
+    hazard <- function(t, lins, start, target) .5*lins*(lins-1)*integrate_step_fun(traj_inv, start, start+t) - target
+    is_stepfun = TRUE
+  }
+  else
+  {
+    traj_inv <- function(t) 1/traj(t, ...)
+    hazard <- function(t, lins, start, target) .5*lins*(lins-1)*stats::integrate(traj_inv, start, start+t)$value - target
+    is_stepfun = FALSE
+  }
   
   coal_times = NULL
   lineages = NULL
@@ -60,8 +98,20 @@ coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
     
     #time = time + stats::rexp(1, 0.5*active_lineages*(active_lineages-1)/lower_bound)
     target <- stats::rexp(1)
-    y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
-                 lower=0, upper=val_upper, extendInt = "upX")$root
+    if (is_stepfun)
+    {
+      y <- hazard_uniroot_stepfun(traj_inv_stepfun = traj_inv,
+                                  lineages = active_lineages,
+                                  start = time, target = target)
+    }
+    else
+    {
+      y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
+                          lower=0, upper=val_upper, extendInt = "upX")$root
+    }
+    # print(paste("Diff = ", round(y - hazard_uniroot_stepfun(traj_inv_stepfun = traj_inv,
+    #                              lineages = active_lineages,
+    #                              start = time, target = target), digits = 5)))
     
     while(curr < length(samp_times) && time + y >= samp_times[curr+1])
     {
@@ -71,8 +121,22 @@ coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
       active_lineages <- active_lineages + n_sampled[curr]
       time <- samp_times[curr]
       
-      y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
-                   lower=0, upper=val_upper, extendInt = "upX")$root
+      if (is_stepfun)
+      {
+        y <- hazard_uniroot_stepfun(traj_inv_stepfun = traj_inv,
+                                    lineages = active_lineages,
+                                    start = time, target = target)
+      }
+      else
+      {
+        y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
+                            lower=0, upper=val_upper, extendInt = "upX")$root
+      }
+      # y <- stats::uniroot(hazard, lins=active_lineages, start=time, target=target,
+      #              lower=0, upper=val_upper, extendInt = "upX")$root
+      # print(paste("Diff = ", round(y - hazard_uniroot_stepfun(traj_inv_stepfun = traj_inv,
+      #                              lineages = active_lineages,
+      #                              start = time, target = target), digits = 5)))
     }
     
     time <- time + y
