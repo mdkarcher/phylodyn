@@ -506,17 +506,17 @@ calculate_estimates = function(logfmat, params, grid)
   logflow = apply(logfmat, MARGIN = 2, FUN = function(x) stats::quantile(x, .025))
   logfhi  = apply(logfmat, MARGIN = 2, FUN = function(x) stats::quantile(x, .975))
   
-  logfmed_fun = stats::stepfun(grid, c(0, logfmed, 0))
-  logflow_fun = stats::stepfun(grid, c(0, logflow, 0))
-  logfhi_fun  = stats::stepfun(grid, c(0, logfhi,  0))
+  logfmed_fun = stats::stepfun(grid, c(logfmed[1], logfmed, utils::tail(logfmed,1)))
+  logflow_fun = stats::stepfun(grid, c(logflow[1], logflow, utils::tail(logflow,1)))
+  logfhi_fun  = stats::stepfun(grid, c(logfhi[1], logfhi,  utils::tail(logfhi,1)))
   
   fmed = apply(exp(logfmat), MARGIN = 2, FUN = stats::median)
   flow = apply(exp(logfmat), MARGIN = 2, FUN = function(x) stats::quantile(x, .025))
   fhi  = apply(exp(logfmat), MARGIN = 2, FUN = function(x) stats::quantile(x, .975))
   
-  fmed_fun = stats::stepfun(grid, c(0, fmed, 0))
-  flow_fun = stats::stepfun(grid, c(0, flow, 0))
-  fhi_fun  = stats::stepfun(grid, c(0, fhi,  0))
+  fmed_fun = stats::stepfun(grid, c(fmed[1], fmed, utils::tail(fmed,1)))
+  flow_fun = stats::stepfun(grid, c(flow[1], flow, utils::tail(flow,1)))
+  fhi_fun  = stats::stepfun(grid, c(fhi[1], fhi,  utils::tail(fhi,1)))
   
   pmed = apply(params, MARGIN = 2, FUN = stats::median)
   plow = apply(params, MARGIN = 2, FUN = function(x) stats::quantile(x, .025))
@@ -1010,7 +1010,7 @@ sampling_ESS = function(data, para, setting, init,
 #'   precision matrix to make it full-rank. Options are '1,1' for an adjustment 
 #'   to the first element, 'diag' for an adjustment to the entire main diagonal,
 #'   or 'none' which may result in a non-full-rank precision matrix.
-#' @param prec_alpha,prec_beta numeric shape and rate parameters for the prior
+#' @param prec_alpha,prec_beta numeric shape and rate parameters for the prior 
 #'   on precision.
 #' @param TrjL numeric tuning parameter.
 #' @param Nleap integer tuning parameter.
@@ -1021,8 +1021,8 @@ sampling_ESS = function(data, para, setting, init,
 #' @param covariates list of functions representing covariate trajectories that 
 #'   (may) influence sampling frequency.
 #' @param betas numeric vector of starting values for the beta hyperparameters.
-#' @param samp_alg selects sampling algorithm for effective population size 
-#'   latent points. One of "HMC", "splitHMC", "MALA", "aMALA", and "ESS".
+#' @param samp_alg string selecting sampling algorithm for sampling time 
+#'   intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".
 #' @param kappa_alg selects sampling algorithm for kappa. One of "gibbs" 
 #'   (default) or "whiten".
 #' @param beta_vars numeric vector prior variances of the beta hyperparameters.

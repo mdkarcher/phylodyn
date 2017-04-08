@@ -33,7 +33,7 @@ precision matrix to make it full-rank. Options are '1,1' for an adjustment
 to the first element, 'diag' for an adjustment to the entire main diagonal,
 or 'none' which may result in a non-full-rank precision matrix.}
 
-\item{prec_alpha, prec_beta}{numeric shape and rate parameters for the prior
+\item{prec_alpha, prec_beta}{numeric shape and rate parameters for the prior 
 on precision.}
 
 \item{TrjL}{numeric tuning parameter.}
@@ -53,8 +53,8 @@ on precision.}
 
 \item{betas}{numeric vector of starting values for the beta hyperparameters.}
 
-\item{samp_alg}{selects sampling algorithm for effective population size 
-latent points. One of "HMC", "splitHMC", "MALA", "aMALA", and "ESS".}
+\item{samp_alg}{string selecting sampling algorithm for sampling time 
+intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".}
 
 \item{kappa_alg}{selects sampling algorithm for kappa. One of "gibbs" 
 (default) or "whiten".}
