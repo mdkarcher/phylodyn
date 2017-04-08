@@ -108,6 +108,9 @@ samp_loglik = function(init, fs, betas)
   llsampevents = init$count * fs_betas
   llsampnoevents = init$D * exp(beta0 + fs_betas)
   llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  #print(init$ns * beta0)
+  #print(sum(llsampevents[!is.na(init$count)]))
+  #print(-1 * sum(llsampnoevents[!is.na(init$count)]))
   
   return(llsamp)
 }
