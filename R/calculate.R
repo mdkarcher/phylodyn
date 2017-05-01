@@ -148,6 +148,12 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
 BNPR_multiple <- function(data, lengthout = 100, prec_alpha=0.01,
                  prec_beta=0.01, zero_dates=NA)
 {
+  if (sum(abs(ape::coalescent.intervals(data[[1]])$interval.length-ape::coalescent.intervals(data[[2]])$interval.length))==0)
+    
+    
+  
+    stop("The realizations are the same. Code needs to be fixed")
+  
   if (class(data) != "multiPhylo")
   {
     result<-0
