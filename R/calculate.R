@@ -181,10 +181,10 @@ BNPR_multiple <- function(data, lengthout = 100, prec_alpha=0.01,
     }
    i<-indicators[,1]
    j<-indicators[,2]
-   k<-indicators[,2]
+   k<-rep(1,lengthout)
    hyper.rw1 = list(prec = list(param = c(prec_alpha,prec_beta)))
    formula = y ~ f(i,model="rw1",hyper = hyper.rw1,constr = FALSE)+ f(j,copy="i",
-                                                                      hyper = list(beta=list(fixed=FALSE)))+f(k, model="iid") -1
+                        hyper = list(beta=list(fixed=FALSE)))+f(k, model="iid") -1
    
    datause<-data.frame(y=y,i=i,j=j,k=k,E_log=E_log)
     
