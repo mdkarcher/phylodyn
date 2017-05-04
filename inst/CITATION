@@ -1,0 +1,22 @@
+citHeader("To cite phylodyn in publications use:")
+
+citEntry(entry = "Article",
+  title        = "{phylodyn}: an {R} package for phylodynamic simulation and inference",
+  author       = personList(as.person("Karcher M"),
+                   as.person("Palacious JA"),
+                   as.person("Lan S"),
+                   as.person("Minin VN")
+                   ),
+  journal      = "Molecular Ecology Resources",
+  year         = "2017",
+  volume       = "17",
+  number       = "1",
+  pages        = "96--100",
+  url          = "http://onlinelibrary.wiley.com/doi/10.1111/1755-0998.12630/full",
+
+  textVersion  =
+  paste("Karcher M, Palacios JA, Lan S, Minin VN (2017).",
+        "phylodyn: an R package for phylodynamic simulation and inference.",
+        "Molecular Ecology Resources, 17(1), 96-100.",
+        "URL http://onlinelibrary.wiley.com/doi/10.1111/1755-0998.12630/full.")
+)
