@@ -1,3 +1,5 @@
+http://www.r-pkg.org/badges/last-release/{phylodyn}
+
 phylodyn
 ========
 
