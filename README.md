@@ -1,4 +1,6 @@
-http://www.r-pkg.org/badges/last-release/{phylodyn}
+http://www.r-pkg.org/badges/last-release/phylodyn
+
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/last-release/phylodyn)](http://cran.r-project.org/package=phylodyn)
 
 phylodyn
 ========
