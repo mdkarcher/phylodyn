@@ -61,7 +61,9 @@ Bayesian nonparametric phylodynamic reconstruction.
 }}
 \examples{
 data("NY_flu")
-res = BNPR(NY_flu)
-plot_BNPR(res)
+if (requireNamespace("INLA", quietly = TRUE)) {
+ res = BNPR(NY_flu)
+ plot_BNPR(res)
+}
 }
 

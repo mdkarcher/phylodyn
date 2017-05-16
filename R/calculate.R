@@ -59,8 +59,10 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #' 
 #' @examples
 #' data("NY_flu")
-#' res = BNPR(NY_flu)
-#' plot_BNPR(res)
+#' if (requireNamespace("INLA", quietly = TRUE)) {
+#'  res = BNPR(NY_flu)
+#'  plot_BNPR(res)
+#' }
 BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
                  prec_beta=0.01, beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
                  simplify = TRUE, derivative = FALSE, forward = TRUE)

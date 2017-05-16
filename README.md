@@ -55,7 +55,7 @@ Datasets below can be found at: https://github.com/mdkarcher/PhyloData/
 
 1. A. Rambaut, O. G. Pybus, M. I. Nelson, C. Viboud, J. K. Taubenberger, E. C. Holmes
 [The genomic and epidemiological dynamics of human influenza A
-virus](http://www.nature.com/doifinder/10.1038/nature06945).
+virus](http://www.nature.com/nature/journal/v453/n7195/full/nature06945.html).
 *Nature*, 453(7195): 615–619, 2008.
 
 2. J. A. Palacios and V. N. Minin.

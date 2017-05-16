@@ -1,18 +1,19 @@
 Package: phylodyn
 Type: Package
 Title: Statistical Tools for Phylodynamics
-Version: 0.8.9.9001
+Version: 0.9.0
 Depends:
     R (>= 2.13.0)
 Imports:
     ape,
     spam
-Date: 2013-12-12
+Date: 2017-04-24
 Author: Michael Karcher, Julia Palacios, Shiwei Lan, Vladimir Minin
 Maintainer: Michael Karcher <mkarcher@uw.edu>
 Description: Statistical tools for reconstructing population size from genetic
     sequence data.
 License: GPL-3
+Additional_repositories: https://www.math.ntnu.no/inla/R/stable
 Suggests:
     INLA,
     knitr,

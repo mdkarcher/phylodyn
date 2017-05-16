@@ -23,8 +23,10 @@ test_that("BNPR produces correct INLA arguments", {
   data1 = with(data1, condense_stats(time = time, event = event, E = E))
   expect_equal(data1, answer)
   
-  data2 = BNPR(data = list(samp_times = samp_times, n_sampled = n_sampled, coal_times= coal_times), lengthout = 2)$data
-  expect_equal(data2$y, answer$event)
-  expect_equal(data2$time, answer$time)
-  expect_equal(data2$E_log, answer$E_log)
+  if (requireNamespace("INLA", quietly = TRUE)) {
+    data2 = BNPR(data = list(samp_times = samp_times, n_sampled = n_sampled, coal_times= coal_times), lengthout = 2)$data
+    expect_equal(data2$y, answer$event)
+    expect_equal(data2$time, answer$time)
+    expect_equal(data2$E_log, answer$E_log)
+  }
 })
