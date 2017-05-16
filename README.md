@@ -1,3 +1,5 @@
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/last-release/phylodyn)](http://cran.r-project.org/package=phylodyn)
+
 phylodyn
 ========
 
@@ -21,17 +23,17 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 
 1. [SimpleBNPR](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/SimpleBNPR.Rmd): A short example showing how to use BNPR and BNPR-PS on simulated data, illustraring methodology in [2] and [5].
 
-2. **NewYorkInfluenza**: A case study analyzing influenza data from New York, reproducing analysis in [5] on data from [1].
+2. [NewYorkInfluenza](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/NewYorkInfluenza.Rmd): A case study analyzing influenza data from New York, reproducing analysis in [5] on data from [1].
 
-3. **RegionalInfluenza**: A case study analyzing influenza data from nine geographic regions, reproducing analsyis in [5] on data from [3].
+3. [RegionalInfluenza](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/RegionalInfluenza.Rmd): A case study analyzing influenza data from nine geographic regions, reproducing analsyis in [5] on data from [3].
 
-4. **RegionalSeasonality**: A case study analyzing influenza seasonality from nine geographic regions, reproducing analsyis in [5] on data from [3].
+4. [RegionalSeasonality](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/RegionalSeasonality.Rmd): A case study analyzing influenza seasonality from nine geographic regions, reproducing analsyis in [5] on data from [3].
 
-5. **SimplePhyloinfer**: A short example comparing BNPR with a split HMC MCMC sampler approach, illustrating methodology in [4].
+5. [SimplePhyloinfer](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/SimplePhyloinfer.Rmd): A short example comparing BNPR with a split HMC MCMC sampler approach, illustrating methodology in [4].
 
-6. **LongPhyloinfer**: A longer example comparing BNPR with multiple MCMC samplers, including split HMC as in SimplePhyloinfer, illustrating methodology in [4].
+6. [LongPhyloinfer](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/SimplePhyloinfer.Rmd): A longer example comparing BNPR with multiple MCMC samplers, including split HMC as in SimplePhyloinfer, illustrating methodology in [4].
 
-7. **LocalGenealogies**: A short example of MCMC-based inference of effective population size trajectories from a sequence of local genealogies. Genealogies are assumed to be a realization of the Sequentially Markov Coalescent (SMC') model. The methodology is developed in [6]
+7. [LocalGenealogies](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/LocalGenealogies.Rmd): A short example of MCMC-based inference of effective population size trajectories from a sequence of local genealogies. Genealogies are assumed to be a realization of the Sequentially Markov Coalescent (SMC') model. The methodology is developed in [6]
 
 ## Datasets
 
