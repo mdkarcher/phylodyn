@@ -76,4 +76,6 @@ In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in 
 [Quantifying and mitigating the effect of preferential sampling on phylodynamic inference](http://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004789).
 *PLOS Computational Biology*, 12:e1004789, 2016.
 
-6. J.A Palacios, J. Wakeley,  and S. Ramachandran. [Bayesian nonparametric inference of population size changes from sequential genealogies.](http://www.genetics.org/content/early/2015/07/28/genetics.115.177980) *Genetics* Vol. 201:281-304, 2015.
+6. J.A. Palacios, J. Wakeley,  and S. Ramachandran. [Bayesian nonparametric inference of population size changes from sequential genealogies.](http://www.genetics.org/content/early/2015/07/28/genetics.115.177980) *Genetics* Vol. 201:281-304, 2015.
+
+7. M. Karcher M, J.A. Palacios, S. Lan, V.N. Minin. phylodyn: an R package for phylodynamic simulation and inference, Molecular Ecology Resources, 17, 96-100, 2017.
