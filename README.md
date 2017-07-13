@@ -68,7 +68,7 @@ In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in 
 [Seasonality in the migration and establishment of H3N2 Influenza lineages with epidemic growth and decline](http://bmcevolbiol.biomedcentral.com/articles/10.1186/s12862-014-0272-2).
 *BMC Evolutionary Biology*, 14(1): 272, 2014.
 
-4. S. Lan, J. A. Palacios, M. Karcher, V. N. Minin, and B. Shahbaba
+4. S. Lan, J. A. Palacios, M. Karcher, V. N. Minin, and B. Shahbaba.
 [An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics](http://bioinformatics.oxfordjournals.org/content/31/20/3282),
 *Bioinformatics*, 31(20): 3282-3289, 2015.
 
@@ -78,4 +78,6 @@ In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in 
 
 6. J.A. Palacios, J. Wakeley,  and S. Ramachandran. [Bayesian nonparametric inference of population size changes from sequential genealogies.](http://www.genetics.org/content/early/2015/07/28/genetics.115.177980) *Genetics* Vol. 201:281-304, 2015.
 
-7. M. Karcher M, J.A. Palacios, S. Lan, V.N. Minin. phylodyn: an R package for phylodynamic simulation and inference, Molecular Ecology Resources, 17, 96-100, 2017.
+7. M. Karcher M, J.A. Palacios, S. Lan, V.N. Minin. 
+[phylodyn: an R package for phylodynamic simulation and inference](http://onlinelibrary.wiley.com/doi/10.1111/1755-0998.12630/full), 
+Molecular Ecology Resources, 17, 96-100, 2017.
