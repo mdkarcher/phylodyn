@@ -91,7 +91,7 @@ for (i in 1:4)
     
     lines(res_MCMC[[i]][[j]]$med_fun, pch="", col=color[j], lwd=2.5)
     lines(res_MCMC[[i]][[j]]$low_fun, pch="", col=color[j], lwd=2, lty=3)
-    lines(res_MCMC[[i]][[j]]$up_fun,  pch="", col=color[j], lwd=2, lty=3)
+    lines(res_MCMC[[i]][[j]]$hi_fun,  pch="", col=color[j], lwd=2, lty=3)
     legend('bottomright',c('Truth','BNPR',alg[j]),col=c('black','blue',color[j]),lwd=c(1,2.5,2.5),bty='n')
   }
 }
