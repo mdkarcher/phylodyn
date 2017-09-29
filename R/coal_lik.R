@@ -115,6 +115,52 @@ samp_loglik = function(init, fs, betas)
   return(llsamp)
 }
 
+samp_loglik_pow = function(init, logpop, betas, covars = NULL, covar_betas = NULL,
+                           pow_covars = NULL, pow_covar_betas = NULL)
+{
+  logpop = rep(logpop, init$gridrep)
+  beta0 = betas[1]
+  beta1 = betas[2]
+  
+  if (!is.null(covars))
+  {
+    covars = as.matrix(covars)
+    covars = as.matrix(covars[rep(1:init$ng, init$gridrep),])
+    covars_bs = covars %*% covar_betas
+  }
+  else
+  {
+    covars_bs = 0
+  }
+  
+  if (!is.null(pow_covars))
+  {
+    pow_covars = as.matrix(pow_covars)
+    pow_covars = as.matrix(pow_covars[rep(1:init$ng, init$gridrep),])
+    pcovars_bs = (beta1 + pow_covars %*% pow_covar_betas) * logpop
+  }
+  else
+  {
+    pcovars_bs = beta1 * logpop
+  }
+  
+  fs_betas = covars_bs + p_covars_bs
+  
+  #llsampevents = beta1 * init$count * f
+  #llsampnoevents = init$D * exp(beta0) * exp(f)^beta1
+  #llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  
+  llsampevents = init$count * fs_betas
+  llsampnoevents = init$D * exp(beta0 + fs_betas)
+  llsamp = init$ns * beta0 + sum(llsampevents[!is.na(init$count)]) - sum(llsampnoevents[!is.na(init$count)])
+  #print(init$ns * beta0)
+  #print(sum(llsampevents[!is.na(init$count)]))
+  #print(-1 * sum(llsampnoevents[!is.na(init$count)]))
+  
+  return(llsamp)
+}
+
+
 coal_samp_loglik = function(init, f, beta0, beta1)
 {
   if (init$ng != length(f))

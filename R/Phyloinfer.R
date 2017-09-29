@@ -48,21 +48,13 @@ ESS = function(q_cur, l_cur, loglik, cholC, ...)
   return(list(q=q, u=l, Ind=1))
 }
 
-ESS_wrapper = function(lik_init, loglik, l_cur, f, kappa, cholC, invC, alpha, beta)
-{
-  #ll = function(f) coal_loglik(init = lik_init, f = f)
-  res = ESS(q_cur = f, l_cur = l_cur, loglik = loglik, cholC = cholC/sqrt(kappa))
-  pos_summ = list(loglik = res$u)
-  pos_summ$logpri = log_mvnorm_prior(x = res$q, prec = invC * kappa) +
-    log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
-  pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
-  res$pos_summ = pos_summ
-}
-
-ESS_old = function(q_cur, l_cur, loglik, cholC)
+ESS2 = function(q_cur, l_cur, loglik, prec, first_elem_prec, ...)
 {  
   # choose ellipse
-  nu = t(cholC) %*% stats::rnorm(length(q_cur))
+  # nu = crossprod(cholC, stats::rnorm(length(q_cur)))
+  first_elem = rnorm(1, mean = 0, sd = sqrt(1 / first_elem_prec))
+  diffs = c(0, rnorm(length(q_cur) - 1, mean = 0, sd = sqrt(1 / prec)))
+  nu = first_elem + cumsum(diffs)
   
   # log-likelihood threshold
   u = stats::runif(1)
@@ -73,14 +65,11 @@ ESS_old = function(q_cur, l_cur, loglik, cholC)
   t_min <- t-2*pi
   t_max <- t
   
-  while (1)
+  q <- q_cur*cos(t) + nu*sin(t)
+  l <- loglik(q, ...)
+  
+  while (l < logy)
   {
-    q <- q_cur*cos(t) + nu*sin(t)
-    l = loglik(q)
-    if (l > logy)
-    {
-      return(list(q=q, l=l, Ind=1))
-    }
     # shrink the bracket and try a new point
     if (t < 0)
     {
@@ -91,9 +80,62 @@ ESS_old = function(q_cur, l_cur, loglik, cholC)
       t_max <- t
     }
     
-    t = stats::runif(1, t_min, t_max)
+    t <- stats::runif(1, t_min, t_max)
+    q <- q_cur*cos(t) + nu*sin(t)
+    
+    l <- loglik(q, ...)
   }
+  
+  return(list(q=q, u=l, Ind=1))
 }
+
+
+# ESS_wrapper = function(lik_init, loglik, l_cur, f, kappa, cholC, invC, alpha, beta)
+# {
+#   #ll = function(f) coal_loglik(init = lik_init, f = f)
+#   res = ESS(q_cur = f, l_cur = l_cur, loglik = loglik, cholC = cholC/sqrt(kappa))
+#   pos_summ = list(loglik = res$u)
+#   pos_summ$logpri = log_mvnorm_prior(x = res$q, prec = invC * kappa) +
+#     log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
+#   pos_summ$logpos = pos_summ$logpri + pos_summ$loglik
+#   res$pos_summ = pos_summ
+# }
+# 
+# ESS_old = function(q_cur, l_cur, loglik, cholC)
+# {  
+#   # choose ellipse
+#   nu = t(cholC) %*% stats::rnorm(length(q_cur))
+#   
+#   # log-likelihood threshold
+#   u = stats::runif(1)
+#   logy <- l_cur + log(u)
+#   
+#   # draw a initial proposal, also defining a bracket
+#   t = 2*pi*stats::runif(1)
+#   t_min <- t-2*pi
+#   t_max <- t
+#   
+#   while (1)
+#   {
+#     q <- q_cur*cos(t) + nu*sin(t)
+#     l = loglik(q)
+#     if (l > logy)
+#     {
+#       return(list(q=q, l=l, Ind=1))
+#     }
+#     # shrink the bracket and try a new point
+#     if (t < 0)
+#     {
+#       t_min <- t
+#     }
+#     else
+#     {
+#       t_max <- t
+#     }
+#     
+#     t = stats::runif(1, t_min, t_max)
+#   }
+# }
 
 #### Metropolis-Adjusted Langevin (MALA) Algorithm ####
 # This function generates one sample given previous state.
@@ -378,7 +420,21 @@ splitHMC = function (q_cur, u_cur, du_cur, U, rtEV, EVC, eps=.1, L=5, rand_leap=
 log_mvnorm_prior <- function(x, prec, mu=rep(0, length(x)))
 {
   x_mu = x - mu
-  return(0.5 * spam::determinant(prec)$modulus - 0.5 * crossprod(x_mu, prec %*% x_mu))
+  firstterm = 0.5 * spam::determinant(prec)$modulus
+  secondterm = -0.5 * crossprod(x_mu, prec %*% x_mu)
+  return(as.numeric(firstterm + secondterm))
+}
+
+log_inorm_prior <- function(x, prec, mu=rep(0, length(x)))
+{
+  x_mu = x - mu
+  return(sum(dnorm(x_mu, sd = prec ^ -0.5, log = TRUE)))
+}
+
+log_field_prior <- function(f, prec, first_elem_prec)
+{
+  result = dnorm(f[1], mean = 0, sd = sqrt(1 / first_elem_prec), log = TRUE) +
+    sum(dnorm(diff(f), mean = 0, sd = sqrt(1 / prec), log = TRUE))
 }
 
 # Gamma log-prior for kappa
@@ -399,35 +455,104 @@ log_betas_prior <- function(betas, betas_prec = diag(1/100, 1/100))
   return(log_mvnorm_prior(x = betas, prec = betas_prec))
 }
 
+log_betas_prior2 <- function(betas, betas_prec = 0.01)
+{
+  return(log_inorm_prior(x = betas, prec = betas_prec))
+}
+
 # Computes a summary of the posterior
 compute_pos_summ = function(samp_alg, loglikf, f, kappa, invC, alpha, beta, lik_init,
                             betas = NULL, betas_prec = diag(1/100, 1/100), covar_vals = NULL,
-                            loglik = NULL, logpri = NULL)
+                            loglik = NULL, logpri = NULL, noprec=FALSE)
 {
   if (is.null(loglik))
   {
-    if (samp_alg %in% c("fixed", "MH"))
+    if (samp_alg == "MH" || samp_alg == "fixed")
       loglik = loglikf(f, lik_init, betas, covar_vals)
     else if (samp_alg == "ESS")
       loglik = loglikf(c(f, betas), lik_init, length(f)+1, covar_vals)
     else
       loglik = loglikf(f, lik_init)
   }
+  result = data.frame(loglik)
   
   if (is.null(logpri))
   {
-    logpri = log_mvnorm_prior(x = f, prec = invC * kappa) +
-      log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
+    logfieldpri = log_mvnorm_prior(x = f, prec = invC * kappa)
+    result$logfieldpri = logfieldpri
+    
+    logpri = logfieldpri
+    
+    if (!noprec)
+    {
+      logprecpri = log_kappa_prior(kappa = kappa, alpha = alpha, beta = beta)
+      result$logprecpri = logprecpri
+      
+      logpri = logpri + logprecpri
+    }
+    
     if (samp_alg %in% c("MH", "ESS"))
     {
       logbetapri = log_betas_prior(betas, betas_prec)
+      result$logbetapri = logbetapri
+      
       logpri = logpri + logbetapri
     }
   }
+  result$logpri = logpri
   
   logpos = logpri + loglik
+  result$logpos = logpos
   
-  return(list(loglik = loglik, logpri = logpri, logpos = logpos))
+  return(result)
+}
+
+compute_pos_summ2 = function(samp_alg, loglikf, f, prec, first_elem_prec,
+                             alpha, beta, lik_init, betas = NULL,
+                             covar_vals = NULL, covar_betas = NULL,
+                             pow_covar_vals = NULL, pow_covar_betas = NULL, 
+                             betas_prec = 0.01, noprec=FALSE)
+{
+  if (samp_alg == "MH" || samp_alg == "fixed")
+  {
+    loglik = ESS_betas_ll2(f = f, lik_init = lik_init, betas = betas,
+                           covar_vals = covar_vals, covar_betas = covar_betas,
+                           pow_covar_vals = pow_covar_vals,
+                           pow_covar_betas = pow_covar_betas)
+  }
+  else
+    loglik = ESS_none_ll(f = f, lik_init = lik_init)
+  
+  result = data.frame(loglik)
+  
+  logfieldpri = log_field_prior(f = f, prec = prec, first_elem_prec = first_elem_prec)
+  result$logfieldpri = logfieldpri
+  
+  logpri = logfieldpri
+  
+  if (!noprec)
+  {
+    logprecpri = log_kappa_prior(kappa = prec, alpha = alpha, beta = beta)
+    result$logprecpri = logprecpri
+    
+    logpri = logpri + logprecpri
+  }
+  
+  if (samp_alg == "MH")
+  {
+    logbetapri = log_betas_prior2(betas = c(betas, covar_betas, pow_covar_betas),
+                                  betas_prec = betas_prec)
+    result$logbetapri = logbetapri
+    
+    logpri = logpri + logbetapri
+  }
+  
+  result$logpri = logpri
+  
+  logpos = logpri + loglik
+  result$logpos = logpos
+  
+  return(result)
 }
 
 # Intrinsic precision matrix
@@ -535,7 +660,8 @@ calculate_estimates = function(logfmat, params, grid)
 #MH_betas = function(curr_betas, lik_init, f, curr_pos_summ, proposal_sds = c(0.1, 0.1))
 MH_betas = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
                     invC, alpha, beta, betas_prec = diag(1/100, 1/100),
-                    covar_vals = covar_vals, proposal_sds = c(0.1, 0.1))
+                    covar_vals = covar_vals, proposal_sds = c(0.1, 0.1),
+                    noprec = FALSE)
 {
   # Metropolis step for betas
   new_betas = stats::rnorm(n = length(curr_betas), mean = curr_betas, sd = proposal_sds)
@@ -543,7 +669,8 @@ MH_betas = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
   new_pos_summ = compute_pos_summ(samp_alg = "MH", loglikf = loglikf, f = f,
                                   kappa = kappa, invC = invC, lik_init = lik_init,
                                   alpha = alpha, beta = beta, betas = new_betas,
-                                  betas_prec = betas_prec, covar_vals = covar_vals)
+                                  betas_prec = betas_prec, covar_vals = covar_vals,
+                                  noprec = noprec)
   #new_ll = coal_samp_loglik(init = lik_init, f = f, beta0 = new_beta0, beta1 = new_beta1)
   
   if (new_pos_summ$logpos > curr_pos_summ$logpos ||
@@ -561,7 +688,7 @@ MH_betas = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
 MH_betas_rscan = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa,
                           invC, alpha, beta, betas_prec = diag(1/100, 1/100),
                           covar_vals = covar_vals, proposal_sds = rep(0.1, length(curr_betas)),
-                          niter = length(curr_betas))
+                          niter = length(curr_betas), noprec = FALSE)
 {
   n = length(curr_betas)
   rscan = sample(x = 1:n, size = niter, replace = TRUE)
@@ -575,7 +702,49 @@ MH_betas_rscan = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, kappa
     new_pos_summ = compute_pos_summ(samp_alg = "MH", loglikf = loglikf, f = f,
                                     kappa = kappa, invC = invC, lik_init = lik_init,
                                     alpha = alpha, beta = beta, betas = new_betas,
-                                    betas_prec = betas_prec, covar_vals = covar_vals)
+                                    betas_prec = betas_prec, covar_vals = covar_vals,
+                                    noprec = noprec)
+    
+    if (new_pos_summ$logpos > curr_pos_summ$logpos ||
+        log(stats::runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
+    {
+      curr_betas = new_betas
+      curr_pos_summ = new_pos_summ
+      inds[[idx]] = c(inds[[idx]], 1)
+    }
+    else
+    {
+      new_betas = curr_betas
+      inds[[idx]] = c(inds[[idx]], 0)
+    }
+  }
+  
+  result = list(betas = curr_betas, pos_summ = curr_pos_summ, inds = inds)
+  
+  return(result)
+}
+
+MH_betas_rscan2 = function(curr_betas, curr_pos_summ, loglikf, lik_init, f, prec,
+                           first_elem_prec, alpha, beta, betas_prec = diag(1/100, 1/100),
+                           covar_vals = NULL, covar_betas = NULL,
+                           pow_covar_vals = NULL, pow_covar_betas = NULL,
+                           proposal_sds = rep(0.1, length(curr_betas)),
+                           niter = length(curr_betas), noprec = FALSE)
+{
+  n = length(curr_betas)
+  rscan = sample(x = 1:n, size = niter, replace = TRUE)
+  inds = vector(mode="list", length=n)
+  
+  new_betas = curr_betas
+  for (idx in rscan)
+  {
+    new_betas[idx] = stats::rnorm(n = 1, mean = curr_betas[idx], sd = proposal_sds[idx])
+    
+    new_pos_summ = compute_pos_summ2(samp_alg = "MH", loglikf = loglikf, f = f,
+                                    prec = prec, first_elem_prec = first_elem_prec,
+                                    lik_init = lik_init, alpha = alpha, beta = beta,
+                                    betas = new_betas, betas_prec = betas_prec,
+                                    covar_vals = covar_vals, noprec = noprec)
     
     if (new_pos_summ$logpos > curr_pos_summ$logpos ||
         log(stats::runif(n = 1)) < new_pos_summ$logpos - curr_pos_summ$logpos)
@@ -789,6 +958,16 @@ ESS_betas_ll = function(f, lik_init, betas, covar_vals = NULL)
            samp_loglik(init = lik_init, fs = fs, betas = betas))
 }
 
+ESS_betas_ll2 = function(f, lik_init, betas, covar_vals = NULL, covar_betas = NULL,
+                         pow_covar_vals = NULL, pow_covar_betas = NULL) 
+{
+  return(coal_loglik(init = lik_init, f = f) +
+           samp_loglik_pow(init = lik_init, logpop = f, betas = betas,
+                           covar_vals = covar_vals, covar_betas = covar_betas,
+                           pow_covar_vals = pow_covar_vals,
+                           pow_covar_betas = pow_covar_betas))
+}
+
 ESS_ext_ll = function(f, lik_init, Ngrid, covar_vals = NULL) 
 {
   nbetas = length(f) - Ngrid + 1
@@ -836,6 +1015,7 @@ sampling_ESS = function(data, para, setting, init,
   logpri = rep(NA, length(recorded_iters))
   loglik = rep(NA, length(recorded_iters))
   logpos = rep(NA, length(recorded_iters))
+  pos_summ_out = data.frame()
   
   if (samp_alg == "none")
   {
@@ -862,15 +1042,22 @@ sampling_ESS = function(data, para, setting, init,
     betas_out = matrix(NA, nrow = length(recorded_iters), ncol = length(betas))
   }
   
-  pos_summ = compute_pos_summ(samp_alg = samp_alg, loglikf = ll, f = f,
-                              kappa = kappa, invC = invC, lik_init = lik_init,
-                              alpha = alpha, beta = beta, betas = betas,
-                              betas_prec = diag(1/beta_vars), covar_vals = covar_vals)
-  
   if (kappa_alg == "whiten")
   {
     invtcholC = solve(t(cholC))
   }
+  
+  noprec = FALSE
+  if (kappa_alg == "none")
+  {
+    noprec = TRUE
+  }
+  
+  pos_summ = compute_pos_summ(samp_alg = samp_alg, loglikf = ll, f = f,
+                              kappa = kappa, invC = invC, lik_init = lik_init,
+                              alpha = alpha, beta = beta, betas = betas,
+                              betas_prec = diag(1/beta_vars),
+                              covar_vals = covar_vals, noprec = noprec)
   
   # start MCMC run
   start_time = Sys.time()
@@ -937,13 +1124,16 @@ sampling_ESS = function(data, para, setting, init,
       kappa <- kappa_res$kappa
       f <- kappa_res$f
     }
-    else
+    else if (kappa_alg != "none")
+    {
       stop("Kappa operator not recognized.")
+    }
     
     pos_summ = compute_pos_summ(samp_alg = samp_alg, loglikf = ll, f = f,
                                 lik_init = lik_init, kappa = kappa, invC = invC,
                                 alpha = alpha, beta = beta, betas = betas,
-                                betas_prec = diag(1/beta_vars), covar_vals = covar_vals)
+                                betas_prec = diag(1/beta_vars),
+                                covar_vals = covar_vals, noprec = noprec)
     #u <- pos_summ$loglik
     
     # save posterior samples after burnin
@@ -962,6 +1152,7 @@ sampling_ESS = function(data, para, setting, init,
       logpri[output_index] <- pos_summ$logpri
       loglik[output_index] <- pos_summ$loglik
       logpos[output_index] <- pos_summ$logpos
+      pos_summ_out = rbind(pos_summ_out, pos_summ)
     }
     
     if (verbose && iter %% printevery == 0)
@@ -981,18 +1172,211 @@ sampling_ESS = function(data, para, setting, init,
   
   if (samp_alg %in% c("MH", "ESS"))
   {
-    samp = cbind(fmat, kappas, betas_out)
+    samp = data.frame(fmat, kappas, betas_out)
     colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa", paste("beta", 0:(length(betas)-1)))
   }
   else
   {
-    samp = cbind(fmat, kappas)
+    samp = data.frame(fmat, kappas)
     colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "kappa")
   }
   
-  return(list(samp=samp, alg="ESS", time=time, pos_summ = pos_summ,
+  return(list(samp=samp, alg="ESS", time=time, pos_summ = pos_summ, pos_summ_out = pos_summ_out,
               samp_alg = samp_alg, kappa_alg = kappa_alg))
 }
+
+sampling_ESS2 = function(data, para, setting, init,
+                        samp_alg = "none", kappa_alg = "gibbs",
+                        verbose=TRUE, printevery=100)
+{
+  # pass the data and parameters
+  lik_init = data$lik_init
+  covar_vals = data$covar_vals
+  pow_covar_vals = data$pow_covar_vals
+  Ngrid = lik_init$ng+1
+  
+  alpha = para$alpha
+  beta = para$beta
+  # invC = para$invC
+  # cholC = para$cholC
+  first_elem_prec = para$first_elem_prec # TODO: make mcmc_sampling do this
+  beta_vars = para$beta_vars
+  
+  proposal_sds = setting$proposal_sds
+  
+  # storage of posterior samples
+  NSAMP = setting$NSAMP
+  NBURNIN = setting$NBURNIN
+  NSUBSAMP = setting$NSUBSAMP
+  recorded_iters = seq.int(from = NBURNIN+1, to = NSAMP, by = NSUBSAMP)
+  
+  # initialization
+  f = init$theta[1:(Ngrid-1)]
+  prec = init$theta[Ngrid]
+  #u = init$u
+  
+  #acpi = 0
+  acpt = rep(1, length(recorded_iters))
+  
+  fmat = matrix(NA, nrow = length(recorded_iters), ncol = length(f))
+  kappas = rep(NA, length(recorded_iters))
+  
+  # storage of log prior, log likelihood, and log posterior
+  logpri = rep(NA, length(recorded_iters))
+  loglik = rep(NA, length(recorded_iters))
+  logpos = rep(NA, length(recorded_iters))
+  pos_summ_out = data.frame()
+  
+  if (samp_alg == "none")
+  {
+    ll = ESS_none_ll
+  }
+  else if (samp_alg == "fixed")
+  {
+    betas = para$betas
+    ll = ESS_betas_ll2
+  }
+  else if (samp_alg == "MH")
+  {
+    betas = init$betas
+    ll = ESS_betas_ll2
+  }
+  
+  if (samp_alg == "MH")
+  {
+    betas_out = matrix(NA, nrow = length(recorded_iters), ncol = length(betas))
+  }
+  
+  noprec = FALSE
+  if (kappa_alg == "none")
+  {
+    noprec = TRUE
+  }
+  
+  pos_summ = compute_pos_summ2(samp_alg = samp_alg, loglikf = ll, f = f, 
+                               prec = prec, first_elem_prec = first_elem_prec,
+                               lik_init = lik_init, alpha = alpha, beta = beta,
+                               betas = betas, covar_vals = covar_vals,
+                               covar_betas = covar_betas,
+                               pow_covar_vals = pow_covar_vals,
+                               pow_covar_betas = pow_covar_betas,
+                               betas_prec = 1/beta_vars, noprec = noprec)
+  init_pos = list(f = f, prec = prec, first_elem_prec = first_elem_prec, pos_summ = pos_summ)
+  
+  # start MCMC run
+  start_time = Sys.time()
+  cat('Running ESS', samp_alg ,' sampling...\n')
+  for(iter in 1:NSAMP)
+  {
+    if (samp_alg == "none")
+    {
+      res = ESS2(q_cur = f, l_cur = pos_summ$loglik, loglik = ll, prec = prec,
+                 first_elem_prec = first_elem_prec, lik_init = lik_init)
+      f = res$q
+    }
+    else if (samp_alg == "fixed")
+    {
+      res = ESS2(q_cur = f, l_cur = pos_summ$loglik, loglik = ll, prec = prec,
+                 first_elem_prec = first_elem_prec, lik_init = lik_init,
+                 betas = betas, covar_vals = covar_vals,
+                 covar_betas = covar_betas,
+                 pow_covar_vals = pow_covar_vals,
+                 pow_covar_betas = pow_covar_betas)
+      f = res$q
+    }
+    else if (samp_alg == "MH")
+    {
+      MH_res = MH_betas_rscan2(curr_betas = betas, curr_pos_summ = pos_summ,
+                              loglikf = ll, lik_init = lik_init, f = f, prec = prec,
+                              first_elem_prec = first_elem_prec, alpha = alpha, beta = beta,
+                              betas_prec = 1/beta_vars, covar_vals = covar_vals,
+                              covar_betas = covar_betas,
+                              pow_covar_vals = pow_covar_vals,
+                              pow_covar_betas = pow_covar_betas,
+                              proposal_sds = proposal_sds)
+      betas = MH_res$betas
+      pos_summ = MH_res$pos_summ
+      
+      res = ESS2(q_cur = f, l_cur = pos_summ$loglik, loglik = ll, prec = prec,
+                 first_elem_prec = first_elem_prec, lik_init = lik_init,
+                 betas = betas, covar_vals = covar_vals)
+      f = res$q
+    }
+    else
+    {
+      stop('The ESS subalgorithm is not in the list!')
+    }
+    
+    #acpi <- acpi+res$Ind
+    
+    if (kappa_alg == "gibbs")
+    {
+      prec <- stats::rgamma(1, alpha + (Ngrid-1)/2, beta + sum(diff(f)^2)/2)
+    }
+    else if (kappa_alg != "none")
+    {
+      stop("Kappa operator not recognized.")
+    }
+    
+    pos_summ = compute_pos_summ2(samp_alg = samp_alg, loglikf = ll, f = f, 
+                                 prec = prec, first_elem_prec = first_elem_prec,
+                                 lik_init = lik_init, alpha = alpha, beta = beta,
+                                 betas = betas, covar_vals = covar_vals,
+                                 covar_betas = covar_betas,
+                                 pow_covar_vals = pow_covar_vals,
+                                 pow_covar_betas = pow_covar_betas,
+                                 betas_prec = 1/beta_vars, noprec = noprec)
+    #u <- pos_summ$loglik
+    
+    # save posterior samples after burnin
+    output_index = match(x = iter, table = recorded_iters)
+    if (!is.na(output_index))
+    {
+      fmat[output_index, ] <- f
+      kappas[output_index] <- prec
+      
+      if (samp_alg == "MH")
+      {
+        betas_out[output_index, ] <- betas
+      }
+      #acpt[output_index] <- res$Ind
+      
+      # logpri[output_index] <- pos_summ$logpri
+      # loglik[output_index] <- pos_summ$loglik
+      # logpos[output_index] <- pos_summ$logpos
+      pos_summ_out = rbind(pos_summ_out, pos_summ)
+    }
+    
+    if (verbose && iter %% printevery == 0)
+    {
+      cat(iter, ' iterations have been finished!\n' )
+      cat('Online acceptance rate is ', 1,'\n')
+      #acpi=0
+    }
+  }
+  stop_time <- Sys.time()
+  time <- stop_time-start_time
+  cat('\nTime consumed : ', time, units(time))
+  #acpt <- acpt/(NSAMP-NBURNIN)
+  cat('\nFinal Acceptance Rate: ', sum(acpt) / length(recorded_iters),'\n')
+  
+  # pos_summ = data.frame(acpt=acpt, logpri = logpri, loglik = loglik, logpos = logpos)
+  
+  if (samp_alg == "MH")
+  {
+    samp = data.frame(fmat, kappas, betas_out)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "prec", paste("beta", 0:(length(betas)-1)))
+  }
+  else
+  {
+    samp = data.frame(fmat, kappas)
+    colnames(samp) = c(paste("f", 1:(Ngrid-1), sep = ""), "prec")
+  }
+  
+  return(list(samp=samp, alg="ESS2", time=time, pos_summ = pos_summ_out,
+              samp_alg = samp_alg, kappa_alg = kappa_alg, init_pos = init_pos))
+}
+
 
 #' MCMC Sampling
 #' 
@@ -1034,9 +1418,11 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
                          nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,
                          TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL,
                          f_init = rep(1, ngrid-1), kappa = 1,
-                         covariates=NULL, betas=rep(0, 2+length(covariates)),
+                         covariates=NULL, power_covariates=NULL,
+                         betas=rep(0, 2+length(covariates)+length(power_covariates)),
                          samp_alg = "none", kappa_alg = "gibbs",
-                         beta_vars = rep(100, length(betas)), printevery=100)
+                         beta_vars = rep(100, length(betas)), printevery=100,
+                         first_elem_prec = 0.01)
 {
   if (class(dataset) == "phylo")
   {
@@ -1073,11 +1459,19 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   midpts = grid[-1]-intl/2
   
   covar_vals = NULL
+  pow_covar_vals = NULL
   if (!is.null(covariates))
   {
     for (fcn in covariates)
     {
       covar_vals = cbind(covar_vals, log(fcn(midpts)), deparse.level = 0)
+    }
+  }
+  if (!is.null(power_covariates))
+  {
+    for (fcn in power_covariates)
+    {
+      pow_covar_vals = cbind(pow_covar_vals, log(fcn(midpts)), deparse.level = 0)
     }
   }
   
@@ -1129,7 +1523,7 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
     u  = U_kappa(theta,lik_init,invC,prec_alpha,prec_beta)$logpos
     du = NULL
   }
-  else if (alg == "ESS")
+  else if (alg == "ESS" || alg == "ESS2")
   {
     u = NULL
     #u  = coal_loglik(init = lik_init, f = theta[-Ngrid])
@@ -1141,9 +1535,10 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   }
   
   # MCMC sampling preparation
-  dataset = list(lik_init = lik_init, covar_vals = covar_vals)
+  dataset = list(lik_init = lik_init, covar_vals = covar_vals, pow_covar_vals = pow_covar_vals)
   para = list(alpha = prec_alpha, beta = prec_beta, invC = invC, rtEV = rtEV,
-              EVC = EVC, cholC = cholC, betas = betas, beta_vars = beta_vars)
+              EVC = EVC, cholC = cholC, betas = betas, beta_vars = beta_vars,
+              first_elem_prec = first_elem_prec)
   setting = list(stepsz = stepsz, Nleap = Nleap,
                  NSAMP = nsamp, NBURNIN = nburnin, NSUBSAMP = nsubsamp,
                  szkappa = szkappa, rand_leap=rand_leap,
@@ -1156,6 +1551,12 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
     res_MCMC = sampling_ESS(data = dataset, para = para, setting = setting,
                             init = init, samp_alg = samp_alg, kappa_alg = kappa_alg,
                             printevery = printevery)
+  }
+  else if (alg == "ESS2")
+  {
+    res_MCMC = sampling_ESS2(data = dataset, para = para, setting = setting,
+                             init = init, samp_alg = samp_alg, kappa_alg = kappa_alg,
+                             printevery = printevery)
   }
   else
   {
@@ -1171,7 +1572,7 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   #cleaned_res = burnin_subsample(res = res_MCMC, burnin = 0)
   
   logfmat = res_MCMC$samp[,1:(ngrid-1)]
-  if (alg == "ESS" && samp_alg %in% c("MH", "ESS"))
+  if (alg %in% c("ESS", "ESS2") && samp_alg %in% c("MH", "ESS"))
   {
     params = res_MCMC$samp[,ngrid:(ngrid+2)]
   }

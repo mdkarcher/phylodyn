@@ -18,6 +18,36 @@ summarize_phylo <- function(phy)
               coal_times = hgpstat$coal_times))
 }
 
+summarize_phylo2 <- function(phy, backwards = TRUE)
+{
+  if (class(phy) != "phylo")
+    stop("object \"phy\" is not of class \"phylo\"")
+  
+  n_nodes = phy$Nnode
+  n_tips = length(phy$tip.label)
+  
+  root_node <- phy$edge[1,1]
+  raw_times <- dist.nodes(phy)[root_node, ]
+  raw_samp_times <- head(raw_times, n_tips)
+  raw_coal_times <- tail(raw_times, n_nodes)
+  
+  if (backwards)
+  {
+    raw_coal_times <- max(raw_samp_times) - raw_coal_times
+    raw_samp_times <- max(raw_samp_times) - raw_samp_times
+  }
+  
+  samp_tab <- table(raw_samp_times)
+  samp_times <- as.numeric(names(samp_tab))
+  n_sampled <- as.numeric(samp_tab)
+  
+  coal_times <- sort(as.numeric(raw_coal_times))
+  
+  return(list(samp_times = samp_times,
+              n_sampled  = n_sampled,
+              coal_times = coal_times))
+}
+
 branching_sampling_times <- function(phy)
 {
   phy = ape::new2old.phylo(phy)

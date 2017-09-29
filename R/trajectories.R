@@ -206,12 +206,13 @@ mesa_traj_inv = function(t, a=2, b=3)
 #'
 #' @examples
 #' unif_traj(0:12)
-logistic_traj = function(t, offset=0, a=2)
+logistic_traj = function(t, offset=0, a=2, period=12, min = 10, max = 100)
 {
   t = t + offset
+  t = t * 12 / period
   result = rep(0, length(t))
-  result[(t %% 12) <= 6] = 10 + 90/(1+exp((3-(t[(t %% 12) <= 6] %% 12)) * a))
-  result[(t %% 12) >  6] = 10 + 90/(1+exp(((t[(t %% 12) >  6] %% 12) - 12 + 3) * a))
+  result[(t %% 12) <= 6] = min + (max-min)/(1+exp((3-(t[(t %% 12) <= 6] %% 12)) * a))
+  result[(t %% 12) >  6] = min + (max-min)/(1+exp(((t[(t %% 12) >  6] %% 12) - 12 + 3) * a))
   return(result)
 }
 

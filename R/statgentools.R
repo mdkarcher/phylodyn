@@ -36,3 +36,26 @@ pref_sample = function(f, lim=c(0,1), c=1, beta=1, upper=NULL, grid.len = 1000)
   
   return(pthin)
 }
+
+pref_sample_betafun = function(f, lim=c(0,1), c=1, beta=function(t) {return(1)}, upper=NULL, grid.len = 1000)
+{
+  if (is.null(upper))
+  {
+    grid = seq(lim[1], lim[2], length.out=grid.len)
+    eval = f(grid)^beta(grid)
+    upper = max(eval)
+  }
+  
+  nfull = stats::rpois(1, c * upper * diff(lim))
+  pfull = sort(stats::runif(nfull, lim[1], lim[2]))
+  
+  pthin = NULL
+  for (p in pfull)
+  {
+    if (stats::runif(1) < f(p)^beta(p) / upper)
+      pthin = c(pthin, p)
+  }
+  #nthin = length(pthin)
+  
+  return(pthin)
+}
