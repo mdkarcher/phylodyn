@@ -37,6 +37,7 @@ shade_band = function(x, ylo, yhi, xlim=NULL, col="gray")
 #' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
 #' @param heatmap_labels boolean whether to display labels on heatmaps.
 #' @param heatmap_labels_side string which side of plot to display heatmaps.
+#' @param heatmap_labels_cex numeric scaling factor for heatmap labels.
 #' @param heatmap_width numeric how wide heatmaps should be.
 #' @param yscale numeric scaling applied to all effective population
 #'   calculations.
@@ -50,8 +51,8 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
                      traj_lty=2, traj_lwd=2, traj_col=col,
                      newplot=TRUE, credible_region=TRUE,
                      heatmaps=TRUE, heatmap_labels=TRUE,
-                     heatmap_labels_side="right", heatmap_width=7,
-                     yscale = 1, ...)
+                     heatmap_labels_side="right", heatmap_labels_cex = 0.7,
+                     heatmap_width=7, yscale = 1, ...)
 {
   grid = BNPR_out$grid
   if (is.null(xlim))
@@ -157,9 +158,9 @@ plot_BNPR = function(BNPR_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
         }
         
         graphics::text(x = lab_x, y = ymin/(yextra^0.20), labels = "Sampling events",
-             adj = c(lab_adj, 0), cex = 0.7)
+             adj = c(lab_adj, 0), cex = heatmap_labels_cex)
         graphics::text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
-             adj = c(lab_adj, 1), cex = 0.7)
+             adj = c(lab_adj, 1), cex = heatmap_labels_cex)
       }
     }
   }

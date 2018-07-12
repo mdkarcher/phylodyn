@@ -9,8 +9,8 @@ plot_BNPR(BNPR_out, traj = NULL, xlim = NULL, ylim = NULL, nbreaks = 40,
   ylab = "Effective Population Size", xlab = "Time", xmarline = 3,
   axlabs = NULL, traj_lty = 2, traj_lwd = 2, traj_col = col,
   newplot = TRUE, credible_region = TRUE, heatmaps = TRUE,
-  heatmap_labels = TRUE, heatmap_labels_side = "right", heatmap_width = 7,
-  yscale = 1, ...)
+  heatmap_labels = TRUE, heatmap_labels_side = "right",
+  heatmap_labels_cex = 0.7, heatmap_width = 7, yscale = 1, ...)
 }
 \arguments{
 \item{BNPR_out}{output of BNPR or BNPR_PS.}
@@ -56,6 +56,8 @@ previously open plot.}
 \item{heatmap_labels}{boolean whether to display labels on heatmaps.}
 
 \item{heatmap_labels_side}{string which side of plot to display heatmaps.}
+
+\item{heatmap_labels_cex}{numeric scaling factor for heatmap labels.}
 
 \item{heatmap_width}{numeric how wide heatmaps should be.}
 

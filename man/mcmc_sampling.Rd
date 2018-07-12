@@ -7,10 +7,10 @@
 mcmc_sampling(dataset, alg, nsamp, nburnin = 0, nsubsamp = 1, ngrid = 100,
   nugget = "1,1", prec_alpha = 0.01, prec_beta = 0.01, TrjL = NULL,
   Nleap = NULL, szkappa = NULL, rand_leap = NULL, f_init = rep(1, ngrid
-  - 1), kappa = 1, covariates = NULL, betas = rep(0, 2 +
-  length(covariates)), samp_alg = "none", kappa_alg = "gibbs",
-  beta_vars = rep(100, length(betas)), printevery = 100,
-  first_elem_prec = 0.01)
+  - 1), kappa = 1, covariates = NULL, power_covariates = NULL,
+  betas = rep(0, 2 + length(covariates) + length(power_covariates)),
+  samp_alg = "none", kappa_alg = "gibbs", beta_vars = rep(100,
+  length(betas)), printevery = 100, first_elem_prec = 0.01)
 }
 \arguments{
 \item{dataset}{\code{phylo} object or list containing vectors of coalescent 

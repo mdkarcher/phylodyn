@@ -16,24 +16,24 @@ samp_loglik3 = function(init, logpop, betas_list, covars_list = NULL)
   beta0 = betas[1]
   beta1 = betas[2]
   
-  if (!is.null(covars_list) && !is.null(covars_list$covars))
+  if (!is.null(covars_list) && !is.null(covars_list$covar_vals))
   {
-    covars = as.matrix(covars_list$covars)
-    covars = as.matrix(covars[rep(1:init$ng, init$gridrep),])
+    covar_vals = as.matrix(covars_list$covar_vals)
+    covar_vals = as.matrix(covar_vals[rep(1:init$ng, init$gridrep),])
     covar_betas = betas_list$covar_betas
-    covars_bs = covars %*% covar_betas
+    covars_bs = covar_vals %*% covar_betas
   }
   else
   {
     covars_bs = 0
   }
   
-  if (!is.null(covars_list) && !is.null(covars_list$pow_covars))
+  if (!is.null(covars_list) && !is.null(covars_list$pow_covar_vals))
   {
-    pow_covars = as.matrix(covars_list$pow_covars)
-    pow_covars = as.matrix(pow_covars[rep(1:init$ng, init$gridrep),])
+    pow_covar_vals = as.matrix(covars_list$pow_covar_vals)
+    pow_covar_vals = as.matrix(pow_covar_vals[rep(1:init$ng, init$gridrep),])
     pow_covar_betas = betas_list$pow_covar_betas
-    pcovars_bs = (beta1 + pow_covars %*% pow_covar_betas) * logpop
+    pcovars_bs = (beta1 + pow_covar_vals %*% pow_covar_betas) * logpop
   }
   else
   {
