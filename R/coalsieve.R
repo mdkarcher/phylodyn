@@ -188,3 +188,71 @@ coalsim_thin <- function(samp_times, n_sampled, traj, lower_bound, ...)
          intercoal_times = c(coal_times[1], diff(coal_times)),
          samp_times = samp_times, n_sampled = n_sampled))
 }
+
+#' Sample a phylo tree
+#'
+#' @param gene a list containing 
+#'
+#' @return a phylo tree consisent with `gene`.
+#' @export
+#'
+#' @examples
+#' gene = coalsim(samp_times = c(0,1,2), n_sampled = c(2,1,1), traj = unif_traj)
+#' tree = sample_tree(gene)
+#' plot(tree)
+sample_tree <- function(gene) 
+{
+  n <- sum(gene$n_sampled)
+  labels <- paste0(rep("t",n), seq(1,n,1))
+  Nnode <- n - 1
+  
+  tb <- gene$n_sampled[1] #Total branches (initial)
+  s <- 0 #time for branch lengths
+  temp_labels <- labels[1:tb]
+  temp_times <- rep(gene$samp_times[1], gene$n_sampled[1])
+  initial.row <- 2
+  args2 <- gen_INLA_args(gene$samp_times, gene$n_sampled, gene$coal_times)
+  
+  for (j in 2:length(args2$event)) 
+  {
+    if (args2$event[j] == 1) 
+    {
+      s <- args2$s[j]; 
+      ra <- sort(sample.int(tb, 2))
+      new_label <- paste0("(",temp_labels[ra[1]],":",s-temp_times[ra[1]],",",
+                          temp_labels[ra[2]],":",s-temp_times[ra[2]],")")
+      temp_labels[ra[1]] <- new_label
+      temp_labels <- temp_labels[-ra[2]]
+      temp_times[ra[1]] <- s
+      temp_times <- temp_times[-ra[2]]
+      tb <- tb - 1
+    } 
+    else 
+    { #I will be adding samples at 
+      s <- args2$s[j]; 
+      if (gene$n_sample[initial.row] == 1) 
+      {
+        temp_labels <- c(temp_labels, labels[cumsum(gene$n_sampled)[initial.row]])
+        initial.row <- initial.row + 1
+        tb <- tb + 1
+        temp_times <- c(temp_times, s)        
+      } 
+      else 
+      {
+        end <- cumsum(gene$n_sampled)[initial.row]
+        ini <- cumsum(gene$n_sampled)[initial.row - 1] + 1
+        for (k in ini:end) 
+        {
+          temp_labels <- c(temp_labels, labels[k])
+          tb <- tb + 1
+          temp_times <- c(temp_times, s)      
+        }
+        initial.row <- initial.row + 1
+      }
+    }
+  }  
+  
+  out.tree <- ape::read.tree(text=paste0(temp_labels, ";"))
+  return(out.tree)
+}
+

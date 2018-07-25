@@ -34,7 +34,7 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #' @param lengthout numeric specifying number of grid points.
 #' @param pref logical. Should the preferential sampling model be used?
 #' @param prec_alpha,prec_beta numerics specifying gamma prior for precision 
-#'   \eqn{\tau}.
+#'   \eqn{\kappa}.
 #' @param beta1_prec numeric specifying precision for normal prior on 
 #'   \eqn{\beta_1}.
 #' @param fns list containing functions of covariates.
@@ -262,29 +262,6 @@ samp_stats <- function(grid, samp_times, n_sampled = NULL, trim_end = FALSE)
     result <- result[stats::complete.cases(result),]
   
   return(result)
-}
-
-infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100,
-                       prec_alpha = 0.01, prec_beta = 0.01)
-{
-  if (!requireNamespace("INLA", quietly = TRUE)) {
-    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
-         call. = FALSE)
-  }
-  
-  grid <- seq(min(samp_times),max(samp_times),length.out=lengthout+1)
-  
-  samp_data <- samp_stats(grid = grid, samp_times = samp_times,
-                          n_sampled = n_sampled)
-  
-  data <- with(samp_data, data.frame(y = count, time = time, E_log = E_log))
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
-  formula_sampling <- y ~ 1 + f(time, model="rw1", hyper = hyper, constr=FALSE)
-  
-  mod <- INLA::inla(formula_sampling, family="poisson", data=data,
-                    offset=data$E_log, control.predictor=list(compute=TRUE))
-  
-  return(list(result = mod, data = data, grid = grid, x = samp_data$time))
 }
 
 joint_stats <- function(coal_data, samp_data)
@@ -532,4 +509,151 @@ infer_coal_samp_exper <- function(samp_times, coal_times, n_sampled=NULL, fns = 
                     control.inla = list(lincomb.derived.only=FALSE))
   
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
+}
+
+infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100, grid = NULL,
+                       prec_alpha = 0.01, prec_beta = 0.01)
+{
+  if (!requireNamespace("INLA", quietly = TRUE)) {
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+         call. = FALSE)
+  }
+  
+  if (is.null(grid)) {
+    grid <- seq(min(samp_times),max(samp_times),length.out=lengthout+1)
+  }
+  
+  samp_data <- samp_stats(grid = grid, samp_times = samp_times,
+                          n_sampled = n_sampled)
+  
+  data <- with(samp_data, data.frame(y = count, time = time, E_log = E_log))
+  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  formula_sampling <- y ~ 1 + f(time, model="rw1", hyper = hyper, constr=FALSE)
+  
+  mod <- INLA::inla(formula_sampling, family="poisson", data=data,
+                    offset=data$E_log, control.predictor=list(compute=TRUE))
+  
+  return(list(result = mod, data = data, grid = grid, x = samp_data$time))
+}
+
+#' Nonparametric estimate of sampling intensity
+#' 
+#' @param data \code{phylo} object or list containing vectors of sampling times
+#'   \code{samp_times} and number sampled per sampling time \code{n_sampled}.
+#' @param lengthout numeric specifying number of grid points.
+#' @param grid numeric vector of endpoints of the latent field.
+#' @param prec_alpha,prec_beta numerics specifying gamma prior for precision 
+#'   \eqn{\kappa}.
+#'   
+#' @return
+#' @export
+#' 
+#' @examples
+BNPR_samp_only <- function(data, lengthout = 100, grid = NULL, tmrca = NULL,
+                           prec_alpha = 0.01, prec_beta = 0.01)
+{
+  if (class(data) == "phylo")
+  {
+    phy <- summarize_phylo(data)
+  }
+  else if (all(c("coal_times", "samp_times", "n_sampled") %in% names(data)))
+  {
+    phy <- with(data, list(samp_times = samp_times, coal_times = coal_times,
+                           n_sampled = n_sampled))
+  }
+  
+  if (is.null(grid)) {
+    if (is.null(tmrca)) {
+      grid <- seq(min(phy$samp_times), max(phy$samp_times), length.out=lengthout+1)
+    } else {
+      grid <- seq(min(phy$samp_times), tmrca, length.out=lengthout+1)
+    }
+  }
+  midpts <- grid[-1] - diff(grid)/2
+  
+  foo <- infer_samp(samp_times = phy$samp_times, n_sampled = phy$n_sampled, 
+                       lengthout = lengthout, grid = grid,
+                       prec_alpha = prec_alpha, prec_beta = prec_beta)
+  
+  quants <- foo$result$summary.random$time
+  beta0 <- foo$result$summary.fixed$`0.5quant`
+  
+  result <- list(q025Samp = exp(quants$`0.025quant` + beta0),
+                medianSamp = exp(quants$`0.5quant` + beta0),
+                q975Samp = exp(quants$`0.975quant` + beta0),
+                beta0 = beta0, grid = grid, midpts = midpts,
+                samp_times = gene$samp_times, n_sampled = gene$n_sampled, internals = foo)
+  
+  return(result)
+}
+
+log_samp_int = function(logpop, betas,
+                        covariates = NULL, cov_betas = NULL,
+                        pow_covariates = NULL, pow_cov_betas = NULL)
+{
+  result = betas[1] + logpop * betas[2]
+  
+  if (!is.null(covariates))
+  {
+    for (i in 1:length(covariates))
+    {
+      result = result + covariates[[i]] * cov_betas[i]
+    }
+  }
+  
+  if (!is.null(pow_covariates))
+  {
+    for (i in 1:length(pow_covariates))
+    {
+      result = result + pow_covariates[[i]] * logpop * pow_cov_betas[i]
+    }
+  }
+  
+  return(result)
+}
+
+#' Calculate posterior sampling intensities
+#' 
+#' @param popTbl table of log-effective population sizes.
+#' @param betaTbl table of log-linear sampling model coefficients.
+#' @param covariates list of covariates
+#' @param powBetaTbl table of log-linear sampling model coefficients for terms 
+#'   crossed with the log-effective population size.
+#' @param pow_covariates list of covariates to be crossed with the log-effective
+#'   population size.
+#'   
+#' @return a matrix of posterior sampling intensities.
+#' @export
+#' 
+#' @examples 2 + 2
+log_samp_mat <- function(popTbl, betaTbl, covariates = NULL, 
+                         powBetaTbl = NULL, pow_covariates = NULL)
+{
+  n <- nrow(popTbl)
+  m <- ncol(popTbl)
+  #m <- length(popTbl[1,])
+  #grid <- epoch_width * 0:m
+  
+  samp_mat<- matrix(0, nrow = n, ncol = m)
+  for (i in 1:n) {
+    logpop <- as.numeric(popTbl[i, ])
+    betas <- as.numeric(betaTbl[i, ])
+    
+    cov_betas <- NULL
+    if (length(betas) > 2) {
+      cov_betas <- tail(betas, -2)
+      betas <- betas[1:2]
+    }
+    
+    pow_cov_betas <- NULL
+    if (ncol(powBetaTbl) > 0) {
+      pow_cov_betas <- as.numeric(powBetaTbl[i, ])
+    }
+    
+    samp_mat[i, ] <- log_samp_int(logpop = logpop, betas = betas,
+                                  covariates = covariates, cov_betas = cov_betas,
+                                  pow_covariates = pow_covariates, pow_cov_betas = pow_cov_betas)
+  }
+  
+  return(samp_mat)
 }

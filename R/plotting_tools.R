@@ -713,3 +713,299 @@ plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)
   if (!is.null(traj))
     graphics::lines(grid, traj(grid))
 }
+
+
+#' Plot trajectory estimate and credible intervals
+#'
+#' @param midpts numeric vector of x-values at which to plot estimate and credible interval bounds.
+#' @param med numeric vector of estimated trajectory values.
+#' @param up numeric vector of trajectory pointwise credible interval upper bounds.
+#' @param low numeric vector of trajectory pointwise credible interval lower bounds.
+#' @param cutoff numeric maximum time (in past) plotted.
+#' @param ylim numeric y-axis interval.
+#' @param xlab character x-axis label.
+#' @param ylab character y-axis label.
+#' @param axlabs character vector x-axis labels.
+#' @param samp_times numeric vector of sampling times.
+#' @param n_sampled integer vector of number of samples taken at each element of samp_times.
+#' @param nbreaks integer number of bins in the sampling time histogram heatmap.
+#' @param med_col color of trajectory estimate line.
+#' @param cred_col color of trajectory pointwise credible interval region.
+#' @param heatmap_width numeric vertical width of sampling time histogram heatmap.
+#' @param ... additional parameters to be passed to plot().
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
+                      xlab = "Time", ylab = "Effective Population Size",axlabs=NULL,
+                      samp_times = NULL, n_sampled = NULL, nbreaks = 40, 
+                      med_col = rgb(0.330, 0.484, 0.828), cred_col = rgb(0.330, 0.484, 0.828, 0.4),
+                      heatmap_width = 7, ...) {
+  #trev_blue = rgb(0.330, 0.484, 0.828)
+  #trev_yell = rgb(0.829, 0.680, 0.306)
+  
+  if (is.null(cutoff)) {
+    cutoff = max(midpts)
+  }
+  
+  mask = midpts <= cutoff
+  
+  if (is.null(ylim)) {
+    ylim = c(min(low[mask]), max(up[mask]))
+  } else {
+    ylim = c(min(ylim), max(ylim))
+  }
+  
+  if (!is.null(samp_times)) {
+    yspan=max(ylim)/min(ylim)
+    yextra=yspan^(0.07)
+    ylim[1] = ylim[1] / yextra
+  }
+  
+  xaxt = "s"
+  if (!is.null(axlabs))
+  {
+    xaxt = "n"
+  }
+  
+  plot(x = midpts[mask], y = med[mask], 
+       xlab = "", ylab = "", xlim = c(cutoff, 0), ylim = ylim, 
+       log = "y", xaxt = xaxt, type = 'n', ...)
+  
+  if (!is.null(axlabs))
+  {
+    graphics::axis(1, at=axlabs$x, labels = axlabs$labs, las=0)
+    #graphics::mtext(text = xlab, side = 1, line = 3)
+  }
+  
+  if (!is.null(samp_times)) {
+    if (is.null(n_sampled)) {
+      n_sampled = rep(1, length(samp_times))
+    }
+    samps = rep(samp_times, n_sampled)
+    samps = samps[samps <= cutoff]
+    
+    breaks = seq(0, cutoff, length.out=nbreaks)
+    h_samp = graphics::hist(samps, breaks=breaks, plot=FALSE)
+    
+    hist2heat(h_samp, y=ylim[1], wd=heatmap_width)
+    
+    lab_x = 0
+    lab_adj = 1
+    
+    graphics::text(x = lab_x, y = ylim[1]*yextra, labels = "Sampling events",
+                   adj = c(1, 1), cex = 0.9)
+  }
+  
+  phylodyn:::shade_band(x = midpts[mask], ylo = low[mask], yhi = up[mask],
+                        col = cred_col)
+  
+  lines(x = midpts[mask], y = med[mask], lwd = 2, col = med_col)
+  
+  title(ylab = ylab, line = 2.5)
+  title(xlab = xlab, line = 2.5)
+}
+
+#' Plot seasonal overlays
+#'
+#' @param BEAST_out list containing `midpts`, `medianEffPop`, `q975EffPop`, and `q025EffPop`.
+#' @param zero_date numeric date (in decimal years) representing `t=0` in `BEAST_out`
+#' @param start numeric value between 0 and `period` controlling the right side of the plot.
+#' @param years numeric how many years or periods to overlay.
+#' @param period numeric representing how long one year or other seasonal period is in the units of `BEAST_out`.
+#' @param ylim numeric y-axis interval.
+#' @param nbreaks integer number of bins in the sampling time histogram heatmap.
+#' @param lty numeric line type.
+#' @param lwd numeric line width.
+#' @param col_years color of individual trajectory
+#' @param col_median color of the median estimate.
+#' @param main character main figure title.
+#' @param axlabs 
+#' @param xlab 
+#' @param xmarline 
+#' @param ylab 
+#' @param log_y 
+#' @param samp_times 
+#' @param n_sampled 
+#' @param heatmaps 
+#' @param heatmap_labels 
+#' @param heatmap_labels_side 
+#' @param heatmap_width numeric vertical width of sampling time histogram heatmap.
+#' @param legend 
+#' @param yscale 
+#' @param ... 
+#'
+#' @return
+#' @export
+#'
+#' @examples
+plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL, 
+                            period = 1.0, ylim = NULL, nbreaks = 40,
+                            lty=1, lwd=2, col_years="gray", col_median="black",
+                            main="", axlabs = NULL, xlab = "Time", xmarline = 1,
+                            ylab="Effective Population Size", log_y=TRUE,
+                            samp_times = NULL, n_sampled = NULL,
+                            heatmaps=TRUE, heatmap_labels=TRUE,
+                            heatmap_labels_side="right", heatmap_width = 7,
+                            legend = NULL, yscale = 1.0, ...)
+{
+  offset <- zero_date %% period - start
+  if (log_y)
+    log = "y"
+  else
+    log = ""
+  
+  if (is.null(samp_times))
+    heatmaps = FALSE
+  
+  t <- BEAST_out$midpts - offset
+  y <- BEAST_out$medianEffPop * yscale
+  
+  fun = approxfun(x = t, y = y, method = "linear")
+  #yhi <- BNPR_out$effpop975[mask] * yscale
+  #ylo <- BNPR_out$effpop025[mask] * yscale
+  
+  if (is.null(ylim))
+  {
+    ymax <- max(y)
+    ymin <- min(y)
+  }
+  else
+  {
+    ymin <- min(ylim)
+    ymax <- max(ylim)
+  }
+  
+  if (heatmaps)
+  {
+    if (log_y)
+    {
+      yspan <- ymax/ymin
+      yextra <- yspan^(0.05)
+      ylim <- c(ymin/(yextra^1), ymax)
+    }
+    else
+    {
+      yspan <- ymax - ymin
+      yextra <- yspan*0.05
+      ylim <- c(ymin - yextra * 1, ymax)
+    }
+  }
+  else
+  {
+    ylim=c(ymin, ymax)
+  }
+  
+  if (is.null(axlabs))
+  {
+    plot(1, 1, type="n", log = log,
+         xlab = xlab, ylab = ylab, main = main,
+         xlim = c(period, 0), ylim = ylim, ...)
+  }
+  else
+  {
+    plot(1, 1, type="n", xaxt = "n", log = log,
+         xlab = "", ylab = ylab, main = main,
+         xlim = c(period, 0), ylim = ylim, ...)
+    axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
+    mtext(text = xlab, side = 1, line = xmarline, cex = 1.3)
+  }
+  
+  if (is.null(years))
+  {
+    years <- max(t)
+  }
+  
+  current_t <- 0
+  fun_mat <- matrix(0, nrow = 101, ncol = 0)
+  fun_col <- 0
+  while (current_t < years)
+  {
+    #period_mask <- (t >= current_t) & (t <= current_t + period)
+    ts = seq(from = current_t, to = current_t + period, length.out = 101)
+    
+    lines(x = ts - current_t, y = fun(ts),
+          lty = lty, lwd = lwd, col = col_years)
+    
+    if (fun_col > 0)
+      fun_mat <- cbind(fun_mat, fun(ts))
+    
+    fun_col <- fun_col + 1
+    
+    current_t <- current_t + period
+  }
+  fun_median <- apply(X = fun_mat, MARGIN = 1, FUN = median)
+  lines(x = seq(0, 1, length.out = 101), y = fun_median,
+        lty = lty, lwd = lwd, col = col_median)
+  
+  if (heatmaps)
+  {
+    samps = rep(samp_times, n_sampled) - offset
+    samps = samps[samps <= years & samps >= 0]
+    
+    #coals = BEAST_out$coal_times - offset
+    #coals = coals[coals <= years & coals >= 0]
+    
+    breaks = seq(0, period, length.out=nbreaks)
+    h_samp = hist(samps %% period, breaks=breaks, plot=FALSE)
+    #h_coal = hist(coals %% period, breaks=breaks, plot=FALSE)
+    
+    if (log_y)
+    {
+      hist2heat(h_samp, y=ymin/yextra^1, wd=heatmap_width)
+      #hist2heat(h_coal, y=ymin/yextra, wd=heatmap_width)
+    }
+    else
+    {
+      hist2heat(h_samp, y=ymin - yextra * 1, wd=heatmap_width)
+      #hist2heat(h_coal, y=ymin - yextra, wd=heatmap_width)
+    }
+    
+    #points(samps, rep(ymin/yextra^0.5, length(samps)), pch=3) 
+    #points(coals, rep(ymin/yextra, length(coals)), pch=4)
+    
+    if (heatmap_labels)
+    {
+      if (heatmap_labels_side == "left")
+      {
+        lab_x = period
+        lab_adj = 0
+      }
+      else if (heatmap_labels_side == "right")
+      {
+        lab_x = 0
+        lab_adj = 1
+      }
+      else
+      {
+        warning('heatmap_labels_side not "left" or "right", defaulting to right')
+        lab_x = 0
+        lab_adj = 1
+      }
+      
+      if (log_y)
+      {
+        text(x = lab_x, y = ymin/(yextra^0.0), labels = "Sampling events",
+             adj = c(lab_adj, 0), cex = 1)
+        #text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
+        #     adj = c(lab_adj, 1), cex = 0.7)
+      }
+      else
+      {
+        text(x = lab_x, y = ymin - yextra * 0.0, labels = "Sampling events",
+             adj = c(lab_adj, 0), cex = 1)
+        #text(x = lab_x, y = ymin - yextra * 1.25, labels = "Coalescent events",
+        #     adj = c(lab_adj, 1), cex = 0.7)
+      }
+    }
+  }
+  
+  if (!is.null(legend))
+  {
+    legend("topright", legend = legend, lty=1, lwd = 2, bty = "n", col=col_median)
+    
+    #text(x=max(xlim), y=max(ylim), label=legend1, adj=c(0,1), cex=1.5)
+  }
+}
