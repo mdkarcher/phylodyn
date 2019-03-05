@@ -9,7 +9,7 @@
 inla.models <- function(...)
 {
   if (!requireNamespace("INLA", quietly = TRUE)) {
-    stop('INLA needed for this function to work. Use install.packages("INLA", repos="https://www.math.ntnu.no/inla/R/stable").',
+    stop('INLA needed for this function to work. Use install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE).',
          call. = FALSE)
   }
   
