@@ -732,6 +732,7 @@ plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)
 #' @param med_col color of trajectory estimate line.
 #' @param cred_col color of trajectory pointwise credible interval region.
 #' @param heatmap_width numeric vertical width of sampling time histogram heatmap.
+#' @param heatmap_legend_cex numeric plotting expansion for heatmap legend.
 #' @param ... additional parameters to be passed to plot().
 #'
 #' @return
@@ -742,7 +743,7 @@ plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
                       xlab = "Time", ylab = "Effective Population Size",axlabs=NULL,
                       samp_times = NULL, n_sampled = NULL, nbreaks = 40, 
                       med_col = rgb(0.330, 0.484, 0.828), cred_col = rgb(0.330, 0.484, 0.828, 0.4),
-                      heatmap_width = 7, ...) {
+                      heatmap_width = 7, heatmap_legend_cex = 1.0, ...) {
   #trev_blue = rgb(0.330, 0.484, 0.828)
   #trev_yell = rgb(0.829, 0.680, 0.306)
   
@@ -796,7 +797,7 @@ plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
     lab_adj = 1
     
     graphics::text(x = lab_x, y = ylim[1]*yextra, labels = "Sampling events",
-                   adj = c(1, 1), cex = 0.9)
+                   adj = c(1, 1), cex = heatmap_legend_cex)
   }
   
   phylodyn:::shade_band(x = midpts[mask], ylo = low[mask], yhi = up[mask],

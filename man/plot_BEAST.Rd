@@ -8,7 +8,7 @@ plot_BEAST(midpts, med, up, low, cutoff = NULL, ylim = NULL,
   xlab = "Time", ylab = "Effective Population Size", axlabs = NULL,
   samp_times = NULL, n_sampled = NULL, nbreaks = 40, med_col = rgb(0.33,
   0.484, 0.828), cred_col = rgb(0.33, 0.484, 0.828, 0.4), heatmap_width = 7,
-  ...)
+  heatmap_legend_cex = 1, ...)
 }
 \arguments{
 \item{midpts}{numeric vector of x-values at which to plot estimate and credible interval bounds.}
@@ -40,6 +40,8 @@ plot_BEAST(midpts, med, up, low, cutoff = NULL, ylim = NULL,
 \item{cred_col}{color of trajectory pointwise credible interval region.}
 
 \item{heatmap_width}{numeric vertical width of sampling time histogram heatmap.}
+
+\item{heatmap_legend_cex}{numeric plotting expansion for heatmap legend.}
 
 \item{...}{additional parameters to be passed to plot().}
 }
