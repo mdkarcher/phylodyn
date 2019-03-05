@@ -9,11 +9,11 @@ Imports:
     spam
 Date: 2017-04-24
 Author: Michael Karcher, Julia Palacios, Shiwei Lan, Vladimir Minin
-Maintainer: Michael Karcher <mkarcher@uw.edu>
+Maintainer: Michael Karcher <mkarcher@fredhutch.org>
 Description: Statistical tools for reconstructing population size from genetic
     sequence data.
 License: GPL-3
-Additional_repositories: https://www.math.ntnu.no/inla/R/stable
+Additional_repositories: https://inla.r-inla-download.org/R/stable
 Suggests:
     INLA,
     knitr,
