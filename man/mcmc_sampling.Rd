@@ -4,37 +4,38 @@
 \alias{mcmc_sampling}
 \title{MCMC Sampling}
 \usage{
-mcmc_sampling(dataset, alg, nsamp, nburnin = 0, nsubsamp = 1, ngrid = 100,
-  nugget = "1,1", prec_alpha = 0.01, prec_beta = 0.01, TrjL = NULL,
-  Nleap = NULL, szkappa = NULL, rand_leap = NULL, f_init = rep(1, ngrid
-  - 1), kappa = 1, covariates = NULL, power_covariates = NULL,
-  betas = rep(0, 2 + length(covariates) + length(power_covariates)),
-  samp_alg = "none", kappa_alg = "gibbs", beta_vars = rep(100,
-  length(betas)), printevery = 100, first_elem_prec = 0.01)
+mcmc_sampling(dataset, alg, nsamp, nburnin = 0, nsubsamp = 1,
+  ngrid = 100, nugget = "1,1", prec_alpha = 0.01, prec_beta = 0.01,
+  TrjL = NULL, Nleap = NULL, szkappa = NULL, rand_leap = NULL,
+  f_init = rep(1, ngrid - 1), kappa = 1, covariates = NULL,
+  power_covariates = NULL, betas = rep(0, 2 + length(covariates) +
+  length(power_covariates)), samp_alg = "none", kappa_alg = "gibbs",
+  beta_vars = rep(100, length(betas)), printevery = 100,
+  first_elem_prec = 0.01)
 }
 \arguments{
-\item{dataset}{\code{phylo} object or list containing vectors of coalescent 
-times \code{coal_times}, sampling times \code{samp_times}, and number 
+\item{dataset}{\code{phylo} object or list containing vectors of coalescent
+times \code{coal_times}, sampling times \code{samp_times}, and number
 sampled per sampling time \code{n_sampled}.}
 
-\item{alg}{string selecting which MCMC sampler to use. Options are "HMC", 
+\item{alg}{string selecting which MCMC sampler to use. Options are "HMC",
 "splitHMC", "MALA", "aMALA", and "ESS".}
 
 \item{nsamp}{integer number of MCMC steps to compute.}
 
 \item{nburnin}{integer number of MCMC steps to discard as burn-in.}
 
-\item{nsubsamp}{integer after burn-in, how often to record a step to the 
+\item{nsubsamp}{integer after burn-in, how often to record a step to the
 output.}
 
 \item{ngrid}{integer number of grid point in the latent field.}
 
-\item{nugget}{string selecting which "nugget" adjustment to apply to the 
-precision matrix to make it full-rank. Options are '1,1' for an adjustment 
+\item{nugget}{string selecting which "nugget" adjustment to apply to the
+precision matrix to make it full-rank. Options are '1,1' for an adjustment
 to the first element, 'diag' for an adjustment to the entire main diagonal,
 or 'none' which may result in a non-full-rank precision matrix.}
 
-\item{prec_alpha, prec_beta}{numeric shape and rate parameters for the prior 
+\item{prec_alpha, prec_beta}{numeric shape and rate parameters for the prior
 on precision.}
 
 \item{TrjL}{numeric tuning parameter.}
@@ -49,23 +50,27 @@ on precision.}
 
 \item{kappa}{numeric starting kappa.}
 
-\item{covariates}{list of functions representing covariate trajectories that 
+\item{covariates}{list of functions representing covariate trajectories that
 (may) influence sampling frequency.}
+
+\item{power_covariates}{list of functions representing interaction covariate
+trajectories that (may) influence sampling frequency.}
 
 \item{betas}{numeric vector of starting values for the beta hyperparameters.}
 
-\item{samp_alg}{string selecting sampling algorithm for sampling time 
+\item{samp_alg}{string selecting sampling algorithm for sampling time
 intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".}
 
-\item{kappa_alg}{selects sampling algorithm for kappa. One of "gibbs" 
+\item{kappa_alg}{selects sampling algorithm for kappa. One of "gibbs"
 (default) or "whiten".}
 
 \item{beta_vars}{numeric vector prior variances of the beta hyperparameters.}
 
-\item{printevery}{integer how many MCMC steps between writing output to the 
+\item{printevery}{integer how many MCMC steps between writing output to the
 console.}
+
+\item{first_elem_prec}{numeric the precision of the first element.}
 }
 \description{
 MCMC Sampling
 }
-

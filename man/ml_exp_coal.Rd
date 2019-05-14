@@ -18,4 +18,3 @@ ml_exp_coal(samp_times, n_sampled, coal_times, betas = c(0, 0))
 \description{
 Maximum likelihood exponential model
 }
-

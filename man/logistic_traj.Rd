@@ -4,7 +4,8 @@
 \alias{logistic_traj}
 \title{Seasonal logistic trajectory}
 \usage{
-logistic_traj(t, offset = 0, a = 2, period = 12, min = 10, max = 100)
+logistic_traj(t, offset = 0, a = 2, period = 12, min = 10,
+  max = 100)
 }
 \arguments{
 \item{t}{numeric vector of times at which to evaluate the trajectory 
@@ -15,6 +16,12 @@ added to \code{t} to allow \code{t=0} to represent a different point in the
 cycle.}
 
 \item{a}{numeric slopedness parameter.}
+
+\item{period}{numeric how much time passes before the cycle repeats.}
+
+\item{min}{numeric the smallest value of the cycle.}
+
+\item{max}{numeric the greatest value of the cycle.}
 }
 \value{
 A vector containing a value of \code{level} for every element in
@@ -26,4 +33,3 @@ Seasonal logistic trajectory
 \examples{
 unif_traj(0:12)
 }
-

@@ -537,17 +537,19 @@ infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100, grid = NUL
 }
 
 #' Nonparametric estimate of sampling intensity
-#' 
+#'
 #' @param data \code{phylo} object or list containing vectors of sampling times
 #'   \code{samp_times} and number sampled per sampling time \code{n_sampled}.
 #' @param lengthout numeric specifying number of grid points.
 #' @param grid numeric vector of endpoints of the latent field.
-#' @param prec_alpha,prec_beta numerics specifying gamma prior for precision 
+#' @param tmrca numeric optional value to specify end of grid. Useful for having
+#'   the same grid as a coalescent inference.
+#' @param prec_alpha,prec_beta numerics specifying gamma prior for precision
 #'   \eqn{\kappa}.
-#'   
+#'
 #' @return
 #' @export
-#' 
+#'
 #' @examples
 BNPR_samp_only <- function(data, lengthout = 100, grid = NULL, tmrca = NULL,
                            prec_alpha = 0.01, prec_beta = 0.01)
@@ -582,7 +584,7 @@ BNPR_samp_only <- function(data, lengthout = 100, grid = NULL, tmrca = NULL,
                 medianSamp = exp(quants$`0.5quant` + beta0),
                 q975Samp = exp(quants$`0.975quant` + beta0),
                 beta0 = beta0, grid = grid, midpts = midpts,
-                samp_times = gene$samp_times, n_sampled = gene$n_sampled, internals = foo)
+                samp_times = phy$samp_times, n_sampled = phy$n_sampled, internals = foo)
   
   return(result)
 }
@@ -641,7 +643,7 @@ log_samp_mat <- function(popTbl, betaTbl, covariates = NULL,
     
     cov_betas <- NULL
     if (length(betas) > 2) {
-      cov_betas <- tail(betas, -2)
+      cov_betas <- utils::tail(betas, -2)
       betas <- betas[1:2]
     }
     

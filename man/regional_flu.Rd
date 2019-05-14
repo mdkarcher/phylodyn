@@ -18,4 +18,3 @@ Seasonality in the migration and establishment of H3N2 Influenza lineages
 with epidemic growth and decline. BMC Evolutionary Biology, 14(1): 272, 2014.
 }
 \keyword{datasets}
-

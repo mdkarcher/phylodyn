@@ -15,10 +15,12 @@ BNPR_samp_only(data, lengthout = 100, grid = NULL, tmrca = NULL,
 
 \item{grid}{numeric vector of endpoints of the latent field.}
 
-\item{prec_alpha, prec_beta}{numerics specifying gamma prior for precision 
+\item{tmrca}{numeric optional value to specify end of grid. Useful for having
+the same grid as a coalescent inference.}
+
+\item{prec_alpha, prec_beta}{numerics specifying gamma prior for precision
 \eqn{\kappa}.}
 }
 \description{
 Nonparametric estimate of sampling intensity
 }
-

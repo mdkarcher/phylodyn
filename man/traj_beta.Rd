@@ -25,4 +25,3 @@ Raise a trajectory function to a power
 \examples{
 traj_beta(1:3, unif_traj, 2, level=2)
 }
-

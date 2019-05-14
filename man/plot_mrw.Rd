@@ -4,12 +4,13 @@
 \alias{plot_mrw}
 \title{Plot Mean Relative Widths}
 \usage{
-plot_mrw(BNPR_outs, traj = NULL, xlim = NULL, ylim = NULL, nbreaks = 40,
-  ltys = 1, lwds = 2, cols = "black", xlab = "Time", xmarline = 3,
-  axlabs = NULL, ymin_zero = FALSE, ylab = "Mean Relative Width",
-  main = "", heatmaps = TRUE, heatmap_labels = FALSE,
-  heatmap_labels_side = "right", heatmap_width = 7, legends = NULL,
-  legend_place = "topleft", legend_cex = 1, bty = "n", ...)
+plot_mrw(BNPR_outs, traj = NULL, xlim = NULL, ylim = NULL,
+  nbreaks = 40, ltys = 1, lwds = 2, cols = "black",
+  xlab = "Time", xmarline = 3, axlabs = NULL, ymin_zero = FALSE,
+  ylab = "Mean Relative Width", main = "", heatmaps = TRUE,
+  heatmap_labels = FALSE, heatmap_labels_side = "right",
+  heatmap_width = 7, legends = NULL, legend_place = "topleft",
+  legend_cex = 1, bty = "n", ...)
 }
 \arguments{
 \item{BNPR_outs}{one or more outputs of BNPR or BNPR_PS.}
@@ -63,4 +64,3 @@ the labels from the axis.}
 \description{
 Plot Mean Relative Widths
 }
-

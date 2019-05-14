@@ -17,4 +17,3 @@ a character string to be pasted into the taxa block of the BEAST XML.
 \description{
 Make taxa BEAST XML block
 }
-

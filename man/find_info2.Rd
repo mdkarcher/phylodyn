@@ -23,4 +23,3 @@ A list of sufficient statistics
 \description{
 Extracts all sufficient statistics for inferring Ne from sequential local genealogies
 }
-

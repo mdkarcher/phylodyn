@@ -22,4 +22,3 @@ simulation1<-coalsim(0,10,constant)
 tree1<-generate_newick(simulation1)
 plot(tree1$newick)
 }
-

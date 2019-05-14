@@ -18,4 +18,3 @@ Holmes The genomic and epidemiological dynamics of human influenza A virus.
 Nature, 453(7195): 615-619, 2008.
 }
 \keyword{datasets}
-

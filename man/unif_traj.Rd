@@ -22,4 +22,3 @@ Uniform trajectory.
 \examples{
 unif_traj(0:10, level=5)
 }
-

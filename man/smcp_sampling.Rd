@@ -37,4 +37,3 @@ A matrix of sim rows. Entry x_{i,j} has the n-j+1-th coalescent time of the i-th
 \description{
 SMC' sampler--inference from local genealogies
 }
-

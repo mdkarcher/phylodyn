@@ -12,4 +12,3 @@ plot_res(results)
 \description{
 Plot SMCP Results
 }
-

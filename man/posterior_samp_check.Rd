@@ -4,7 +4,8 @@
 \alias{posterior_samp_check}
 \title{Posterior predictive check for inhomogenous Poisson process sampling model}
 \usage{
-posterior_samp_check(samp_times, n_sampled, logpop, grid, betas, cap = NULL)
+posterior_samp_check(samp_times, n_sampled, logpop, grid, betas,
+  cap = NULL)
 }
 \arguments{
 \item{samp_times}{numeric vector of sampling times.}
@@ -23,4 +24,3 @@ model.}
 \description{
 Posterior predictive check for inhomogenous Poisson process sampling model
 }
-

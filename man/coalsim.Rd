@@ -37,4 +37,3 @@ Simulate from inhomogeneous, heterochronous coalescent
 \examples{
 coalsim(0:2, 3:1, unif_traj, lower_bound=10)
 }
-

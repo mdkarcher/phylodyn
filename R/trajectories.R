@@ -199,6 +199,9 @@ mesa_traj_inv = function(t, a=2, b=3)
 #'   added to \code{t} to allow \code{t=0} to represent a different point in the
 #'   cycle.
 #' @param a numeric slopedness parameter.
+#' @param period numeric how much time passes before the cycle repeats.
+#' @param min numeric the smallest value of the cycle.
+#' @param max numeric the greatest value of the cycle.
 #'
 #' @return A vector containing a value of \code{level} for every element in
 #'   \code{t}.

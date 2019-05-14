@@ -59,6 +59,7 @@ Bayesian nonparametric phylodynamic reconstruction.
 \itemize{
 \item \code{BNPR_PS}: Uses preferential sampling model.
 }}
+
 \examples{
 data("NY_flu")
 if (requireNamespace("INLA", quietly = TRUE)) {
@@ -66,4 +67,3 @@ if (requireNamespace("INLA", quietly = TRUE)) {
  plot_BNPR(res)
 }
 }
-

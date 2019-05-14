@@ -16,4 +16,3 @@ hist2heat(hist, y, wd)
 \description{
 Plot heatmap of a histogram
 }
-

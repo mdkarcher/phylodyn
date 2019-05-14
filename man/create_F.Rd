@@ -18,4 +18,3 @@ Generates a matrix with ranked tree shape information
 \examples{
 create_F(ape::rcoal(4))
 }
-

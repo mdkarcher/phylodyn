@@ -13,4 +13,3 @@ inla.models(...)
 Wrapper for \code{INLA::inla.models} to work around a potential namespace bug
 in \code{INLA::inla}.
 }
-

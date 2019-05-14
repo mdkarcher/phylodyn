@@ -20,4 +20,3 @@ Bottleneck trajectory
 \examples{
 bottleneck_traj(seq(0,2,by=0.1))
 }
-

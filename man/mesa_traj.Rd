@@ -24,4 +24,3 @@ Mesa trajectory
 \examples{
 mesa_traj(0:20)
 }
-

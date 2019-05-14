@@ -742,7 +742,8 @@ plot_INLA_ii = function(BNPR_out, traj=NULL, xlim=NULL, ...)
 plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
                       xlab = "Time", ylab = "Effective Population Size",axlabs=NULL,
                       samp_times = NULL, n_sampled = NULL, nbreaks = 40, 
-                      med_col = rgb(0.330, 0.484, 0.828), cred_col = rgb(0.330, 0.484, 0.828, 0.4),
+                      med_col = grDevices::rgb(0.330, 0.484, 0.828), 
+                      cred_col = grDevices::rgb(0.330, 0.484, 0.828, 0.4),
                       heatmap_width = 7, heatmap_legend_cex = 1.0, ...) {
   #trev_blue = rgb(0.330, 0.484, 0.828)
   #trev_yell = rgb(0.829, 0.680, 0.306)
@@ -771,9 +772,9 @@ plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
     xaxt = "n"
   }
   
-  plot(x = midpts[mask], y = med[mask], 
-       xlab = "", ylab = "", xlim = c(cutoff, 0), ylim = ylim, 
-       log = "y", xaxt = xaxt, type = 'n', ...)
+  graphics::plot(x = midpts[mask], y = med[mask], 
+                 xlab = "", ylab = "", xlim = c(cutoff, 0), ylim = ylim, 
+                 log = "y", xaxt = xaxt, type = 'n', ...)
   
   if (!is.null(axlabs))
   {
@@ -800,22 +801,25 @@ plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
                    adj = c(1, 1), cex = heatmap_legend_cex)
   }
   
-  phylodyn:::shade_band(x = midpts[mask], ylo = low[mask], yhi = up[mask],
-                        col = cred_col)
+  shade_band(x = midpts[mask], ylo = low[mask], yhi = up[mask], col = cred_col)
   
-  lines(x = midpts[mask], y = med[mask], lwd = 2, col = med_col)
+  graphics::lines(x = midpts[mask], y = med[mask], lwd = 2, col = med_col)
   
-  title(ylab = ylab, line = 2.5)
-  title(xlab = xlab, line = 2.5)
+  graphics::title(ylab = ylab, line = 2.5)
+  graphics::title(xlab = xlab, line = 2.5)
 }
 
 #' Plot seasonal overlays
 #'
-#' @param BEAST_out list containing `midpts`, `medianEffPop`, `q975EffPop`, and `q025EffPop`.
-#' @param zero_date numeric date (in decimal years) representing `t=0` in `BEAST_out`
-#' @param start numeric value between 0 and `period` controlling the right side of the plot.
+#' @param BEAST_out list containing `midpts`, `medianEffPop`, `q975EffPop`, and
+#'   `q025EffPop`.
+#' @param zero_date numeric date (in decimal years) representing `t=0` in
+#'   `BEAST_out`
+#' @param start numeric value between 0 and `period` controlling the right side
+#'   of the plot.
 #' @param years numeric how many years or periods to overlay.
-#' @param period numeric representing how long one year or other seasonal period is in the units of `BEAST_out`.
+#' @param period numeric representing how long one year or other seasonal period
+#'   is in the units of `BEAST_out`.
 #' @param ylim numeric y-axis interval.
 #' @param nbreaks integer number of bins in the sampling time histogram heatmap.
 #' @param lty numeric line type.
@@ -823,34 +827,38 @@ plot_BEAST = function(midpts, med, up, low, cutoff = NULL, ylim = NULL,
 #' @param col_years color of individual trajectory
 #' @param col_median color of the median estimate.
 #' @param main character main figure title.
-#' @param axlabs 
-#' @param xlab 
-#' @param xmarline 
-#' @param ylab 
-#' @param log_y 
-#' @param samp_times 
-#' @param n_sampled 
-#' @param heatmaps 
-#' @param heatmap_labels 
-#' @param heatmap_labels_side 
-#' @param heatmap_width numeric vertical width of sampling time histogram heatmap.
-#' @param legend 
-#' @param yscale 
-#' @param ... 
+#' @param axlabs character vector x-axis labels.
+#' @param xlab character x-axis label.
+#' @param xmarline numeric if not using default x-axis labels, how far to put
+#'   the labels from the axis.
+#' @param ylab character y-axis label.
+#' @param log_y logical whether to log-scale the y-axis.
+#' @param samp_times numeric vector of sampling times.
+#' @param n_sampled integer vector of number of samples taken at each element of
+#'   samp_times.
+#' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
+#' @param heatmap_labels boolean whether to display labels on heatmaps.
+#' @param heatmap_labels_side string which side of plot to display heatmaps.
+#' @param heatmap_width numeric vertical width of sampling time histogram
+#'   heatmap.
+#' @param legend character legend text. The defauly, NULL, disables.
+#' @param yscale numeric scaling applied to all effective population
+#'   calculations.
+#' @param ... additional arguments to be passed onto plot().
 #'
 #' @return
 #' @export
 #'
 #' @examples
-plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL, 
-                            period = 1.0, ylim = NULL, nbreaks = 40,
-                            lty=1, lwd=2, col_years="gray", col_median="black",
-                            main="", axlabs = NULL, xlab = "Time", xmarline = 1,
-                            ylab="Effective Population Size", log_y=TRUE,
-                            samp_times = NULL, n_sampled = NULL,
-                            heatmaps=TRUE, heatmap_labels=TRUE,
-                            heatmap_labels_side="right", heatmap_width = 7,
-                            legend = NULL, yscale = 1.0, ...)
+plot_seasonality_beast = function(BEAST_out, zero_date, start = 0.0, years = NULL, 
+                                  period = 1.0, ylim = NULL, nbreaks = 40,
+                                  lty=1, lwd=2, col_years="gray", col_median="black",
+                                  main="", axlabs = NULL, xlab = "Time", xmarline = 1,
+                                  ylab="Effective Population Size", log_y=TRUE,
+                                  samp_times = NULL, n_sampled = NULL,
+                                  heatmaps=TRUE, heatmap_labels=TRUE,
+                                  heatmap_labels_side="right", heatmap_width = 7,
+                                  legend = NULL, yscale = 1.0, ...)
 {
   offset <- zero_date %% period - start
   if (log_y)
@@ -864,7 +872,7 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
   t <- BEAST_out$midpts - offset
   y <- BEAST_out$medianEffPop * yscale
   
-  fun = approxfun(x = t, y = y, method = "linear")
+  fun = stats::approxfun(x = t, y = y, method = "linear")
   #yhi <- BNPR_out$effpop975[mask] * yscale
   #ylo <- BNPR_out$effpop025[mask] * yscale
   
@@ -901,17 +909,17 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
   
   if (is.null(axlabs))
   {
-    plot(1, 1, type="n", log = log,
+    graphics::plot(1, 1, type="n", log = log,
          xlab = xlab, ylab = ylab, main = main,
          xlim = c(period, 0), ylim = ylim, ...)
   }
   else
   {
-    plot(1, 1, type="n", xaxt = "n", log = log,
+    graphics::plot(1, 1, type="n", xaxt = "n", log = log,
          xlab = "", ylab = ylab, main = main,
          xlim = c(period, 0), ylim = ylim, ...)
-    axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
-    mtext(text = xlab, side = 1, line = xmarline, cex = 1.3)
+    graphics::axis(1, at=axlabs$x, labels = axlabs$labs, las=2)
+    graphics::mtext(text = xlab, side = 1, line = xmarline, cex = 1.3)
   }
   
   if (is.null(years))
@@ -927,7 +935,7 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
     #period_mask <- (t >= current_t) & (t <= current_t + period)
     ts = seq(from = current_t, to = current_t + period, length.out = 101)
     
-    lines(x = ts - current_t, y = fun(ts),
+    graphics::lines(x = ts - current_t, y = fun(ts),
           lty = lty, lwd = lwd, col = col_years)
     
     if (fun_col > 0)
@@ -937,8 +945,8 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
     
     current_t <- current_t + period
   }
-  fun_median <- apply(X = fun_mat, MARGIN = 1, FUN = median)
-  lines(x = seq(0, 1, length.out = 101), y = fun_median,
+  fun_median <- apply(X = fun_mat, MARGIN = 1, FUN = stats::median)
+  graphics::lines(x = seq(0, 1, length.out = 101), y = fun_median,
         lty = lty, lwd = lwd, col = col_median)
   
   if (heatmaps)
@@ -950,7 +958,7 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
     #coals = coals[coals <= years & coals >= 0]
     
     breaks = seq(0, period, length.out=nbreaks)
-    h_samp = hist(samps %% period, breaks=breaks, plot=FALSE)
+    h_samp = graphics::hist(samps %% period, breaks=breaks, plot=FALSE)
     #h_coal = hist(coals %% period, breaks=breaks, plot=FALSE)
     
     if (log_y)
@@ -988,14 +996,14 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
       
       if (log_y)
       {
-        text(x = lab_x, y = ymin/(yextra^0.0), labels = "Sampling events",
+        graphics::text(x = lab_x, y = ymin/(yextra^0.0), labels = "Sampling events",
              adj = c(lab_adj, 0), cex = 1)
         #text(x = lab_x, y = ymin/(yextra^1.25), labels = "Coalescent events",
         #     adj = c(lab_adj, 1), cex = 0.7)
       }
       else
       {
-        text(x = lab_x, y = ymin - yextra * 0.0, labels = "Sampling events",
+        graphics::text(x = lab_x, y = ymin - yextra * 0.0, labels = "Sampling events",
              adj = c(lab_adj, 0), cex = 1)
         #text(x = lab_x, y = ymin - yextra * 1.25, labels = "Coalescent events",
         #     adj = c(lab_adj, 1), cex = 0.7)
@@ -1005,7 +1013,7 @@ plot_seasonality = function(BEAST_out, zero_date, start = 0.0, years = NULL,
   
   if (!is.null(legend))
   {
-    legend("topright", legend = legend, lty=1, lwd = 2, bty = "n", col=col_median)
+    graphics::legend("topright", legend = legend, lty=1, lwd = 2, bty = "n", col=col_median)
     
     #text(x=max(xlim), y=max(ylim), label=legend1, adj=c(0,1), cex=1.5)
   }

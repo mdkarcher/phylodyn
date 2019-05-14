@@ -4,13 +4,14 @@
 \alias{plot_BNPR}
 \title{Plot a BNPR output}
 \usage{
-plot_BNPR(BNPR_out, traj = NULL, xlim = NULL, ylim = NULL, nbreaks = 40,
-  lty = 1, lwd = 2, col = "black", main = "", log = "y",
-  ylab = "Effective Population Size", xlab = "Time", xmarline = 3,
-  axlabs = NULL, traj_lty = 2, traj_lwd = 2, traj_col = col,
-  newplot = TRUE, credible_region = TRUE, heatmaps = TRUE,
-  heatmap_labels = TRUE, heatmap_labels_side = "right",
-  heatmap_labels_cex = 0.7, heatmap_width = 7, yscale = 1, ...)
+plot_BNPR(BNPR_out, traj = NULL, xlim = NULL, ylim = NULL,
+  nbreaks = 40, lty = 1, lwd = 2, col = "black", main = "",
+  log = "y", ylab = "Effective Population Size", xlab = "Time",
+  xmarline = 3, axlabs = NULL, traj_lty = 2, traj_lwd = 2,
+  traj_col = col, newplot = TRUE, credible_region = TRUE,
+  heatmaps = TRUE, heatmap_labels = TRUE,
+  heatmap_labels_side = "right", heatmap_labels_cex = 0.7,
+  heatmap_width = 7, yscale = 1, ...)
 }
 \arguments{
 \item{BNPR_out}{output of BNPR or BNPR_PS.}
@@ -69,4 +70,3 @@ calculations.}
 \description{
 Plot a BNPR output
 }
-

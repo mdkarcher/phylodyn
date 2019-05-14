@@ -29,4 +29,3 @@ Calculate posterior sampling intensities
 \examples{
 2 + 2
 }
-

@@ -1,7 +1,7 @@
 log_inorm_prior3 <- function(x, prec, mu=rep(0, length(x)))
 {
   x_mu = x - mu
-  return(sum(dnorm(x_mu, sd = prec ^ -0.5, log = TRUE)))
+  return(sum(stats::dnorm(x_mu, sd = prec ^ -0.5, log = TRUE)))
 }
 
 log_betas_prior3 <- function(betas, betas_prec = 0.01)
@@ -168,8 +168,8 @@ ESS3 = function(q_cur, l_cur, loglik, prec, first_elem_prec, ...)
 {  
   # choose ellipse
   # nu = crossprod(cholC, stats::rnorm(length(q_cur)))
-  first_elem = rnorm(1, mean = 0, sd = sqrt(1 / first_elem_prec))
-  diffs = c(0, rnorm(length(q_cur) - 1, mean = 0, sd = sqrt(1 / prec)))
+  first_elem = stats::rnorm(1, mean = 0, sd = sqrt(1 / first_elem_prec))
+  diffs = c(0, stats::rnorm(length(q_cur) - 1, mean = 0, sd = sqrt(1 / prec)))
   nu = first_elem + cumsum(diffs)
   
   # log-likelihood threshold

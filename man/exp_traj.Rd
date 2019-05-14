@@ -24,4 +24,3 @@ Exponential trajectory
 \examples{
 exp_traj(0:10, scale = 100, rate = 0.5)
 }
-

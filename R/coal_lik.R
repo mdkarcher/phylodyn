@@ -144,7 +144,7 @@ samp_loglik_pow = function(init, logpop, betas, covars = NULL, covar_betas = NUL
     pcovars_bs = beta1 * logpop
   }
   
-  fs_betas = covars_bs + p_covars_bs
+  fs_betas = covars_bs + pcovars_bs
   
   #llsampevents = beta1 * init$count * f
   #llsampnoevents = init$D * exp(beta0) * exp(f)^beta1

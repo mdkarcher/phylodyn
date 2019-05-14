@@ -26,4 +26,3 @@ grid.len points between min(lim) and max(lim) to find upper bound.}
 Sample values from an inhomogeneous Poisson process with intensity
   c*f(t)^beta.
 }
-

@@ -1,7 +1,7 @@
 get_tips_and_times = function(tree, backwards=FALSE) {
   root_node = tree$edge[1,1]
   tip_labels = tree$tip.label
-  tip_times = dist.nodes(tree)[root_node, 1:(root_node - 1)]
+  tip_times = ape::dist.nodes(tree)[root_node, 1:(root_node - 1)]
   
   if (backwards)
     tip_times = max(tip_times) - tip_times
@@ -40,7 +40,7 @@ make_taxa = function(tree, units = "years") {
 #' 
 #' @examples
 make_alignment = function(nexus_data) {
-  alig = read.nexus.data(nexus_data)
+  alig = ape::read.nexus.data(nexus_data)
   n = length(alig)
   ids = names(alig)
   
@@ -48,7 +48,7 @@ make_alignment = function(nexus_data) {
   for (i in 1:n) {
     id = ids[i]
     seq = paste0(alig[[i]], collapse = "")
-    seq = str_to_upper(seq)
+    seq = toupper(seq)
     items[[i]] = sprintf('\t\t<sequence>\n\t\t\t<taxon idref="%s"/>\n\t\t\t%s\n\t\t</sequence>',
                          id, seq)
   }

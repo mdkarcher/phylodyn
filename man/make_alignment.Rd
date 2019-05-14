@@ -17,4 +17,3 @@ a character string to be pasted into the alignment block of the BEAST
 \description{
 Make alignment BEAST XML block
 }
-

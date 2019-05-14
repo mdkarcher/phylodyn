@@ -20,4 +20,3 @@ Sloped trajectory
 \examples{
 sloped_traj(0:20)
 }
-

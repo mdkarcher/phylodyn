@@ -23,4 +23,3 @@ posterior_coal_check(coal_times, samp_times, n_sampled, logpop, grid,
 \description{
 Posterior predictive check for coalescent model
 }
-

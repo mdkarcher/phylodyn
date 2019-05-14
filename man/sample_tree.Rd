@@ -20,4 +20,3 @@ gene = coalsim(samp_times = c(0,1,2), n_sampled = c(2,1,1), traj = unif_traj)
 tree = sample_tree(gene)
 plot(tree)
 }
-

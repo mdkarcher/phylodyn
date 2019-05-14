@@ -20,4 +20,3 @@ Steep cyclical trajectory
 \examples{
 steep_cyc_traj(0:20)
 }
-

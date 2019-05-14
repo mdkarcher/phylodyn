@@ -52,8 +52,8 @@ ESS2 = function(q_cur, l_cur, loglik, prec, first_elem_prec, ...)
 {  
   # choose ellipse
   # nu = crossprod(cholC, stats::rnorm(length(q_cur)))
-  first_elem = rnorm(1, mean = 0, sd = sqrt(1 / first_elem_prec))
-  diffs = c(0, rnorm(length(q_cur) - 1, mean = 0, sd = sqrt(1 / prec)))
+  first_elem = stats::rnorm(1, mean = 0, sd = sqrt(1 / first_elem_prec))
+  diffs = c(0, stats::rnorm(length(q_cur) - 1, mean = 0, sd = sqrt(1 / prec)))
   nu = first_elem + cumsum(diffs)
   
   # log-likelihood threshold
@@ -428,13 +428,13 @@ log_mvnorm_prior <- function(x, prec, mu=rep(0, length(x)))
 log_inorm_prior <- function(x, prec, mu=rep(0, length(x)))
 {
   x_mu = x - mu
-  return(sum(dnorm(x_mu, sd = prec ^ -0.5, log = TRUE)))
+  return(sum(stats::dnorm(x_mu, sd = prec ^ -0.5, log = TRUE)))
 }
 
 log_field_prior <- function(f, prec, first_elem_prec)
 {
-  result = dnorm(f[1], mean = 0, sd = sqrt(1 / first_elem_prec), log = TRUE) +
-    sum(dnorm(diff(f), mean = 0, sd = sqrt(1 / prec), log = TRUE))
+  result = stats::dnorm(f[1], mean = 0, sd = sqrt(1 / first_elem_prec), log = TRUE) +
+    sum(stats::dnorm(diff(f), mean = 0, sd = sqrt(1 / prec), log = TRUE))
 }
 
 # Gamma log-prior for kappa
@@ -963,8 +963,8 @@ ESS_betas_ll2 = function(f, lik_init, betas, covar_vals = NULL, covar_betas = NU
 {
   return(coal_loglik(init = lik_init, f = f) +
            samp_loglik_pow(init = lik_init, logpop = f, betas = betas,
-                           covar_vals = covar_vals, covar_betas = covar_betas,
-                           pow_covar_vals = pow_covar_vals,
+                           covars = covar_vals, covar_betas = covar_betas,
+                           pow_covars = pow_covar_vals,
                            pow_covar_betas = pow_covar_betas))
 }
 
@@ -1257,7 +1257,7 @@ sampling_ESS2 = function(data, para, setting, init,
                                prec = prec, first_elem_prec = first_elem_prec,
                                lik_init = lik_init, alpha = alpha, beta = beta,
                                betas = betas, covar_vals = covar_vals,
-                               covar_betas = covar_betas,
+                               # covar_betas = covar_betas,
                                pow_covar_vals = pow_covar_vals,
                                pow_covar_betas = pow_covar_betas,
                                betas_prec = 1/beta_vars, noprec = noprec)
@@ -1379,22 +1379,22 @@ sampling_ESS2 = function(data, para, setting, init,
 
 
 #' MCMC Sampling
-#' 
-#' @param dataset \code{phylo} object or list containing vectors of coalescent 
-#'   times \code{coal_times}, sampling times \code{samp_times}, and number 
+#'
+#' @param dataset \code{phylo} object or list containing vectors of coalescent
+#'   times \code{coal_times}, sampling times \code{samp_times}, and number
 #'   sampled per sampling time \code{n_sampled}.
-#' @param alg string selecting which MCMC sampler to use. Options are "HMC", 
+#' @param alg string selecting which MCMC sampler to use. Options are "HMC",
 #'   "splitHMC", "MALA", "aMALA", and "ESS".
 #' @param nsamp integer number of MCMC steps to compute.
 #' @param nburnin integer number of MCMC steps to discard as burn-in.
-#' @param nsubsamp integer after burn-in, how often to record a step to the 
+#' @param nsubsamp integer after burn-in, how often to record a step to the
 #'   output.
 #' @param ngrid integer number of grid point in the latent field.
-#' @param nugget string selecting which "nugget" adjustment to apply to the 
-#'   precision matrix to make it full-rank. Options are '1,1' for an adjustment 
+#' @param nugget string selecting which "nugget" adjustment to apply to the
+#'   precision matrix to make it full-rank. Options are '1,1' for an adjustment
 #'   to the first element, 'diag' for an adjustment to the entire main diagonal,
 #'   or 'none' which may result in a non-full-rank precision matrix.
-#' @param prec_alpha,prec_beta numeric shape and rate parameters for the prior 
+#' @param prec_alpha,prec_beta numeric shape and rate parameters for the prior
 #'   on precision.
 #' @param TrjL numeric tuning parameter.
 #' @param Nleap integer tuning parameter.
@@ -1402,17 +1402,20 @@ sampling_ESS2 = function(data, para, setting, init,
 #' @param rand_leap logical tuning parameter.
 #' @param f_init numeric vector starting log effective population size values.
 #' @param kappa numeric starting kappa.
-#' @param covariates list of functions representing covariate trajectories that 
+#' @param covariates list of functions representing covariate trajectories that
 #'   (may) influence sampling frequency.
+#' @param power_covariates list of functions representing interaction covariate
+#'   trajectories that (may) influence sampling frequency.
 #' @param betas numeric vector of starting values for the beta hyperparameters.
-#' @param samp_alg string selecting sampling algorithm for sampling time 
+#' @param samp_alg string selecting sampling algorithm for sampling time
 #'   intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".
-#' @param kappa_alg selects sampling algorithm for kappa. One of "gibbs" 
+#' @param kappa_alg selects sampling algorithm for kappa. One of "gibbs"
 #'   (default) or "whiten".
 #' @param beta_vars numeric vector prior variances of the beta hyperparameters.
-#' @param printevery integer how many MCMC steps between writing output to the 
+#' @param printevery integer how many MCMC steps between writing output to the
 #'   console.
-#'   
+#' @param first_elem_prec numeric the precision of the first element.
+#'
 #' @export
 mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
                          nugget="1,1", prec_alpha = 1e-2, prec_beta = 1e-2,

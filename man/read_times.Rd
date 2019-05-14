@@ -22,4 +22,3 @@ Extracts coalescent times from a Multi-Phylo object
 \examples{
 read_times(ape::rmtree(3,5),3,1)
 }
-

@@ -25,4 +25,3 @@ Boom and bust trajectory
 \examples{
 boombust_traj(0:10)
 }
-

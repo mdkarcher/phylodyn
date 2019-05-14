@@ -20,4 +20,3 @@ Cyclical trajectory
 \examples{
 cyclic_traj(0:20)
 }
-

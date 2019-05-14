@@ -21,4 +21,3 @@ Summarize a phylogeny.
 data("NY_flu")
 summarize_phylo(NY_flu)
 }
-
