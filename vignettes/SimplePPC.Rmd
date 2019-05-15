@@ -124,10 +124,12 @@ abline(a = 0, b = 1)
 
 ## References
 
-1. J. A. Palacios and V. N. Minin.
+1. Karcher MD, Suchard MA, Dudas G, Minin VN (2019). Estimating effective population size changes from preferentially sampled genetic sequences, [arXiv:1903.11797](https://arxiv.org/abs/1903.11797).
+
+2. Palacios JA and Minin VN.
 Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
 In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
 
-2. Lan, S., Palacios, J. A., Karcher, M., Minin, V. N., & Shahbaba, B. (2014).
+3. Lan, S, Palacios, JA, Karcher, M, Minin, VN, & Shahbaba, B (2014).
 An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
-*arXiv preprint arXiv*:1412.0158.
+ *Bioinformatics*, 31, 3282-3289.
