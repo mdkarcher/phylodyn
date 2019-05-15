@@ -8,9 +8,10 @@ mcmc_sampling(dataset, alg, nsamp, nburnin = 0, nsubsamp = 1,
   ngrid = 100, nugget = "1,1", prec_alpha = 0.01, prec_beta = 0.01,
   TrjL = NULL, Nleap = NULL, szkappa = NULL, rand_leap = NULL,
   f_init = rep(1, ngrid - 1), kappa = 1, covariates = NULL,
-  power_covariates = NULL, betas = rep(0, 2 + length(covariates) +
-  length(power_covariates)), samp_alg = "none", kappa_alg = "gibbs",
-  beta_vars = rep(100, length(betas)), printevery = 100,
+  power_covariates = NULL, betas = rep(0, 2 + length(covariates)),
+  pow_betas = rep(0, length(power_covariates)), samp_alg = "none",
+  kappa_alg = "gibbs", beta_vars = rep(100, length(betas)),
+  pow_beta_vars = rep(100, length(pow_betas)), printevery = 100,
   first_elem_prec = 0.01)
 }
 \arguments{
@@ -35,8 +36,8 @@ precision matrix to make it full-rank. Options are '1,1' for an adjustment
 to the first element, 'diag' for an adjustment to the entire main diagonal,
 or 'none' which may result in a non-full-rank precision matrix.}
 
-\item{prec_alpha, prec_beta}{numeric shape and rate parameters for the prior
-on precision.}
+\item{prec_alpha, prec_beta}{numeric hyperparameters for the prior on
+precision.}
 
 \item{TrjL}{numeric tuning parameter.}
 
@@ -56,7 +57,11 @@ on precision.}
 \item{power_covariates}{list of functions representing interaction covariate
 trajectories that (may) influence sampling frequency.}
 
-\item{betas}{numeric vector of starting values for the beta hyperparameters.}
+\item{betas}{numeric vector of (starting) values for the coefficients of the
+log-linear sampling time model.}
+
+\item{pow_betas}{numeric vector of (starting) values for the interaction
+coefficients of the log-linear sampling time model.}
 
 \item{samp_alg}{string selecting sampling algorithm for sampling time
 intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".}
@@ -65,6 +70,9 @@ intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".}
 (default) or "whiten".}
 
 \item{beta_vars}{numeric vector prior variances of the beta hyperparameters.}
+
+\item{pow_beta_vars}{numeric vector prior variances of the pow_beta
+hyperparameters.}
 
 \item{printevery}{integer how many MCMC steps between writing output to the
 console.}

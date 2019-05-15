@@ -526,6 +526,39 @@ plot_seasonality = function(BNPR_out, zero_date, start = 0.0, years = NULL,
   }
 }
 
+#' Plot an MCMC output
+#'
+#' @param MCMC_out output of mcmc_sampling().
+#' @param traj function summarizing the true effective population size 
+#'   trajectory.
+#' @param xlim numeric x-axis interval.
+#' @param ylim numeric y-axis interval.
+#' @param nbreaks integer number of bins for sampling heatmap.
+#' @param lty line type for estimated trajectory.
+#' @param lwd line width for estimated trajectory.
+#' @param col color for estimated trajectory.
+#' @param main character main plot title.
+#' @param log character which axes to plot log-scale. Defaults to "y".
+#' @param ylab character y-axis label.
+#' @param xlab character x-axis label.
+#' @param xmarline numeric if not using default x-axis labels, how far to put 
+#'   the labels from the axis.
+#' @param axlabs character vector x-axis labels.
+#' @param traj_lty,traj_lwd,traj_col line type, line width, and line color for 
+#'   the true trajectory.
+#' @param newplot boolean whether to create a new plot or superimpose over a 
+#'   previously open plot.
+#' @param credible_region logical whether to display pointwise credible region.
+#' @param heatmaps boolean whether to display sampling and coalescent heatmaps.
+#' @param heatmap_labels boolean whether to display labels on heatmaps.
+#' @param heatmap_labels_side string which side of plot to display heatmaps.
+#' @param heatmap_labels_cex numeric scaling factor for heatmap labels.
+#' @param heatmap_width numeric how wide heatmaps should be.
+#' @param yscale numeric scaling applied to all effective population
+#'   calculations.
+#' @param ... additional arguments to be passed onto plot().
+#'
+#' @export
 plot_MCMC = function(MCMC_out, traj=NULL, xlim=NULL, ylim=NULL, nbreaks=40,
                      lty=1, lwd=2, col="black", main="", log="y",
                      ylab="Effective Population Size",

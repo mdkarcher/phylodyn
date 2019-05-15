@@ -16,6 +16,31 @@ integrate_step_fun = function(fun, from, to)
   return(sum(segments))
 }
 
+log_sampling_intensity = function(logpop, beta0, beta1,
+                                  covariates = NULL, cov_betas = NULL,
+                                  pow_covariates = NULL, pow_cov_betas = NULL)
+{
+  result = beta0 + logpop * beta1
+  
+  if (!is.null(covariates))
+  {
+    for (i in 1:length(covariates))
+    {
+      result = result + covariates[[i]] * cov_betas[i]
+    }
+  }
+  
+  if (!is.null(pow_covariates))
+  {
+    for (i in 1:length(pow_covariates))
+    {
+      result = result + pow_covariates[[i]] * logpop * pow_cov_betas[i]
+    }
+  }
+  
+  return(result)
+}
+
 #### Conversion functions ####
 
 coal_to_exp = function(coal_times, samp_times, n_sampled, logpop, grid, maxt=Inf)
@@ -88,29 +113,41 @@ exp_to_KS = function(exps, rm_zero=FALSE)
   return(stats::ks.test(exps, "pexp"))
 }
 
-#### Single step check functions ####
-
-coal_check = function(coal_times, samp_times, n_sampled, logpop, grid)
+samp_to_chisq = function(samp_times, n_sampled, logpop, grid, beta0, beta1, maxt=NULL,
+                         covariates = NULL, cov_betas = NULL,
+                         pow_covariates = NULL, pow_cov_betas = NULL)
+  # f, beta0=1, beta1=1, maxt=Inf, pts_per_bin=1)
 {
-  exps_obs = coal_to_exp(coal_times = coal_times, samp_times = samp_times,
-                         n_sampled = n_sampled, logpop = logpop,
-                         grid = grid)
-  KSobs = exp_to_KS(exps_obs)$statistic
+  y = exp(log_sampling_intensity(logpop = logpop, beta0 = beta0, beta1 = beta1,
+                                 covariates = covariates, cov_betas = cov_betas,
+                                 pow_covariates = pow_covariates,
+                                 pow_cov_betas = pow_cov_betas))
   
-  traj = stats::stepfun(x = grid, y = exp(c(logpop[1], logpop, utils::tail(logpop,1))))
-  coal_rep = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj)
-  exps_rep = coal_to_exp(coal_times = coal_rep$coal_times, samp_times = samp_times,
-                         n_sampled = n_sampled, logpop = logpop,
-                         grid = grid)
-  KSrep = exp_to_KS(exps_rep)$statistic
+  if (is.null(maxt))
+    maxt = max(samp_times)
+  maxt = min(maxt, max(grid))
+  s = rep(samp_times, n_sampled)
+  s = s[s <= maxt]
+  grid = c(grid[grid < maxt], maxt)
+  # if (maxt > max(grid))
+  #  grid = c(grid, maxt)
   
-  result = c(KSobs, KSrep)
-  names(result) = c("obs", "rep")
+  diffs = diff(grid)
+  df = length(diffs)
+  ys = y[1:df]
   
-  return(result)
+  expected = diffs * ys
+  observed = as.numeric(table(cut(x = s, breaks = grid, right = FALSE, include.lowest = TRUE)))
+  
+  chisq = sum((observed - expected)^2/expected)
+  
+  return(list(chisq=chisq, df=df, observed=observed, expected=expected))
 }
 
-samp_check = function(samp_times, n_sampled, logpop, grid, betas)
+
+#### Single step check functions ####
+
+samp_check_exp = function(samp_times, n_sampled, logpop, grid, betas)
 {
   minsamp = min(samp_times)
   maxsamp = max(samp_times)
@@ -129,33 +166,6 @@ samp_check = function(samp_times, n_sampled, logpop, grid, betas)
   
   result = c(KSobs, KSrep)
   names(result) = c("obs", "rep")
-  
-  return(result)
-}
-
-#### Covariates version ####
-
-log_sampling_intensity = function(logpop, beta0, beta1,
-                                  covariates = NULL, cov_betas = NULL,
-                                  pow_covariates = NULL, pow_cov_betas = NULL)
-{
-  result = beta0 + logpop * beta1
-  
-  if (!is.null(covariates))
-  {
-    for (i in 1:length(covariates))
-    {
-      result = result + covariates[[i]] * cov_betas[i]
-    }
-  }
-  
-  if (!is.null(pow_covariates))
-  {
-    for (i in 1:length(pow_covariates))
-    {
-      result = result + pow_covariates[[i]] * logpop * pow_cov_betas[i]
-    }
-  }
   
   return(result)
 }
@@ -191,7 +201,7 @@ samp_to_exp2 = function(samp_times, n_sampled, logpop, grid, beta0, beta1,
 }
 
 
-samp_check2 = function(samp_times, n_sampled, logpop, grid, betas,
+samp_check_exp2 = function(samp_times, n_sampled, logpop, grid, betas,
                        covariates = NULL, cov_betas = NULL,
                        pow_covariates = NULL, pow_cov_betas = NULL)
 {
@@ -226,15 +236,99 @@ samp_check2 = function(samp_times, n_sampled, logpop, grid, betas,
 
 #### User Facing Functions ####
 
-#' Posterior predictive check for coalescent model
-#' 
+#' Predictive check for coalescent model
+#'
 #' @param coal_times numeric vector of coalescent times.
 #' @param samp_times numeric vector of sampling times.
 #' @param n_sampled integer vector of lineages sampled at each sampling time.
+#' @param logpop numeric vector of log-effective population sizes.
+#' @param grid numeric grid of time points.
+#'
+#' @return named numeric vector: "obs" contains the KS discrepancy for the
+#'   supplied coalescent times, "rep" contains å KS discrepancy for the
+#'   replicated coalescent times.
+#' @export
+coal_check = function(coal_times, samp_times, n_sampled, logpop, grid)
+{
+  exps_obs = coal_to_exp(coal_times = coal_times, samp_times = samp_times,
+                         n_sampled = n_sampled, logpop = logpop,
+                         grid = grid)
+  KSobs = exp_to_KS(exps_obs)$statistic
+  
+  traj = stats::stepfun(x = grid, y = exp(c(logpop[1], logpop, utils::tail(logpop,1))))
+  coal_rep = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj)
+  exps_rep = coal_to_exp(coal_times = coal_rep$coal_times, samp_times = samp_times,
+                         n_sampled = n_sampled, logpop = logpop,
+                         grid = grid)
+  KSrep = exp_to_KS(exps_rep)$statistic
+  
+  result = c(KSobs, KSrep)
+  names(result) = c("obs", "rep")
+  
+  return(result)
+}
+
+#' Predictive check for sampling model
+#'
+#' @param samp_times numeric vector of sampling times.
+#' @param n_sampled integer vector of lineages sampled at each sampling time.
+#' @param logpop numeric vector of log-effective population sizes.
+#' @param grid numeric grid of time points.
+#' @param betas numeric vector of log-linear coefficients for sampling model.
+#' @param covariates list of vectors representing covariate values.
+#' @param cov_betas numeric coefficients for each element of covariates.
+#' @param pow_covariates list of vectors representing interaction covariate
+#'   values.
+#' @param pow_cov_betas numeric coefficients for each element of pow_covariates.
+#'
+#' @return named numeric vector: "obs" contains the chi-square discrepancy for
+#'   the supplied sampling times, "rep" contains å chi-square discrepancy for
+#'   the replicated sampling times.
+#' @export
+samp_check = function(samp_times, n_sampled, logpop, grid, betas,
+                      covariates = NULL, cov_betas = NULL,
+                      pow_covariates = NULL, pow_cov_betas = NULL)
+{
+  minsamp = min(samp_times)
+  maxsamp = max(samp_times)
+  chisq_obs = samp_to_chisq(samp_times = samp_times, n_sampled = n_sampled,
+                            logpop = logpop, grid = grid,
+                            beta0 = betas[1], beta1 = betas[2],
+                            covariates = covariates, cov_betas = cov_betas,
+                            pow_covariates = pow_covariates, pow_cov_betas = pow_cov_betas)
+  
+  log_int = log_sampling_intensity(logpop = logpop, beta0 = betas[1], beta1 = betas[2],
+                                   covariates = covariates, cov_betas = cov_betas,
+                                   pow_covariates = pow_covariates, pow_cov_betas = pow_cov_betas)
+  
+  int_fn = stats::stepfun(x = grid, y = exp(c(log_int[1], log_int, utils::tail(log_int, 1))))
+  samp_rep = c(minsamp, pref_sample(f = int_fn, lim = c(minsamp, maxsamp)), maxsamp)
+  
+  chisq_rep = samp_to_chisq(samp_times = samp_rep, n_sampled = rep(1, length(samp_rep)),
+                            logpop = logpop, grid = grid,
+                            beta0 = betas[1], beta1 = betas[2],
+                            covariates = covariates, cov_betas = cov_betas,
+                            pow_covariates = pow_covariates, pow_cov_betas = pow_cov_betas)
+  
+  result = c(chisq_obs$chisq, chisq_rep$chisq)
+  names(result) = c("obs", "rep")
+  
+  return(result)
+}
+
+#' Posterior predictive check for coalescent model
+#'
+#' @param coal_times numeric vector (for fixed-tree) or numeric vector (for
+#'   inferred-tree) of coalescent times.
+#' @param samp_times numeric vector of sampling times.
+#' @param n_sampled integer vector of lineages sampled at each sampling time.
 #' @param logpop matrix posterior sample of log-effective population sizes.
-#' @param grid numeric grid
+#' @param grid numeric grid of time points.
 #' @param cap integer maximum number of posterior samples to use.
-#'   
+#'
+#' @return data.frame with two columns: "obs" contains the KS discrepancies for
+#'   the supplied coalescent times, "rep" contains the KS discrepancies for the
+#'   replicated coalescent times.
 #' @export
 posterior_coal_check = function(coal_times, samp_times, n_sampled, logpop, grid, cap=NULL)
 {
@@ -252,44 +346,44 @@ posterior_coal_check = function(coal_times, samp_times, n_sampled, logpop, grid,
   
   for (i in first:niter)
   {
-    result[i - first + 1, ] = coal_check(coal_times = coal_times, samp_times = samp_times,
-                                         n_sampled = n_sampled, logpop = logpop[i,],
+    if (is.matrix(coal_times))
+      coal_vec = coal_times[i,]
+    else
+      coal_vec = coal_times
+    
+    result[i - first + 1, ] = coal_check(coal_times = coal_vec, samp_times = samp_times,
+                                         n_sampled = n_sampled, logpop = as.numeric(logpop[i,]),
                                          grid = grid)
-    # exps_obs = coal_to_exp(coal_times = coal_times, samp_times = samp_times,
-    #                        n_sampled = n_sampled, logpop = logpop[i,],
-    #                        grid = grid)
-    # KSobs[i] = exp_to_KS(exps_obs)$statistic
-    # 
-    # traj = stats::stepfun(x = grid, y = exp(c(logpop[i,1], logpop[i,], utils::tail(logpop[i,],1))))
-    # coal_rep = coalsim(samp_times = samp_times, n_sampled = n_sampled, traj = traj)$coal_times
-    # exps_rep = coal_to_exp(coal_times = coal_rep$coal_times, samp_times = samp_times,
-    #                        n_sampled = n_sampled, logpop = logpop[i,],
-    #                        grid = grid)
-    # KSrep[i] = exp_to_KS(exps_rep)$statistic
   }
   
   return(result)
 }
 
 #' Posterior predictive check for inhomogenous Poisson process sampling model
-#' 
+#'
 #' @param samp_times numeric vector of sampling times.
 #' @param n_sampled integer vector of lineages sampled at each sampling time.
 #' @param logpop matrix posterior sample of log-effective population sizes.
-#' @param grid numeric grid
+#' @param grid numeric grid of time points.
 #' @param betas matrix posterior sample of log-linear coefficients for sampling
 #'   model.
 #' @param cap integer maximum number of posterior samples to use.
-#'   
+#' @param covariates list of vectors representing covariate values.
+#' @param cov_betas numeric coefficients for each element of covariates.
+#' @param pow_covariates list of vectors representing interaction covariate
+#'   values.
+#' @param pow_cov_betas numeric coefficients for each element of pow_covariates.
+#'
+#' @return data.frame with two columns: "obs" contains the chi-square
+#'   discrepancies for the supplied sampling times, "rep" contains the
+#'   chi-square discrepancies for the replicated sampling times.
 #' @export
-posterior_samp_check = function(samp_times, n_sampled, logpop, grid, betas, cap=NULL)
+posterior_samp_check = function(samp_times, n_sampled, logpop, grid, betas, cap=NULL,
+                                covariates = NULL, cov_betas = NULL,
+                                pow_covariates = NULL, pow_cov_betas = NULL)
 {
   niter = nrow(logpop)
   result = data.frame(obs = rep(0, min(cap, niter)), rep = rep(0, min(cap, niter)))
-  # minsamp = min(samp_times)
-  # maxsamp = max(samp_times)
-  # KSobs = rep(0, min(cap, niter))
-  # KSrep = rep(0, min(cap, niter))
   
   if (is.null(cap) || cap < 1)
   {
@@ -303,20 +397,10 @@ posterior_samp_check = function(samp_times, n_sampled, logpop, grid, betas, cap=
   for (i in first:niter)
   {
     result[i - first + 1, ] = samp_check(samp_times = samp_times,
-                                         n_sampled = n_sampled, logpop = logpop[i,],
-                                         grid = grid, betas = betas[i,])
-    # exps_obs = samp_to_exp(samp_times = samp_times, n_sampled = n_sampled,
-    #                        logpop = logpop[i,], grid = grid,
-    #                        beta0 = betas[1], beta1 = betas[2])
-    # KSobs[i] = exp_to_KS(exps_obs)$statistic
-    # 
-    # traj = stats::stepfun(x = grid, y = exp(c(logpop[i,1], logpop[i,], utils::tail(logpop[i,],1))))
-    # samp_rep = c(minsamp, pref_sample(f = traj, lim = c(minsamp, maxsamp),
-    #                                   c = exp(betas[1]), beta = betas[2]), maxsamp)
-    # exps_rep = samp_to_exp(samp_times = samp_rep, n_sampled = rep(1, length(samp_rep)),
-    #                        logpop = logpop[i,], grid = grid,
-    #                        beta0 = betas[1], beta1 = betas[2])
-    # KSrep[i] = exp_to_KS(exps_rep)$statistic
+                                         n_sampled = n_sampled, logpop = as.numeric(logpop[i,]),
+                                         grid = grid, betas = as.numeric(betas[i,]),
+                                         covariates = covariates, cov_betas = cov_betas,
+                                         pow_covariates = pow_covariates, pow_cov_betas = pow_cov_betas)
   }
   
   return(result)

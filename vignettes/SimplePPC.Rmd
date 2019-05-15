@@ -1,0 +1,133 @@
+---
+title: "Simple Posterior Predictive Check Vignette"
+author: "Michael Karcher"
+date: "May 15, 2019"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Simple Posterior Predictive Check Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This vignette shows a simple and typical use of posterior predictive checks in `phylodyn` 
+
+We start by loading the `phylodyn` package.
+
+```{r message=FALSE}
+set.seed(8675309)
+library(phylodyn)
+```
+
+We need to set the true effective population size trajectory function. For this example, we choose a seasonal growth/collapse trajectory (already implemented in `phylodyn`).
+
+```{r}
+traj = function(t)
+{
+  return(100*exp(-0.5*t))
+}
+```
+
+We set the end of the sampling interval and the number of samples we should expect.
+
+```{r}
+samp_end = 5
+nsamps   = 100
+```
+
+We calculate the proportionality constant necessary to produce the correct expected number of samples. We then produce a set of samples by drawing from an inhomogeneous Poisson process with intensity proportional to the effective population size trajectory.
+
+```{r}
+Cprop      = nsamps/integrate(traj_beta, 0, samp_end, traj=traj, beta=1)$value
+samp_times = pref_sample(traj, c=Cprop, lim=c(0,samp_end), beta=1)
+```
+
+We simulate a genealogy based on our sample using the coalescent.
+
+```{r}
+gene = coalsim(samp_times = samp_times, 
+               n_sampled = rep(1, length(samp_times)),
+               traj = traj)
+```
+
+We set the number of samples and burn-in parameters. For expediency in this vignette we set them to be small. To produce more meaningful results, increase both parameters.
+
+```{r}
+nsamp = 2000
+nburnin = 1000
+```
+
+We invoke the `mcmc_sampling` function with an elliptical slice sampler for the population parameters and with a Metropolis Hastings sampler for the sampling model parameters.
+
+```{r results='hide'}
+res_MCMC = mcmc_sampling(data = gene, alg = 'ESS', nsamp = nsamp,
+                         nburnin = nburnin, samp_alg = "MH")
+```
+
+We plot the results from the MCMC.
+
+```{r fig.width=3, fig.height=3}
+plot_MCMC(res_MCMC, traj = traj, main = "MCMC Output")
+legend('topleft',c('Truth', 'MCMC'), bty='n', lty=c(2,1))
+```
+
+We note that the MCMC results include the log-effective population sizes as well as any hyperparameters,
+so we separate and store a matrix of the log-effective population sizes.
+
+```{r}
+colnames(res_MCMC$samp)
+logpop_mat = res_MCMC$samp[,1:99]
+betas_mat =  res_MCMC$samp[,101:102]
+```
+
+We run the coalescent posterior predictive check here and calculate the posterior predictive p-value.
+A value close to 0 or 1 would suggests model inadequacy.
+
+```{r}
+coal_ppc = posterior_coal_check(coal_times = res_MCMC$coal_times, 
+                                samp_times = res_MCMC$samp_times,
+                                n_sampled = res_MCMC$n_sampled, 
+                                logpop = logpop_mat, 
+                                grid = res_MCMC$grid)
+mean(coal_ppc$rep > coal_ppc$obs)
+```
+
+We plot the results, and note how the $y=x$ line goes through the cloud of points.
+
+```{r fig.width=3, fig.height=3}
+plot(coal_ppc$obs, coal_ppc$rep, pch = 16, col = rgb(0, 0, 0, 0.5),
+     main = "Coalescent PPC", xlab = "", ylab = "")
+title(ylab = "Replicated", line = 2)
+title(xlab = "Observed", line = 2)
+abline(a = 0, b = 1)
+```
+
+We repeat the analysis for the sampling time posterior predictive check.
+
+```{r}
+samp_ppc = posterior_samp_check(samp_times = res_MCMC$samp_times,
+                                n_sampled = res_MCMC$n_sampled, 
+                                logpop = logpop_mat, 
+                                grid = res_MCMC$grid,
+                                betas = betas_mat)
+mean(samp_ppc$rep > samp_ppc$obs)
+```
+
+We plot the results, and note how the $y=x$ line goes through the cloud of points.
+
+```{r fig.width=3, fig.height=3}
+plot(samp_ppc$obs, samp_ppc$rep, pch = 16, col = rgb(0, 0, 0, 0.5),
+     main = "Sampling-aware, Sampling PPC", xlab = "", ylab = "")
+title(ylab = "Replicated", line = 2)
+title(xlab = "Observed", line = 2)
+abline(a = 0, b = 1)
+```
+
+## References
+
+1. J. A. Palacios and V. N. Minin.
+Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
+In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
+
+2. Lan, S., Palacios, J. A., Karcher, M., Minin, V. N., & Shahbaba, B. (2014).
+An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
+*arXiv preprint arXiv*:1412.0158.

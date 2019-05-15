@@ -1234,17 +1234,24 @@ sampling_ESS2 = function(data, para, setting, init,
   else if (samp_alg == "fixed")
   {
     betas = para$betas
+    pow_betas = para$pow_betas
     ll = ESS_betas_ll2
   }
   else if (samp_alg == "MH")
   {
     betas = init$betas
+    pow_betas = init$pow_betas
     ll = ESS_betas_ll2
   }
   
   if (samp_alg == "MH")
   {
     betas_out = matrix(NA, nrow = length(recorded_iters), ncol = length(betas))
+    pow_betas_out = NULL
+    if (!is.null(pow_betas))
+    {
+      pow_betas_out = matrix(NA, nrow = length(recorded_iters), ncol = length(pow_betas))
+    }
   }
   
   noprec = FALSE
@@ -1257,7 +1264,7 @@ sampling_ESS2 = function(data, para, setting, init,
                                prec = prec, first_elem_prec = first_elem_prec,
                                lik_init = lik_init, alpha = alpha, beta = beta,
                                betas = betas, covar_vals = covar_vals,
-                               # covar_betas = covar_betas,
+                               covar_betas = covar_betas,
                                pow_covar_vals = pow_covar_vals,
                                pow_covar_betas = pow_covar_betas,
                                betas_prec = 1/beta_vars, noprec = noprec)
@@ -1394,8 +1401,8 @@ sampling_ESS2 = function(data, para, setting, init,
 #'   precision matrix to make it full-rank. Options are '1,1' for an adjustment
 #'   to the first element, 'diag' for an adjustment to the entire main diagonal,
 #'   or 'none' which may result in a non-full-rank precision matrix.
-#' @param prec_alpha,prec_beta numeric shape and rate parameters for the prior
-#'   on precision.
+#' @param prec_alpha,prec_beta numeric hyperparameters for the prior on
+#'   precision.
 #' @param TrjL numeric tuning parameter.
 #' @param Nleap integer tuning parameter.
 #' @param szkappa numeric tuning parameter.
@@ -1406,12 +1413,17 @@ sampling_ESS2 = function(data, para, setting, init,
 #'   (may) influence sampling frequency.
 #' @param power_covariates list of functions representing interaction covariate
 #'   trajectories that (may) influence sampling frequency.
-#' @param betas numeric vector of starting values for the beta hyperparameters.
+#' @param betas numeric vector of (starting) values for the coefficients of the
+#'   log-linear sampling time model.
+#' @param pow_betas numeric vector of (starting) values for the interaction
+#'   coefficients of the log-linear sampling time model.
 #' @param samp_alg string selecting sampling algorithm for sampling time
 #'   intensity coefficients. One of "none" (default), "fixed", "MH", and "ESS".
 #' @param kappa_alg selects sampling algorithm for kappa. One of "gibbs"
 #'   (default) or "whiten".
 #' @param beta_vars numeric vector prior variances of the beta hyperparameters.
+#' @param pow_beta_vars numeric vector prior variances of the pow_beta
+#'   hyperparameters.
 #' @param printevery integer how many MCMC steps between writing output to the
 #'   console.
 #' @param first_elem_prec numeric the precision of the first element.
@@ -1422,9 +1434,12 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
                          TrjL=NULL, Nleap=NULL, szkappa=NULL, rand_leap=NULL,
                          f_init = rep(1, ngrid-1), kappa = 1,
                          covariates=NULL, power_covariates=NULL,
-                         betas=rep(0, 2+length(covariates)+length(power_covariates)),
+                         betas=rep(0, 2+length(covariates)),
+                         pow_betas=rep(0, length(power_covariates)),
                          samp_alg = "none", kappa_alg = "gibbs",
-                         beta_vars = rep(100, length(betas)), printevery=100,
+                         beta_vars = rep(100, length(betas)), 
+                         pow_beta_vars = rep(100, length(pow_betas)), 
+                         printevery=100,
                          first_elem_prec = 0.01)
 {
   if (class(dataset) == "phylo")
@@ -1495,7 +1510,7 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   else
     stop(paste("Unrecognized argument nugget = '", nugget, "', please use '1,1', 'diag', or 'none'.", sep = ""))
   
-  eig  = spam::eigen.spam(invC, TRUE)
+  eig  = eigen(invC, TRUE)
   rtEV = sqrt(eig$values)
   EVC  = eig$vectors
   
@@ -1541,12 +1556,13 @@ mcmc_sampling = function(dataset, alg, nsamp, nburnin=0, nsubsamp=1, ngrid=100,
   dataset = list(lik_init = lik_init, covar_vals = covar_vals, pow_covar_vals = pow_covar_vals)
   para = list(alpha = prec_alpha, beta = prec_beta, invC = invC, rtEV = rtEV,
               EVC = EVC, cholC = cholC, betas = betas, beta_vars = beta_vars,
+              pow_betas = pow_betas, pow_beta_vars = pow_beta_vars,
               first_elem_prec = first_elem_prec)
   setting = list(stepsz = stepsz, Nleap = Nleap,
                  NSAMP = nsamp, NBURNIN = nburnin, NSUBSAMP = nsubsamp,
                  szkappa = szkappa, rand_leap=rand_leap,
                  proposal_sds = rep(0.3, length(betas)))
-  init = list(theta = theta, u = u, du = du, betas = betas)
+  init = list(theta = theta, u = u, du = du, betas = betas, pow_betas = pow_betas)
   
   # Run MCMC sampler
   if (alg == "ESS")

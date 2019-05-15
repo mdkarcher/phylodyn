@@ -8,7 +8,8 @@ posterior_coal_check(coal_times, samp_times, n_sampled, logpop, grid,
   cap = NULL)
 }
 \arguments{
-\item{coal_times}{numeric vector of coalescent times.}
+\item{coal_times}{numeric vector (for fixed-tree) or numeric vector (for
+inferred-tree) of coalescent times.}
 
 \item{samp_times}{numeric vector of sampling times.}
 
@@ -16,9 +17,14 @@ posterior_coal_check(coal_times, samp_times, n_sampled, logpop, grid,
 
 \item{logpop}{matrix posterior sample of log-effective population sizes.}
 
-\item{grid}{numeric grid}
+\item{grid}{numeric grid of time points.}
 
 \item{cap}{integer maximum number of posterior samples to use.}
+}
+\value{
+data.frame with two columns: "obs" contains the KS discrepancies for
+  the supplied coalescent times, "rep" contains the KS discrepancies for the
+  replicated coalescent times.
 }
 \description{
 Posterior predictive check for coalescent model

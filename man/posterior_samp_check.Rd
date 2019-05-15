@@ -5,7 +5,8 @@
 \title{Posterior predictive check for inhomogenous Poisson process sampling model}
 \usage{
 posterior_samp_check(samp_times, n_sampled, logpop, grid, betas,
-  cap = NULL)
+  cap = NULL, covariates = NULL, cov_betas = NULL,
+  pow_covariates = NULL, pow_cov_betas = NULL)
 }
 \arguments{
 \item{samp_times}{numeric vector of sampling times.}
@@ -14,12 +15,26 @@ posterior_samp_check(samp_times, n_sampled, logpop, grid, betas,
 
 \item{logpop}{matrix posterior sample of log-effective population sizes.}
 
-\item{grid}{numeric grid}
+\item{grid}{numeric grid of time points.}
 
 \item{betas}{matrix posterior sample of log-linear coefficients for sampling
 model.}
 
 \item{cap}{integer maximum number of posterior samples to use.}
+
+\item{covariates}{list of vectors representing covariate values.}
+
+\item{cov_betas}{numeric coefficients for each element of covariates.}
+
+\item{pow_covariates}{list of vectors representing interaction covariate
+values.}
+
+\item{pow_cov_betas}{numeric coefficients for each element of pow_covariates.}
+}
+\value{
+data.frame with two columns: "obs" contains the chi-square
+  discrepancies for the supplied sampling times, "rep" contains the
+  chi-square discrepancies for the replicated sampling times.
 }
 \description{
 Posterior predictive check for inhomogenous Poisson process sampling model
