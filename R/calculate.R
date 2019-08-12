@@ -65,7 +65,7 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #' }
 BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
                  prec_beta=0.01, beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
-                 simplify = TRUE, derivative = FALSE, forward = TRUE)
+                 simplify = TRUE, derivative = FALSE, forward = TRUE, link=1)
 {
   if (class(data) == "phylo")
   {
@@ -81,7 +81,7 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
                             n_sampled = phy$n_sampled, fns = fns, lengthout = lengthout,
                             prec_alpha = prec_alpha, prec_beta = prec_beta,
                             beta1_prec = beta1_prec, use_samp = pref, log_fns = log_fns,
-                            simplify = simplify, derivative = derivative)
+                            simplify = simplify, derivative = derivative, link=link)
   
   result$samp_times <- phy$samp_times
   result$n_sampled  <- phy$n_sampled
@@ -130,12 +130,12 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
 #' @export
 BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
                     beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
-                    simplify = TRUE, derivative = FALSE, forward = TRUE)
+                    simplify = TRUE, derivative = FALSE, forward = TRUE, link=1)
 {
   return(BNPR(data = data, lengthout = lengthout, pref = TRUE,
               prec_alpha = prec_alpha, prec_beta = prec_beta,
               beta1_prec = beta1_prec, fns = fns, log_fns = log_fns,
-              simplify = simplify, derivative = derivative, forward = forward))
+              simplify = simplify, derivative = derivative, forward = forward, link = link))
 }
 
 coal_stats <- function(grid, samp_times, coal_times, n_sampled = NULL,
@@ -283,7 +283,7 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
                             lengthout=100, prec_alpha=0.01, prec_beta=0.01,
                             beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
                             simplify = FALSE, events_only = FALSE,
-                            derivative = FALSE)
+                            derivative = FALSE, link=1)
 {
   if (!requireNamespace("INLA", quietly = TRUE)) {
     stop('INLA needed for this function to work. Use install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE).',
@@ -372,7 +372,7 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
   
   mod <- INLA::inla(formula, family = family, data = data,
                     lincomb = lc_many, offset = data$E_log,
-                    control.predictor = list(compute=TRUE),
+                    control.predictor = list(compute=TRUE, link=link),
                     control.inla = list(lincomb.derived.only=FALSE))
   
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
