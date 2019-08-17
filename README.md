@@ -36,6 +36,8 @@ or check [r-inla.org](http://www.r-inla.org/download) for the most up-to-date in
 
 7. [LocalGenealogies](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/LocalGenealogies.Rmd): A short example of MCMC-based inference of effective population size trajectories from a sequence of local genealogies. Genealogies are assumed to be a realization of the Sequentially Markov Coalescent (SMC') model. The methodology is developed in [6]
 
+8. [Simulation](https://github.com/mdkarcher/phylodyn/blob/master/vignettes/LocalGenealogies.Rmd): A short example of simulation of genealogies under isochronous and heterochronous sampling scheme, illustraring methodology in [2] and [5].
+
 ## Datasets
 
 Datasets below can be found at: https://github.com/mdkarcher/PhyloData/
