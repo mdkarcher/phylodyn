@@ -507,6 +507,161 @@ compute_pos_summ = function(samp_alg, loglikf, f, kappa, invC, alpha, beta, lik_
   return(result)
 }
 
+#' Set fixed parameters for prior, likelihood, and posterior calculations.
+#'
+#' @param samp_times vector of sampling times.
+#' @param n_sampled integer vector of number of tips sampled at each sampling time.
+#' @param coal_times vector of coalescent times.
+#' @param grid vector of grid end points.
+#' @param prec_alpha numeric alpha hyperparameter for precision parameter (default 0.01).
+#' @param prec_beta numeric beta hyperparameter for precision parameter (default 0.01).
+#' @param betas_prec matrix precision matrix for beta parameters.
+#' @param covar_vals matrix of covariate values at each of the grid midpoints.
+#'
+#' @return list containing all the parameters necessary to use 
+#' logprior_[], loglik_[] and logposterior_[] functions.
+#' @export
+#'
+#' @examples
+initialize_params = function(samp_times, n_sampled, coal_times, grid, 
+                             prec_alpha = 1e-2, prec_beta = 1e-2,
+                             betas_prec = diag(c(0.01, 0.01)),
+                             covar_vals = NULL)
+{
+  lik_init = coal_lik_init(samp_times=samp_times, n_sampled=n_sampled, 
+                           coal_times=coal_times, grid=grid)
+  intl = grid[2]-grid[1]
+  midpts = grid[-1]-intl/2
+  invC = Q_matrix(midpts)
+  
+  # fudge to be able to compute the cholC
+  invC[1,1] <- invC[1,1]+.0001 # nugget at (1,1)
+  
+  return(list(lik_init = lik_init, prec_alpha = prec_alpha, prec_beta = prec_beta, 
+              invC = invC, betas_prec = betas_prec, covar_vals = covar_vals))
+}
+
+#' Compute the log-prior using the set-up for ESS (sampling conditional)
+#'
+#' @param f vector of log effective population sizes at grid midpoints.
+#' @param kappa numeric precision parameter.
+#' @param params output from initialize_parameters().
+#'
+#' @return numeric log-prior to agree with the output of mcmc_sampling(alg='ESS').
+#' @export
+#'
+#' @examples
+logprior_ESS = function(f, kappa, params)
+{
+  logfieldpri = log_mvnorm_prior(x = f, prec = params$invC * kappa)
+  
+  logprecpri = log_kappa_prior(kappa = kappa, alpha = params$prec_alpha, beta = params$prec_beta)
+  
+  logpri = logfieldpri + logprecpri
+  
+  return(logpri)
+}
+
+#' Compute the log-likelihood using the set-up for ESS (sampling conditional)
+#'
+#' @param f vector of log effective population sizes at grid midpoints.
+#' @param params output from initialize_parameters().
+#'
+#' @return numeric log-likelihood to agree with the output of mcmc_sampling(alg='ESS').
+#' @export
+#'
+#' @examples
+loglik_ESS = function(f, params)
+{
+  loglik = ESS_none_ll(f, params$lik_init)
+  
+  return(loglik)
+}
+
+#' Compute the log-posterior using the set-up for ESS (sampling conditional)
+#'
+#' @param f vector of log effective population sizes at grid midpoints.
+#' @param kappa numeric precision parameter.
+#' @param params output from initialize_parameters().
+#'
+#' @return numeric log-posterior to agree with the output of mcmc_sampling(alg='ESS').
+#' @export
+#'
+#' @examples
+logposterior_ESS = function(f, kappa, params)
+{
+  logpri = logprior_ESS(f, kappa, params)
+  
+  loglik = loglik_ESS(f, params)
+  
+  logpos = logpri + loglik
+  
+  return(logpos)
+}
+
+#' Compute the log-prior using the set-up for ESS (sampling aware)
+#'
+#' @param f vector of log effective population sizes at grid midpoints.
+#' @param kappa numeric precision parameter.
+#' @param betas vector of beta coefficients for log-linear sampling model.
+#' @param params output from initialize_parameters().
+#'
+#' @return numeric log-prior to agree with the output of mcmc_sampling(alg='ESS', samp_alg='MH').
+#' @export
+#'
+#' @examples
+logprior_ESS_pref = function(f, kappa, betas, params)
+{
+  logfieldpri = log_mvnorm_prior(x = f, prec = params$invC * kappa)
+  
+  logprecpri = log_kappa_prior(kappa = kappa, alpha = params$prec_alpha, beta = params$prec_beta)
+  
+  logbetapri = log_betas_prior(betas, params$betas_prec)
+  
+  logpri = logfieldpri + logprecpri + logbetapri
+  
+  return(logpri)
+}
+
+#' Compute the log-likelihood using the set-up for ESS (sampling aware)
+#'
+#' @param f vector of log effective population sizes at grid midpoints.
+#' @param betas vector of beta coefficients for log-linear sampling model.
+#' @param params output from initialize_parameters().
+#'
+#' @return numeric log-likelihood to agree with the output of mcmc_sampling(alg='ESS', samp_alg='MH').
+#' @export
+#'
+#' @examples
+loglik_ESS_pref = function(f, betas, params)
+{
+  loglik = ESS_betas_ll(f, params$lik_init, betas, params$covar_vals)
+  
+  return(loglik)
+}
+
+#' Compute the log-posterior using the set-up for ESS (sampling aware)
+#'
+#' @param f vector of log effective population sizes at grid midpoints.
+#' @param kappa numeric precision parameter.
+#' @param betas vector of beta coefficients for log-linear sampling model.
+#' @param params output from initialize_parameters().
+#'
+#' @return numeric log-posterior to agree with the output of mcmc_sampling(alg='ESS', samp_alg='MH').
+#' @export
+#'
+#' @examples
+logposterior_ESS_pref = function(f, kappa, betas, params)
+{
+  logpri = logprior_ESS_pref(f, kappa, betas, params)
+  
+  loglik = loglik_ESS_pref(f, betas, params)
+  
+  logpos = logpri + loglik
+  
+  return(logpos)
+}
+
 compute_pos_summ2 = function(samp_alg, loglikf, f, prec, first_elem_prec,
                              alpha, beta, lik_init, betas = NULL,
                              covar_vals = NULL, covar_betas = NULL,
