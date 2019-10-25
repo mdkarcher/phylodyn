@@ -76,7 +76,7 @@ coalsim_tt <- function(samp_times, n_sampled, traj, val_upper=10, ...)
   else
   {
     traj_inv <- function(t) 1/traj(t, ...)
-    hazard <- function(t, lins, start, target) .5*lins*(lins-1)*stats::integrate(traj_inv, start, start+t)$value - target
+    hazard <- function(t, lins, start, target) .5*lins*(lins-1)*stats::integrate(traj_inv, start, start+t, stop.on.error = FALSE)$value - target
     is_stepfun = FALSE
   }
   

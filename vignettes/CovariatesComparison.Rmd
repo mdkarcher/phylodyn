@@ -4,7 +4,7 @@ author: "Michael Karcher"
 date: "May 20, 2019"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Simple BNPR Vignette}
+  %\VignetteIndexEntry{Covariates Comparison}
   %\VignetteEngine{knitr::rmarkdown}
   \usepackage[utf8]{inputenc}
 ---
