@@ -20,7 +20,7 @@ FIX ME: Make it a real vignette with text instead of comments later
 Ncores <- 20
 
 library(phylodyn)
-source("BNPR_PS_fixedBeta.R")
+#source("BNPR_PS_fixedBeta.R")
 # INLA:::inla.dynload.workaround()
 
 ### Prelim stuff

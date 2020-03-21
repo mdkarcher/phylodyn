@@ -72,8 +72,8 @@ infer_coal_samp_fixed <- function (samp_times, coal_times, n_sampled = NULL, fns
                      )
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
 }
-environment(infer_coal_samp_fixed) <- environment(phylodyn:::infer_coal_samp)
-attributes(infer_coal_samp_fixed) <- attributes(phylodyn:::infer_coal_samp)
+#environment(infer_coal_samp_fixed) <- environment(phylodyn:::infer_coal_samp)
+#attributes(infer_coal_samp_fixed) <- attributes(phylodyn:::infer_coal_samp)
 
 ###
 BNPR_fixed <- function (data, lengthout = 100, pref = TRUE, prec_alpha = 0.01, 
@@ -125,5 +125,5 @@ BNPR_fixed <- function (data, lengthout = 100, pref = TRUE, prec_alpha = 0.01,
   }
   return(result)
 }
-environment(BNPR_fixed) <- environment(phylodyn::BNPR)
-attributes(BNPR_fixed) <- attributes(phylodyn::BNPR)
+#environment(BNPR_fixed) <- environment(phylodyn::BNPR)
+#attributes(BNPR_fixed) <- attributes(phylodyn::BNPR)
