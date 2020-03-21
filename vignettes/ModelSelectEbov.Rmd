@@ -1,6 +1,20 @@
+---
+title: "Model Selection for Ebola Analysis"
+author: "Luiz Max Carvalho"
+date: "March 20, 2020"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Model Selection for Ebola Analysis}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+FIX ME: Make it a real vignette with text instead of comments later
+
+```{r message=FALSE}
 library(ape)
 library(phylodyn)
-source("BNPR_PS_fixedBeta.R")
+#source("BNPR_PS_fixedBeta.R")
 
 ############ Functions
 get_beta2_estimates <- function(fit){
@@ -68,4 +82,4 @@ fit_and_report(resolved.SLE)
 poly.LBR <- read.tree("data/prefsample_Liberiatt_dated.tree") ## Liberia
 resolved.LBR <- multi2di(poly.LBR, random = TRUE)
 fit_and_report(resolved.LBR)
-
+```

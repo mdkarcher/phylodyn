@@ -1,3 +1,17 @@
+---
+title: "Extended Preferential Sampling Simulation Study"
+author: "Luiz Max Carvalho"
+date: "March 20, 2020"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Pref Sample Simulation Study}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+FIX ME: Make it a real vignette with text instead of comments later
+
+```{r message=FALSE}
 ## Set up 
 ## Given a tree size (n) and value for beta2 (b2), simulate **both** (a) sampling times 's' and (b) tree conditional on s;
 ## Fit a model that accounts for preferential sampling (BNPR1) and a model that accounts for PS **and** includes the right covariate (BNPR2)
@@ -237,3 +251,4 @@ Beta2.dt
 write.csv(ErrorMeasures.dt, "simu_study_fixed_genealogy_MAD_MCIW.csv", row.names = FALSE)
 write.csv(lMaL.dt, "simu_study_fixed_genealogy_logMarginalLikelihoods.csv", row.names = FALSE)
 write.csv(Beta2.dt, "simu_study_fixed_genealogy_Beta2_estimates.csv", row.names = FALSE)
+```
