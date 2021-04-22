@@ -369,11 +369,13 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
   {
     lc_many <- NULL
   }
-  
-  mod <- INLA::inla(formula, family = family, data = data,
+   mod <- INLA::inla(formula, family = family, data = data,
                     lincomb = lc_many, offset = data$E_log,
-                    control.predictor = list(compute=TRUE, link=link),
-                    control.inla = list(lincomb.derived.only=FALSE))
+                    control.predictor = list(compute=TRUE, link=link))
+  #mod <- INLA::inla(formula, family = family, data = data,
+   #                 lincomb = lc_many, offset = data$E_log,
+    #                control.predictor = list(compute=TRUE, link=link),
+     #               control.inla = list(lincomb.derived.only=FALSE))
   
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
 }
