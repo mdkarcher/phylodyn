@@ -65,7 +65,7 @@ res_MCMC = mcmc_sampling(data = gene, alg = 'ESS', nsamp = nsamp,
 
 We plot the results from the MCMC.
 
-```{r fig.width=3, fig.height=3}
+```{r fig.width=6, fig.height=6, out.width='50%'}
 plot_MCMC(res_MCMC, traj = traj, main = "MCMC Output")
 legend('topleft',c('Truth', 'MCMC'), bty='n', lty=c(2,1))
 ```
@@ -93,7 +93,7 @@ mean(coal_ppc$rep > coal_ppc$obs)
 
 We plot the results, and note how the $y=x$ line goes through the cloud of points.
 
-```{r fig.width=3, fig.height=3}
+```{r fig.width=6, fig.height=6, out.width='50%'}
 plot(coal_ppc$obs, coal_ppc$rep, pch = 16, col = rgb(0, 0, 0, 0.5),
      main = "Coalescent PPC", xlab = "", ylab = "")
 title(ylab = "Replicated", line = 2)
@@ -114,7 +114,7 @@ mean(samp_ppc$rep > samp_ppc$obs)
 
 We plot the results, and note how the $y=x$ line goes through the cloud of points.
 
-```{r fig.width=3, fig.height=3}
+```{r fig.width=6, fig.height=6, out.width='50%'}
 plot(samp_ppc$obs, samp_ppc$rep, pch = 16, col = rgb(0, 0, 0, 0.5),
      main = "Sampling-aware, Sampling PPC", xlab = "", ylab = "")
 title(ylab = "Replicated", line = 2)

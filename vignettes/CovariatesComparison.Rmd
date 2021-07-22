@@ -1,0 +1,125 @@
+---
+title: "Covariates Comparison"
+author: "Michael Karcher"
+date: "May 20, 2019"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Covariates Comparison}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+
+This vignette shows a simple and typical use of `phylodyn` 
+and its main functions BNPR and BNPR_PS, 
+contrasting different sampling time models.
+We start by loading the `phylodyn` package and setting a random seed.
+
+```{r}
+library(phylodyn)
+set.seed(8675311)
+```
+
+We set the different trajectories:
+`traj1(t)` is the effective population size,
+`traj2(t)` is a covariate trajectory,
+and the product of those two functions `trajc(t)` is the sampling intensity.
+
+```{r}
+beta1 = 1
+beta2 = 1
+
+traj1 = function(t) logistic_traj(t, offset = 6) / 5
+traj2 = function(t) exp_traj(t = t, scale = 1, rate = 0.05)
+trajc = function(t) traj1(t)^beta1 * traj2(t)^beta2
+```
+
+We plot each trajectory to illustrate. 
+Note: the present (`t=0`) is on the right, and time flows from left to right.
+
+```{r fig.width=16, fig.height=6, out.width='100%'}
+ylim=c(0.5,100)
+par(mfrow=c(1, 3), oma=c(4,0,0,0)+0.1, mar=c(0.5,2,2,1), 
+    xpd=NA, cex=1.2, cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.3)
+curve(traj1(t), xlim=c(60, 0), xname = "t", main = "Effective population size (traj1)", ylab = "")
+curve(traj2(t), xlim=c(60, 0), xname = "t", main = "Covariate (traj2)", ylab = "")
+curve(trajc(t), xlim=c(60, 0), xname = "t", main = "Sampling intensity (trajc)", ylab = "")
+```
+
+We simulate sampling times according to the sampling intensity.
+
+```{r fig.width=6, fig.height=6, out.width='50%'}
+samp_end = 60
+nsamps   = 1000
+Cprop      = nsamps/integrate(traj_beta, 0, samp_end, traj=trajc, beta=1)$value
+
+samp_times = pref_sample(trajc, c=Cprop, lim=c(0,samp_end), beta=1)
+hist(samp_times, xlim = c(samp_end, 0))
+```
+
+We simulate a genealogy using a coalescent model.
+
+```{r}
+gene = coalsim(samp_times = samp_times, n_sampled = rep(1, length(samp_times)), traj = traj1)
+```
+
+We fit three models and plot the results:
+
+* Sampling conditional (no sampling time model)
+* Sampling aware, no covariates
+* Sampling aware, one covariate (exponential growth)
+
+```{r warning=FALSE, message=FALSE, fig.width=16, fig.height=6, out.width='100%'}
+res_BNPR = BNPR(data = gene, lengthout = 100)
+res_BNPR_PS1 = BNPR_PS(data = gene, lengthout = 100)
+res_BNPR_PS2 = BNPR_PS(data = gene, lengthout = 100, fns = list(traj2))
+
+ylim=c(0.5,100)
+trev_blue = rgb(0.330, 0.484, 0.828)
+trev_yell = rgb(0.829, 0.680, 0.306)
+trev_purp = rgb(0.533, 0.000, 0.607)
+
+par(mfrow=c(1, 3), oma=c(4,3,0,0)+0.1, mar=c(0.5,2,2,1), 
+    xpd=NA, cex=1.2, cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.3)
+
+plot_BNPR(res_BNPR, traj=traj1, ylim=ylim, lwd=3, 
+          col=trev_yell, traj_col = "black", traj_lty = 2, 
+          main="BNPR", heatmap_labels = FALSE)
+text(x = 12, y = 50, labels = "Estimate", col = trev_yell, cex = 1.0, font = 2)
+arrows(x0 = 12, y0 = 40, x1 = 3, y1 = 20, length = 0.1, lwd = 2, col = trev_yell)
+text(x = 35, y = 90, labels = "Cred. region", col = "darkgray", cex = 1.0, font = 2)
+arrows(x0 = 35, y0 = 75, x1 = 44, y1 = 30, length = 0.1, lwd = 2, col = "darkgray")
+
+plot_BNPR(res_BNPR_PS1, traj=traj1, ylim=ylim, lwd=3, 
+          col=trev_blue, traj_col = "black", traj_lty = 2, 
+          ylab="", main="BNPR-PS", heatmap_labels = FALSE)
+text(x = 12, y = 50, labels = "Estimate", col = trev_blue, cex = 1.0, font = 2)
+arrows(x0 = 12, y0 = 40, x1 = 3, y1 = 25, length = 0.1, lwd = 2, col = trev_blue)
+text(x = 55, y = 50, labels = "True Trajectory", col = "black", cex = 1.0)
+arrows(x0 = 55, y0 = 40, x1 = 59, y1 = 21, length = 0.1, col = "black", lty = 1, lwd=2)
+
+plot_BNPR(res_BNPR_PS2, traj=traj1, ylim=ylim, lwd=3, 
+          col=trev_purp, traj_col = "black", traj_lty = 2, 
+          ylab="", main="BNPR-PS with Cov", heatmap_labels = TRUE, 
+          heatmap_labels_side = "left", heatmap_labels_cex = 1.0)
+text(x = 12, y = 50, labels = "Estimate", col = trev_purp, cex = 1.0, font = 2)
+arrows(x0 = 12, y0 = 40, x1 = 3, y1 = 22, length = 0.1, lwd = 2,
+       col = trev_purp)
+```
+
+We note that including a sampling time model without the correct covariates
+can result in worse results than not including a sampling time model at all,
+but including the right covariate provides better results.
+We pursue the question of model adequacy using posterior predictive checks
+in Karcher, et al. 2019 and in the vignette `SimplePPC.Rmd` in this package.
+
+## References
+
+1. Karcher MD, Suchard MA, Dudas G, Minin VN (2019). Estimating effective population size changes from preferentially sampled genetic sequences, [arXiv:1903.11797](https://arxiv.org/abs/1903.11797).
+
+2. Palacios JA and Minin VN.
+Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
+In *Proceedings of the Twenty-Eighth International Conference on Uncertainty in Artificial Intelligence*, pages 726–735, 2012.
+
+3. Lan, S, Palacios, JA, Karcher, M, Minin, VN, & Shahbaba, B (2014).
+An Efficient Bayesian Inference Framework for Coalescent-Based Nonparametric Phylodynamics.
+ *Bioinformatics*, 31, 3282-3289.
