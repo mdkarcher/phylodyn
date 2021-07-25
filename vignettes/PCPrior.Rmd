@@ -1,0 +1,107 @@
+---
+title: "PC prior"
+author: "Luiz Max Carvalho"
+date: "July 25, 2021"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{PC prior}
+  %\VignetteEngine{knitr::rmarkdown}
+  \usepackage[utf8]{inputenc}
+---
+This vignette illustrates the employment of a penalised complexity (PC) prior (Simpson et al., 2017) on the GMRF precision, $\kappa$.
+The precision controls the smoothness of the population size changes: low precision (high variance) means abrupt changes between coalescent events and high precision (low variance) means a gradual change in population sizes.
+Statistically, we want the _right_ level of smoothness: too little and we are fitting noise; too much and we lose important temporal variation.
+
+It is thus important to place a well-thought-out prior on the precision.
+The main idea is to elicit ("create") a prior distribution that controls the standard deviation of the (log) population sizes without leading to overfitting (see Simpson et al., 2017, Section 3.3).
+It can be shown that the usual Gamma prior leads to overfitting.
+In particular, the default Gamma prior has shape and rate parameters equal to $0.001$, leading to a flat prior distribution on $\kappa$.
+
+To this end, the authors show that a prior that penalises complex models and avoids overfitting is the Gumbel type II distribution.
+Let $a, b > 0$ be the shape and scale hyperparameters respectively; the probability density function is then
+$$
+ \pi_2(\kappa \mid a, b) = ab \cdot \kappa^{-a-1}\exp\left(-b\kappa^{-a}\right),\: \kappa > 0.
+$$
+The authors recommend $a = 1/2$ and $b$ to be chosen such that $\textrm{Pr}(1/\sqrt{\kappa} > S) = p$, where the value $S$ and the probability $p$ are to be chosen on substantive grounds.
+This leads to $b = -\ln(p)/S$.
+The defaults in `BNPR()` when `pc_prior=TRUE` are $S=1$ and $p = 0.1$. 
+
+First, let us set up the hyperparameters for the PC prior:
+```{r hyperpar}
+S <- 1
+p <- .1
+apc <- 1/2
+bpc <- -log(p)/S
+```
+
+To make things more interesting (and fair), we will also elicit a Gamma distribution with the constraint that $\textrm{Pr}(1/\sqrt{\kappa} > 1) = 0.1$. 
+This leads to a Gamma distribution with $\textrm{shape}=2.544882$ and $\textrm{scale}=1.203437$, which we will call a "matching" Gamma.
+
+Now, a comparison between the priors:
+```{r compfig, fig.width=8, fig.height=6,echo=FALSE}
+dgumbel2 <- function(x, a, b, log = FALSE){
+  ans <- log(a) + log(b) -( a + 1)*x -b*x^-a
+  if(!log) ans <- exp(ans)
+  return(ans)
+}
+dgumbel2 <- Vectorize(dgumbel2)
+
+curve(dgamma(x, shape = 2.544882, scale = 1.203437),
+      0, 10,
+      lwd = 4, lty = 2,
+       xlab = expression(kappa), ylab = "Density")
+curve(dgumbel2(x, a = apc, b = bpc), 0, 10,
+       lwd = 4, lty = 3, add = TRUE)
+curve(dgamma(x, shape = 1E-3, rate = 1E-3),
+      lwd = 4, add = TRUE)
+legend(x = "topright",
+       cex = 1.5,
+       legend = c("Default Gamma",
+                  "Matching Gamma",
+                  "Gumbel type II (PC)"),
+       lwd = 3, lty = 1:3, bty = 'n')
+```
+
+Now we will see these priors in action in the analysis of the New York flu data:
+```{r analysis}
+library(phylodyn)
+
+data("NY_flu")
+
+res.default <- BNPR(NY_flu)
+res.RG <- BNPR(NY_flu,
+               prec_alpha =  2.544882, prec_beta = 1/1.203437)
+res.PC <-  BNPR(NY_flu, pc_prior = TRUE)
+```
+
+Extracting the reconstructions and plotting:
+```{r reconstructions, fig.width=8, fig.height=6}
+all.reconstructions <- do.call(rbind,
+                               list(
+                                 data.frame(res.default$summary,
+                                            prior = "default_Gamma"),
+                                 data.frame(res.RG$summary,
+                                            prior = "matching_Gamma"),
+                                 data.frame(res.PC$summary,
+                                            prior = "penalised_complexity")
+                               ))
+
+library(ggplot2)
+
+ggplot(data = all.reconstructions,
+            aes(x = time, y = mean,
+                colour = prior, fill = prior)) +
+  geom_line(size = 1) +
+  scale_y_log10("Effective population size") +
+  scale_x_continuous("Time") + 
+  geom_ribbon(aes(ymin = quant0.025,
+                  ymax = quant0.975),
+              alpha = 0.4) + 
+  theme_bw(base_size = 20)
+```
+As we can see, the matching Gamma prior leads to a posterior with way more uncertainty. 
+Slightly harder to see is that the posterior under the PC prior is the one with the lowest uncertainty.
+
+## References
+
+1. Simpson, D., Rue, H., Riebler, A., Martins, T. G., & Sørbye, S. H. (2017). Penalising model component complexity: A principled, practical approach to constructing priors. Statistical Science, 32(1), 1-28.
