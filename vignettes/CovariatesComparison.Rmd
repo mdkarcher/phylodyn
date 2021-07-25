@@ -114,7 +114,7 @@ in Karcher, et al. 2019 and in the vignette `SimplePPC.Rmd` in this package.
 
 ## References
 
-1. Karcher MD, Suchard MA, Dudas G, Minin VN (2019). Estimating effective population size changes from preferentially sampled genetic sequences, [arXiv:1903.11797](https://arxiv.org/abs/1903.11797).
+1. Karcher, M. D., Carvalho, L. M., Suchard, M. A., Dudas, G., & Minin, V. N. (2020). Estimating effective population size changes from preferentially sampled genetic sequences. PLoS computational biology, 16(10), e1007774, [arXiv:1903.11797](https://arxiv.org/abs/1903.11797).
 
 2. Palacios JA and Minin VN.
 Integrated nested Laplace approximation for Bayesian nonparametric phylodynamics.
