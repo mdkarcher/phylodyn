@@ -135,6 +135,7 @@ BNPR <- function(data, lengthout = 100, pref=FALSE,
 #' @describeIn BNPR Uses preferential sampling model.
 #' @export
 BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
+                    prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
                     beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
                     simplify = TRUE, derivative = FALSE, forward = TRUE, link=1)
 {
