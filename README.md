@@ -10,7 +10,7 @@ The purpose of `phylodyn` is to facilitate phylodynamic inference and analysis i
 1. Install (if necessary) package dependencies and helpers `ape`, `spam` and `devtools` using `install.packages`.
 
 2. Install `INLA` using `install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE)` 
-or check [r-inla.org](http://www.r-inla.org/download) for the most up-to-date installation instructions.
+or check [r-inla.org](https://www.r-inla.org/download-install) for the most up-to-date installation instructions.
 
 3. Load `devtools` using `library(devtools)`.
 
