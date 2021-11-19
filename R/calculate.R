@@ -35,6 +35,9 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #' @param pref logical. Should the preferential sampling model be used?
 #' @param prec_alpha,prec_beta numerics specifying gamma prior for precision 
 #'   \eqn{\kappa}.
+#' @param pc_prior logical. Should a PC prior for the precision be used?
+#' @param prec_S,prec_p numerics specifying Gumbel type II PC prior for precision
+#'  \eqn{\kappa}.   
 #' @param beta1_prec numeric specifying precision for normal prior on 
 #'   \eqn{\beta_1}.
 #' @param fns list containing functions of covariates.
@@ -63,8 +66,10 @@ gen_summary = function(coal_times, samp_times, n_sampled)
 #'  res = BNPR(NY_flu)
 #'  plot_BNPR(res)
 #' }
-BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
-                 prec_beta=0.01, beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
+BNPR <- function(data, lengthout = 100, pref=FALSE,
+                 prec_alpha=0.01, prec_beta=0.01,
+                 prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
+                 beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
                  simplify = TRUE, derivative = FALSE, forward = TRUE, link=1)
 {
   if (class(data) == "phylo")
@@ -80,6 +85,7 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
   result <- infer_coal_samp(samp_times = phy$samp_times, coal_times = phy$coal_times,
                             n_sampled = phy$n_sampled, fns = fns, lengthout = lengthout,
                             prec_alpha = prec_alpha, prec_beta = prec_beta,
+                            prec_S = prec_S, prec_p = prec_p, pc_prior = pc_prior,
                             beta1_prec = beta1_prec, use_samp = pref, log_fns = log_fns,
                             simplify = simplify, derivative = derivative, link=link)
   
@@ -129,11 +135,13 @@ BNPR <- function(data, lengthout = 100, pref=FALSE, prec_alpha=0.01,
 #' @describeIn BNPR Uses preferential sampling model.
 #' @export
 BNPR_PS <- function(data, lengthout = 100, prec_alpha=0.01, prec_beta=0.01,
+                    prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
                     beta1_prec = 0.001, fns = NULL, log_fns = TRUE,
                     simplify = TRUE, derivative = FALSE, forward = TRUE, link=1)
 {
   return(BNPR(data = data, lengthout = lengthout, pref = TRUE,
               prec_alpha = prec_alpha, prec_beta = prec_beta,
+              prec_S = prec_S, prec_p = prec_p, pc_prior = pc_prior,
               beta1_prec = beta1_prec, fns = fns, log_fns = log_fns,
               simplify = simplify, derivative = derivative, forward = forward, link = link))
 }
@@ -186,7 +194,9 @@ condense_stats <- function(time, event, E, log_zero = -100)
 }
 
 infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100,
-                       prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE,
+                       prec_alpha = 0.01, prec_beta = 0.01,
+                       prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
+                       simplify = FALSE,
                        derivative = FALSE)
 {
   if (!requireNamespace("INLA", quietly = TRUE)) {
@@ -212,7 +222,13 @@ infer_coal <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100
     coal_data <- with(coal_data, condense_stats(time = time, event = event, E=E))
   
   data <- with(coal_data, data.frame(y = event, time = time, E_log = E_log))
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
+  
   formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE)
   
   if (derivative)
@@ -280,7 +296,9 @@ joint_stats <- function(coal_data, samp_data)
 }
 
 infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
-                            lengthout=100, prec_alpha=0.01, prec_beta=0.01,
+                            lengthout=100,
+                            prec_alpha=0.01, prec_beta=0.01,
+                            prec_S=1, prec_p=0.1, pc_prior=FALSE,
                             beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
                             simplify = FALSE, events_only = FALSE,
                             derivative = FALSE, link=1)
@@ -307,7 +325,11 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
   if (simplify)
     coal_data <- with(coal_data, condense_stats(time=time, event=event, E=E))
   
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
   
   if (!use_samp)
   {
@@ -369,19 +391,21 @@ infer_coal_samp <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
   {
     lc_many <- NULL
   }
-   mod <- INLA::inla(formula, family = family, data = data,
+  mod <- INLA::inla(formula, family = family, data = data,
                     lincomb = lc_many, offset = data$E_log,
                     control.predictor = list(compute=TRUE, link=link))
   #mod <- INLA::inla(formula, family = family, data = data,
-   #                 lincomb = lc_many, offset = data$E_log,
-    #                control.predictor = list(compute=TRUE, link=link),
-     #               control.inla = list(lincomb.derived.only=FALSE))
+  #                 lincomb = lc_many, offset = data$E_log,
+  #                control.predictor = list(compute=TRUE, link=link),
+  #               control.inla = list(lincomb.derived.only=FALSE))
   
   return(list(result = mod, data = data, grid = grid, x = coal_data$time))
 }
 
 infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout = 100,
-                             prec_alpha = 0.01, prec_beta = 0.01, simplify = FALSE)
+                             prec_alpha = 0.01, prec_beta = 0.01,
+                             prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
+                             simplify = FALSE)
 {
   if (!requireNamespace("INLA", quietly = TRUE)) {
     stop('INLA needed for this function to work. Use install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE).',
@@ -407,7 +431,13 @@ infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout
                       condense_stats(time = time, event = event, E=E))
   
   data <- with(coal_data, data.frame(y = event, time = time, E_log = E_log))
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
+  
   formula <- y ~ -1 + f(time, model="rw1", hyper = hyper, constr = FALSE) + offset(data$E_log)
   
   Imat <- diag(lengthout)
@@ -426,7 +456,8 @@ infer_coal_deriv <- function(samp_times, coal_times, n_sampled = NULL, lengthout
 }
 
 infer_samp_exper <- function(samp_times, fns, n_sampled = NULL, lengthout = 100,
-                             prec_alpha = 0.01, prec_beta = 0.01)
+                             prec_alpha = 0.01, prec_beta = 0.01,
+                             prec_S = 1, prec_p = 0.1, pc_prior = FALSE)
 {
   if (!requireNamespace("INLA", quietly = TRUE)) {
     stop('INLA needed for this function to work. Use install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE).',
@@ -446,7 +477,13 @@ infer_samp_exper <- function(samp_times, fns, n_sampled = NULL, lengthout = 100,
   
   data <- with(samp_data, list(y = count, time = time, E_log = E_log))
   data$fn=vals
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
+  
   formula_sampling <- y ~ 1 + fn + f(time, model="rw1", hyper = hyper, constr=FALSE)
   
   mod <- INLA::inla(formula_sampling, family="poisson", data=data,
@@ -456,7 +493,9 @@ infer_samp_exper <- function(samp_times, fns, n_sampled = NULL, lengthout = 100,
 }
 
 infer_coal_samp_exper <- function(samp_times, coal_times, n_sampled=NULL, fns = NULL,
-                                  lengthout=100, prec_alpha=0.01, prec_beta=0.01,
+                                  lengthout=100,
+                                  prec_alpha=0.01, prec_beta=0.01,
+                                  prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
                                   beta1_prec=0.001, use_samp = FALSE, log_fns = TRUE,
                                   simplify = FALSE, events_only = FALSE)
 {
@@ -482,7 +521,11 @@ infer_coal_samp_exper <- function(samp_times, coal_times, n_sampled=NULL, fns = 
   if (simplify)
     coal_data <- with(coal_data, condense_stats(time=time, event=event, E=E))
   
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
   
   if (events_only)
     samp_data <- samp_stats(grid = grid, samp_times = samp_times)
@@ -514,7 +557,8 @@ infer_coal_samp_exper <- function(samp_times, coal_times, n_sampled=NULL, fns = 
 }
 
 infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100, grid = NULL,
-                       prec_alpha = 0.01, prec_beta = 0.01)
+                       prec_alpha = 0.01, prec_beta = 0.01,
+                       prec_S = 1, prec_p = 0.1, pc_prior = FALSE)
 {
   if (!requireNamespace("INLA", quietly = TRUE)) {
     stop('INLA needed for this function to work. Use install.packages("INLA", repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"), dep=TRUE).',
@@ -529,7 +573,13 @@ infer_samp <- function(samp_times, n_sampled = NULL, lengthout = 100, grid = NUL
                           n_sampled = n_sampled)
   
   data <- with(samp_data, data.frame(y = count, time = time, E_log = E_log))
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
+  
   formula_sampling <- y ~ 1 + f(time, model="rw1", hyper = hyper, constr=FALSE)
   
   mod <- INLA::inla(formula_sampling, family="poisson", data=data,
@@ -576,17 +626,18 @@ BNPR_samp_only <- function(data, lengthout = 100, grid = NULL, tmrca = NULL,
   midpts <- grid[-1] - diff(grid)/2
   
   foo <- infer_samp(samp_times = phy$samp_times, n_sampled = phy$n_sampled, 
-                       lengthout = lengthout, grid = grid,
-                       prec_alpha = prec_alpha, prec_beta = prec_beta)
+                    lengthout = lengthout, grid = grid,
+                    prec_alpha = prec_alpha, prec_beta = prec_beta,
+                    prec_S = prec_S, prec_p = prec_p, pc_prior = pc_prior)
   
   quants <- foo$result$summary.random$time
   beta0 <- foo$result$summary.fixed$`0.5quant`
   
   result <- list(q025Samp = exp(quants$`0.025quant` + beta0),
-                medianSamp = exp(quants$`0.5quant` + beta0),
-                q975Samp = exp(quants$`0.975quant` + beta0),
-                beta0 = beta0, grid = grid, midpts = midpts,
-                samp_times = phy$samp_times, n_sampled = phy$n_sampled, internals = foo)
+                 medianSamp = exp(quants$`0.5quant` + beta0),
+                 q975Samp = exp(quants$`0.975quant` + beta0),
+                 beta0 = beta0, grid = grid, midpts = midpts,
+                 samp_times = phy$samp_times, n_sampled = phy$n_sampled, internals = foo)
   
   return(result)
 }

@@ -1,5 +1,8 @@
 infer_coal_samp_fixed <- function (samp_times, coal_times, n_sampled = NULL, fns = NULL, 
-          lengthout = 100, prec_alpha = 0.01, prec_beta = 0.01, beta1_prec = 0.001, 
+          lengthout = 100,
+          prec_alpha = 0.01, prec_beta = 0.01,
+          prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
+          beta1_prec = 0.001, 
           use_samp = FALSE, log_fns = TRUE, simplify = FALSE, events_only = FALSE, 
           derivative = FALSE, link = 1) 
 {
@@ -20,7 +23,13 @@ infer_coal_samp_fixed <- function (samp_times, coal_times, n_sampled = NULL, fns
   if (simplify) 
     coal_data <- with(coal_data, condense_stats(time = time, 
                                                 event = event, E = E))
-  hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  if(pc_prior){
+    hyper <- list(prec = list(prior="pc.prec", param = c(prec_S, prec_p)))
+  }else{
+    hyper <- list(prec = list(param = c(prec_alpha, prec_beta)))
+  }
+  
+  
   if (!use_samp) {
     data <- with(coal_data, data.frame(y = event, time = time, 
                                        E_log = E_log))
@@ -76,8 +85,10 @@ infer_coal_samp_fixed <- function (samp_times, coal_times, n_sampled = NULL, fns
 #attributes(infer_coal_samp_fixed) <- attributes(phylodyn:::infer_coal_samp)
 
 ###
-BNPR_fixed <- function (data, lengthout = 100, pref = TRUE, prec_alpha = 0.01, 
-          prec_beta = 0.01, beta1_prec = 0.001, fns = NULL, log_fns = TRUE, 
+BNPR_fixed <- function (data, lengthout = 100, pref = TRUE,
+                        prec_alpha = 0.01, prec_beta = 0.01,
+                        prec_S = 1, prec_p = 0.1, pc_prior = FALSE,
+                        beta1_prec = 0.001, fns = NULL, log_fns = TRUE, 
           simplify = TRUE, derivative = FALSE, forward = TRUE, link = 1) 
 {
   if (class(data) == "phylo") {
@@ -90,7 +101,9 @@ BNPR_fixed <- function (data, lengthout = 100, pref = TRUE, prec_alpha = 0.01,
   }
   result <- infer_coal_samp_fixed(samp_times = phy$samp_times, coal_times = phy$coal_times, 
                             n_sampled = phy$n_sampled, fns = fns, lengthout = lengthout, 
-                            prec_alpha = prec_alpha, prec_beta = prec_beta, beta1_prec = beta1_prec, 
+                            prec_alpha = prec_alpha, prec_beta = prec_beta,
+                            prec_S = prec_S, prec_p = prec_p, pc_prior = pc_prior,
+                            beta1_prec = beta1_prec, 
                             use_samp = pref, log_fns = log_fns, simplify = simplify, 
                             derivative = derivative, link = link)
   result$samp_times <- phy$samp_times
